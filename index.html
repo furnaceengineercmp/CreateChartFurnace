@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="ceria" data-mode="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chart Studio — Ceria Metalindo Prima</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script>
+// Some networks/browsers block one CDN but not another. If a library failed
+// to load above, try a second CDN before giving up, then let app.js know
+// which ones (if any) are still missing so it can warn the user clearly
+// instead of silently showing a blank chart.
+window.__csMissingLibs = [];
+(function(){
+  function ok(fn){ try{ return !!fn(); }catch(e){ return false; } }
+  var libs = [
+    { name:'Chart.js', check:function(){return typeof Chart!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js' },
+    { name:'chartjs-plugin-datalabels', check:function(){return typeof ChartDataLabels!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js' },
+    { name:'SheetJS (xlsx)', check:function(){return typeof XLSX!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js' },
+    { name:'PapaParse', check:function(){return typeof Papa!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js' },
+    { name:'jsPDF', check:function(){return typeof window.jspdf!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js' },
+    { name:'html2canvas', check:function(){return typeof html2canvas!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js' },
+    { name:'PptxGenJS', check:function(){return typeof PptxGenJS!=='undefined';}, url:'https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.min.js' },
+  ];
+  function loadScript(url){
+    return new Promise(function(resolve){
+      var s = document.createElement('script');
+      s.src = url;
+      s.onload = function(){ resolve(true); };
+      s.onerror = function(){ resolve(false); };
+      document.head.appendChild(s);
+    });
+  }
+  function ensure(lib){
+    if(ok(lib.check)) return Promise.resolve(true);
+    return loadScript(lib.url).then(function(){ return ok(lib.check); });
+  }
+  Promise.all(libs.map(function(lib){
+    return ensure(lib).then(function(success){ if(!success) window.__csMissingLibs.push(lib.name); });
+  })).then(function(){
+    document.dispatchEvent(new Event('cs-libs-ready'));
+  });
+})();
+</script>
+<style>
+:root{
+  --bg:#f6f4f1;
+  --panel:#ffffff;
+  --panel-2:#fbfaf8;
+  --text:#2a2620;
+  --text-soft:#6b6459;
+  --border:#e6e0d6;
+  --accent1:#E0212B;
+  --accent2:#F5B700;
+  --accent3:#1b1b1b;
+  --accent4:#8C1D18;
+  --accent5:#C97A00;
+  --accent6:#5b5347;
+  --grid:#e9e4da;
+  --shadow: 0 1px 3px rgba(20,15,5,.06), 0 8px 24px rgba(20,15,5,.05);
+  --radius:14px;
+}
+[data-mode="dark"]{
+  --bg:#171310;
+  --panel:#211c17;
+  --panel-2:#28221c;
+  --text:#f3ede2;
+  --text-soft:#b9ad9a;
+  --border:#3a322a;
+  --grid:#39322a;
+  --shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+[data-theme="sunset"]{ --accent1:#FF5A36; --accent2:#FFB84C; --accent3:#7A2048; --accent4:#C81E5C; --accent5:#FF8A5B; --accent6:#4A1942; }
+[data-theme="ocean"]{ --accent1:#0072B5; --accent2:#00B8A9; --accent3:#023047; --accent4:#5FA8D3; --accent5:#8ECAE6; --accent6:#03565F; }
+[data-theme="forest"]{ --accent1:#2E7D32; --accent2:#C0CA33; --accent3:#1B3A2B; --accent4:#6D9773; --accent5:#A9BA9D; --accent6:#345830; }
+[data-theme="royal"]{ --accent1:#6A3DE8; --accent2:#00C9A7; --accent3:#2A1A5E; --accent4:#B14AE2; --accent5:#4C6EF5; --accent6:#3B2A70; }
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+  min-height:100vh;
+  transition:background .25s ease, color .25s ease;
+}
+button, select, input{ font-family:inherit; }
+a{color:var(--accent1);}
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 22px; background:linear-gradient(90deg, var(--accent3), var(--accent4) 55%, var(--accent1));
+  color:#fff; box-shadow:var(--shadow); position:sticky; top:0; z-index:50; flex-wrap:wrap; gap:10px;
+}
+.topbar .brand{display:flex; align-items:center; gap:12px;}
+.topbar .brand img{height:34px; background:#fff; border-radius:8px; padding:3px;}
+.topbar .brand .titles{line-height:1.15;}
+.topbar .brand .titles b{font-size:16px; letter-spacing:.3px;}
+.topbar .brand .titles span{font-size:11px; opacity:.85; display:block;}
+.topbar .controls{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.topbar select, .topbar .iconbtn{
+  background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.35);
+  border-radius:8px; padding:6px 10px; cursor:pointer; font-size:13px;
+}
+.topbar .iconbtn:hover{background:rgba(255,255,255,.28);}
+
+.tabs{
+  display:flex; gap:6px; padding:10px 22px 0 22px; background:var(--bg); flex-wrap:wrap;
+  position:sticky; top:58px; z-index:40;
+}
+.tab-btn{
+  padding:10px 16px; border:none; background:transparent; color:var(--text-soft);
+  font-weight:600; font-size:13.5px; cursor:pointer; border-radius:10px 10px 0 0; border-bottom:3px solid transparent;
+}
+.tab-btn.active{ color:var(--accent1); border-bottom:3px solid var(--accent1); background:var(--panel); }
+.tab-panel{display:none; padding:18px 22px 40px 22px;}
+.tab-panel.active{display:block;}
+
+.card{
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px;
+}
+.card h3{margin:0 0 10px 0; font-size:15px; display:flex; align-items:center; gap:8px;}
+.card h3 .dot{width:8px; height:8px; border-radius:50%; background:var(--accent1); display:inline-block;}
+.hint{color:var(--text-soft); font-size:12.5px; margin:4px 0 12px 0; line-height:1.5;}
+
+.subtabs{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
+.subtab-btn{
+  padding:8px 14px; border-radius:20px; border:1px solid var(--border); background:var(--panel-2);
+  color:var(--text); cursor:pointer; font-size:13px; font-weight:600;
+}
+.subtab-btn.active{ background:var(--accent1); color:#fff; border-color:var(--accent1); }
+.subtab-content{display:none;}
+.subtab-content.active{display:block;}
+
+.btn{
+  padding:8px 14px; border-radius:9px; border:1px solid var(--border); background:var(--panel-2);
+  color:var(--text); cursor:pointer; font-size:13px; font-weight:600; transition:all .15s;
+}
+.btn:hover{ border-color:var(--accent1); color:var(--accent1); }
+.btn.primary{ background:var(--accent1); color:#fff; border-color:var(--accent1); }
+.btn.primary:hover{ filter:brightness(1.08); color:#fff;}
+.btn.small{padding:5px 10px; font-size:12px;}
+.btn.ghost{background:transparent;}
+.btn:disabled{opacity:.45; cursor:not-allowed;}
+
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+.row.between{justify-content:space-between;}
+.field{display:flex; flex-direction:column; gap:4px; margin-bottom:10px;}
+.field label{font-size:12px; color:var(--text-soft); font-weight:600;}
+.field input[type=text], .field input[type=number], .field input[type=date], .field select, .field textarea{
+  padding:7px 9px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:13px; min-width:110px;
+}
+.field.wide input, .field.wide select{min-width:220px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.grid-auto{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:10px;}
+
+.dropzone{
+  border:2px dashed var(--border); border-radius:12px; padding:26px; text-align:center; cursor:pointer;
+  color:var(--text-soft); background:var(--panel-2); transition:.15s;
+}
+.dropzone:hover{border-color:var(--accent1); color:var(--accent1);}
+.dropzone input{display:none;}
+
+.table-scroll{ overflow:auto; max-height:340px; border:1px solid var(--border); border-radius:10px; }
+table.datatable{ border-collapse:collapse; width:100%; font-size:12.5px; }
+table.datatable th, table.datatable td{
+  border:1px solid var(--border); padding:6px 8px; text-align:left; white-space:nowrap; min-width:80px;
+}
+table.datatable thead th{ background:var(--panel-2); position:sticky; top:0; font-weight:700; }
+table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditable=true]:focus{
+  outline:2px solid var(--accent1); outline-offset:-2px; background:var(--panel);
+}
+.table-toolbar{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;}
+
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:100;
+}
+.modal-overlay.active{display:flex;}
+.modal{ background:var(--panel); border-radius:14px; padding:20px; width:460px; max-width:92vw; box-shadow:var(--shadow); }
+.modal h4{margin:0 0 4px 0;}
+.modal .delim-list{display:flex; flex-direction:column; gap:9px; margin:14px 0;}
+.modal .delim-list label{display:flex; align-items:center; gap:8px; font-size:13.5px;}
+.modal .preview{ background:var(--panel-2); border:1px solid var(--border); border-radius:8px; padding:8px; font-size:11.5px; max-height:130px; overflow:auto; font-family:Consolas,monospace; white-space:pre; }
+
+.chartgrid{ display:grid; gap:16px; }
+.chartgrid.cols-1{grid-template-columns:1fr;}
+.chartgrid.cols-2{grid-template-columns:1fr 1fr;}
+@media (max-width:980px){ .chartgrid.cols-2{grid-template-columns:1fr;} }
+
+.chart-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.chart-card-head{ padding:12px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; background:var(--panel-2);}
+.chart-card-head input.title-input{ font-weight:700; font-size:14.5px; border:none; background:transparent; color:var(--text); padding:2px 4px; border-radius:6px; }
+.chart-card-head input.title-input:focus{ outline:1px solid var(--accent1); background:var(--panel); }
+.chart-config{ padding:12px 14px; border-bottom:1px solid var(--border); display:none; }
+.chart-config.open{display:block;}
+.series-row{ display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap; background:var(--panel-2); padding:6px 8px; border-radius:8px; }
+.series-row input[type=color]{width:30px; height:26px; border:none; padding:0; background:none; cursor:pointer;}
+.canvas-wrap{ position:relative; padding:14px; height:380px; box-sizing:border-box; }
+.canvas-wrap canvas{ width:100% !important; height:100% !important; display:block; }
+.chart-error{
+  position:absolute; inset:14px; display:flex; align-items:center; justify-content:center;
+  text-align:center; color:var(--accent1); font-size:13px; font-weight:600; padding:14px;
+  background:var(--panel-2); border:1px dashed var(--accent1); border-radius:10px;
+}
+.lib-warning-banner{
+  position:sticky; top:0; z-index:999; background:#b00020; color:#fff;
+  padding:10px 18px; font-size:13px; text-align:center; line-height:1.6;
+}
+.lib-warning-banner button{
+  margin-left:10px; padding:3px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.6);
+  background:transparent; color:#fff; cursor:pointer; font-size:12px;
+}
+.lib-warning-banner button:hover{ background:rgba(255,255,255,.15); }
+.chart-legend-filter{ display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px 14px; }
+.chip{ padding:4px 10px; border-radius:20px; font-size:11.5px; border:1px solid var(--border); cursor:pointer; user-select:none; }
+.chip.active{ color:#fff; }
+.chart-actions{ display:flex; gap:6px; padding:0 14px 14px 14px; flex-wrap:wrap;}
+
+.callout-box{
+  position:absolute; transform:translate(-50%,-100%); background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; padding:8px 10px; box-shadow:var(--shadow); font-size:11.5px; z-index:20; cursor:pointer; min-width:140px;
+}
+.callout-box .callout-date{ font-weight:700; color:var(--text-soft); margin-bottom:3px; font-size:11px;}
+.callout-box .callout-item{ font-weight:700; }
+
+.toast{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--accent3); color:#fff;
+  padding:10px 18px; border-radius:30px; font-size:13px; box-shadow:var(--shadow); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s, bottom .25s;
+}
+.toast.show{ opacity:1; bottom:32px; }
+
+.badge{ display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700; background:var(--panel-2); border:1px solid var(--border);}
+.corr-result{ font-size:22px; font-weight:800; margin:10px 0 4px 0;}
+.corr-sub{ color:var(--text-soft); font-size:13px;}
+
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <img src="data:image/png;base64,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iBEjEjJs2DCKiorweDxceOGF9O/fn759+3L++eejaRppaWn06dMnsbx169bouk4oFOKpp54iGo3So0cPPB4Pq1atYt26dY0q6OkiIuzevZtx48axZ8+eJs+NuHL6fD4uvPBCunXrRq9evRgzZgxLliyhT58+BAIBHn74YWpqatiwYQPr16/HMAzuuece/uM//oP27duTl5dHu3btuOGGG3jqqacwTZMPPviARYsWpe7ulGlCOQUkCI4/teCMUCrWEGcqdiiEdfhI6uZPisvlIjs7m2+++YZx48axa9cu3nrrLZ599ll0XSc3NxfViKWyLIuamhr8fj9+v5+amhrq6uoSFujYcWmalli//v9jn23bZteuXaxYsYKMjAwee+wxLr30UqLRKAsXLmzgI54Jffr0wefz8emnn3L//fcTiUROqKDUO1alFIZhUFxczCOPPILL5eLLL79k3759fPjhhwSDQXr16sVtt91Genp60rm6XC7GjBnDkCFDsG2bv/71rykB5anThHISSyM5Zze3qdwePJ2KSevc6YzE3b49YjX/hL1eL0888QTt2rWjvLycm2++mVtvvZVQKMTo0aO5+uqr0fWGD6R8/vnn9O/fn169etGrVy969uzJ5Zdfzs6dOxt0kSeitraW3/72t9TW1jJgwAD69OnDjTfeiGEYLFu2jO3bt59UgU6VXr16cd9996GUorS0lLlz5xKJNP96lpSUkJeXR11dHdXV1Qkr3KVLF1wuV2p1ADRNY+TIkSilOHjwIMFgMLXKKXEC5ZT40OXZQZTC1a0rHV9dQqelL52RFL+8iIyBA1J3cVKUUnTt2pUZM2Zgmibr1q3j0KFDdO/enblz5+L1elNXgbjvV1tbS01NDTU1NdTW1lJZWUkoFEqt2iQiwtq1a1m3bh1ut5vJkyeTnZ3NoEGDKC4uxu/3M2XKFAKBQOqqp4XjOIwfP55f/epXOI7DAw88wJo1a1KrnZRjN1/q/8Z6mPqcrPxUOIFyaqAaWpHTRRzhw48/5pVly7CUAtNEuVynJ6aJasTCnSrjx4/nqquuwu12k5uby7x582jTpk2TDdqlSxdefvllli9fzvLly3n99dd5+eWX6dq1a5PrpBIOh3nuueeIRCLk5+ezefNmnnjiCRYvXky7du0SyvvRRx81yxqfCLfbzQMPPMDw4cMJBAJMmjSJnTt3plY7Idu2bePw4cNkZGSQlZXFeeedh6ZpbNu2rVFLLPGHDJcvX46IUFhYmJRzbg5NKKcC5QLt9DbaGCLC0aNHuemmm5g/fz5+v/+sdWHNQSlFZmYmTz75JLfffjtPPPEEgwYNOmHC2Ov10rdvXwYMGJCQ7t27N+oCNIaI8N5777Fq1SpEhH379jF58mQmTZrE5MmTWbt2LUopAoEAzz//fNJFFxEcx8G27YQ4jnNKCqxpGl6vlwceeICioiLKysrYtm1barUEIrEZUo7jYFkWBw4cYPr06YRCITp27Ejbtm3p378/aWlpbN68mT//+c/U1dUlrqPEE/Ovv/46q1atwjAMxowZ02C07lRp+oqQDqpV6sLTRx1P3k6dOpW77rrr7CRqT5Pc3FweeeQRxo4de1Il8/v9rFu3jtWrVyfk7bff5uuvvz7p8Ut8FGfKlCnU1dWRlpZGu3btKCgoID8/n4KCAgoLCykoKEApxSuvvMKnn36aWN/v97N27dqkfb/77run3P3ruk6PHj145plnyM3NTS1OUFdXx969e9mzZw+7du1i5cqVXH/99Xz00UcYhsHEiRPx+Xz07duXwYMHE41GmT59Ovfccw979+4lFApRXl7O/CeeYMJtt2HZNgMGDOAnP/lJ6q5OHZGmkvBBkeCVIrWqYVK9uRJxiRVeIq+++qrEnVnRdV2uuOIK2bx5c2ru9bQ4lSR8bm6ubNq0qcnE8N133y0ej0euv/76RBLe5XIlkur1Rdd1KSgokL179ya2Z1mWLFmyRFwul1xwwQVSXV0ttm3L6tWrJTs7W7xeryxatEjq6uoayMGDB6VLly5iGIaMHTtWli5dmkhyp+7bMAz5zW9+I4FAQLp37y6maSaS8BMmTBBd1+WGG26QUCiUOLdoNCqzZ88Wt9sthmHIpEmTJBgMyh133CFKKdF1XdLS0iQ9PT2RhFdKSVZWljz00EMSiUQS2yovL5fRo0cnEu6ZmZlSXFwsubmtRXO5RbvlFvlBv37y4YcfNtnWp8IJLKcbtH6gN5xgcTawbZvVq1czePBgVq1adVbTKKlkZ2dTUlJC165dKSwsbNJPHDJkCAUFBYwaNQqlFH379iU/Px+v10tGRkYD6dChA5mZmUmplJKSEnw+H71798bj8aCUIicnh8zMTC6//HJGjx5Nenp6A8nPz2fevHnk5+fTu3dvunXrlth+6n59Ph8lJSUYhkGfPn3IycmhuLgYwzAYPHgweXl5DB48GKPe5BjDMLjzzjv57W9/S+vWrRk4cCCmadK7d29atWpFeno6hmGg6zoul4u8vDx+/OMf89ZbbzFx4sSkbbVu3ZrnnnuOP/zhD3Ts2BHHcSgvLycUCpPr8zG5XTvWvPkmF110UZNtfSqceOKHswEiV4DV+LPgp4zHhS3/xetvxHJg9dE0jcLCQiZNmsQNN9xAdnb2aZ2QnGTiR0VFBZFIhOzs7IR/qes6hmEkJkhEo1EOHz5MZmYmhmEQjcS+h8IhlFLoup7IZR7zXTO9mehGbDlANBpl3759tPL58PlaoTSFbdvs27uXrKxsfL5siO9L1/XY20nixxmJRDl0qIKcnByUpnHk8JHYuHtKc5iGSZv8NpimSXV1NTU1NRQWFmLoBrZjU15eTm5uLm5X7IUOx3DiIzyVRyrJL8hH13Qi0Qjl5eUNjIPH7cHXypeYwJF6RRwRbMvmSOURysrKqK2pJS09jfbt21OQn49hmmincR3rc2LlJACRn4D1WrPnUCZxAuU8hsfj4eabb2bWrFlkZWWdMEBpjBMpZzAYZObMmaxcuTIpkEhLS2PQoEHccsstFBcXo2kaZWVlzJp1L3V1ETQbNGJBiGkaXHzJJQwfPhxfdhZKaQRDIeY8Ooc2bfK48cYb0U2DvyxcyHvvvse9991H+6IiNBV/PrNeIn779u08+OCD/OSnP+Xyyy/H0PXYcSmFiHCovJzZDz5Ir17/xM9/dj2mYRCKTw7xeDyouLLEzkXFFVCIbSKuEPHHipNv9FgdVGxqZKN1GlnW2H6a4nQMS5OINOVziohYItG/iQTTG/qRzZFGfM7GxDAMGTZsmHz55Zdi23aS/3EyTuRz7tmzR84///xG/Tdd16Vjx47y5ptvimVZsnDhwiZ9PV3XZeDAgbJ161axLEvWr18vpmmKz+eTHTt2SDAYlH79+olhGHLdddc1mLDhOI5UVVXJkCFDRNM0GTVqlASDwaQ64XBYpk6dKpqmSUFBgWzdulXKy8vl6aefloULF8qBAwfOyI/7R6Jp8yQAGqJfAvQmMZP2W8SyLN58801GjRrF2rVrT3vYK5VjKRKv18v9999PaWkppaWlzJo1iw4dOrBnzx6mTZuWmPOplKJjx47MmTOHuXPn8vjjjzNt2jTat2/PJ598woIFC7Cs2Ns5jnEsanccB8dxePnll5kzZ07SOdTV1TF79mzWrFmTqJeaEtqyZQt//OMfE37c3LlzqaqqSrgAR48eTar/nUYkZjntuOV0JP4nbrgcscSx3hMJ+ET8pxm5n6LlPCaapklhYaHMnz+/gWVpihNZzmPRek5OjmzcuFEikYhEo1EJhULy7rvvSk5OjuTl5cmWLVvkT3/6k5imKQMGDJDa2lqJRCISiUQkGAzKs88+K2lpaXLxxRdLbW2trFmzJmE5v/rqKwkGg3LRRRclIt02bdrIW2+9JbZtSzQalWeffVbS09MT5zlixIikY41EInLbbbeJy+WS1q1bi2EY4vP55O2335bPP/9cNm/eLOFw+HtmOeNGUR3/mEDQQe8Lxp1guBqpcfZxHIeDBw9y9913M2PGDA4dOtTAwpwOKj45wzAMDMPA7XZTXFxMXl4ewWCQYDCY8JlUfPKDaZoJycnJQSlFKBQ64fEopcjKyqKqqoqJEydSVlaW8DPD4XCTE0z279/P8uXLcblcPPzwwwwYMIBAIMCLL75Ily5d6N69Oy6Xq9F1v4to1DNZqRxfZsSUUxsCjTy7820RDAaZN28e48aNo66uLrW42Ui90Q/LsohEIuzdu5fy8nI8Hg9paWkJF8BxHEKhEMFgkEAgQEVFBX/5y1+wLIuSkpITJu4Nw+DXv/41Pp+PLVu2cPvtt3PdddexY8cOfD4fEyZMaBDwOY7Dvffey/7931BcXMzIkSOZMGEChmHw2muv8c033zRY57tOg7OVY3+OBX0Q+6IywfU86MNiLxf6XyI7O5ubbrqJ9PT01KJmEw6HWbJkCQsWLOCpp55i1qxZXHvttfj9fnr27EleXh7ElXjTpk10796dLl26JKzW3/72N1q1asUvfvGLJmfkEF+/Z8+ePPbYY7jdbt544w02b95MXl4epaWldO7cOUnRHMdh48aNLF68GF1X3H777eTn53PZZZfRrl07KioqmDJlSoN0z3edRAsds5In7DCUD8yFoP1z/InKb5f09HQeeughxo8ff1asRiAQ4Pe//z133XUXd911F4888ggHDx6ksLCQP/zhD/h8vkRd27aprq7G7/dTWVlJdXU1HTp0YPXq1Vx22WVJ220MEWHMmDGJhL7b7ebOO+9kyJAhqVWxLIunn36acDhM586d+OEPf8iuXbsIBoNcccUViAhLly5l48aNJx0u/S6hEU+oQuzlBQnq9fPHP2qgWoNrERh3gOEFdeZKk4qu61x44YW88MILXHfddac9cSAVl8vFFVdcwTXXXMO4ceP4+c9/zqxZs1i5ciU9evRIdNVKKXr16sWGDRvYuHEjf/3rXykoKODQoUMsXboUy3JQTqy9pk2bxtSpUyGu0JdeeikTJ05ExZ9gfPTRR7nxxhuZMmUKv/rVrxqci+M4fP311yxZsiSRAx00aBD9+vWjf//+lJaW4jgO4XCY0tLSszpb/pxHRCRiR8QSJxapSzxSt2NBeyL3mYQjIhGR6IsikRKROo9IjdYwSm9mtK7runi9Xhk6dKhs27Yt6aGqk3Gq0fqmTZskFApJOByWSCSSlE91HCcRrQ8cODAxNh0Oh+Whhx4Sl8sl6enp8uKLL0o4HJY1a9ZIq1atpLCwUHbu3CmhUEguueQSyczMlEWLFonjOOI4joTDYbEsSxzHkWg0KgsXLhTTNGXEiBFy+PBhGT9+vCilJCMjQ9q0aSP5+flJkpOTk8gKbN++vdk54H9UNACltEQQkBoZOclGNI4CTDDGgfEGuKaBUQAuPW5JT+gcJFE/gu7bty8LFixgyZIlXHDBBUnjuWeDY1Guy+XC5XJhmmaj7kJqNOxyubj99tu56qqriEQi3HPPPVRUVCDxGUfBYBDbtpH48GD9RyJU/NEFvZEfURARvvjiC958800Apk2bxooVK1i1alWSvPLKKxQUFOD3+5k9e3aDR4m/qyRSSVL/ojTUxiZQoIrBmAzuT0F/CIwB4M4H3YxtvZ6upqZf3G437du3Z9iwYZSWlrJixQquvfZaMjMzk+qdKokbLIWMjAyKi4tp37492dnZqcUJlFLk5eXRunXrxINqx0hLS2PmzJmUlJSgaRqWZZGXl0dBQQEdO3YkMzMTTdMoKSmhqKioyQkmmqbRoUMHCgoKuPDCCxNpp/79+3PbbbfRq1cvevTokSQDBw5k9uzZ5OXlNXozfVdRIiIhiaIpDRMdJXFzqWK/phGN/8zLycMfiT13JH6QCpAvQT4FeysY5TjOPbzzvsGMGTMoKiqiR48e9O7dm06dOtGmTRsyMjIatS6niohw5MgRnnnmGe64444k385xHA4cOEA0GqWoqKiB31efQCBAWVkZubm5DZTBtm327t2LiFBUVIRSiq+//pq0tDQKCwvRNI2Kigpqamro0KEDbrc7advEjzMajVJWVkZeXh4ej4fdu3eTlpZGUVFRoykqESESibBz504KCwuTJq98l1EiIhY2Cg0lgoaWsJzN/6mX+jixN9TFf5xQRMe2Y7NxNE1LzPA5m40sJ/kdohb+sYjNSkpFmuU2ttDCt0LjZqtFMVs4B2hcOVto4RygRTlbOGdpUc4WzllalLOFcxaNRpLjp404WCk/6iSOnfKyfcGxv7+/rdPCqdNiOVs4Z2lRzhbOWVR8AkjLiEoL5xwtlrOFc5YW5WzhnOV/AJfanj9KUVoCAAAAAElFTkSuQmCC" alt="logo">
+    <div class="titles">
+      <b>Chart Studio</b>
+      <span>Ceria Metalindo Prima — Visualisasi Data</span>
+    </div>
+  </div>
+  <div class="controls">
+    <select id="themeSelect" title="Tema warna">
+      <option value="ceria">Tema Ceria</option>
+      <option value="sunset">Tema Sunset</option>
+      <option value="ocean">Tema Ocean</option>
+      <option value="forest">Tema Forest</option>
+      <option value="royal">Tema Royal</option>
+    </select>
+    <button class="iconbtn" id="modeToggle" data-mode="light">🌙 Gelap</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="input">1. Input Data</button>
+  <button class="tab-btn" data-tab="builder">2. Chart Builder</button>
+  <button class="tab-btn" data-tab="korelasi">3. Korelasi Data</button>
+</div>
+
+<!-- ============ TAB: INPUT DATA ============ -->
+<div class="tab-panel active" id="panel-input">
+  <div class="card">
+    <h3><span class="dot"></span> Sumber Data</h3>
+    <p class="hint">Pilih salah satu cara untuk memuat data: unggah file Excel, unggah/olah CSV, atau ketik &amp; tempel (paste) data secara manual.</p>
+    <div class="subtabs">
+      <button class="subtab-btn active" data-group="input" data-sub="excel">📊 Excel</button>
+      <button class="subtab-btn" data-group="input" data-sub="csv">📄 CSV</button>
+      <button class="subtab-btn" data-group="input" data-sub="manual">✍️ Copy‑Paste Manual</button>
+    </div>
+
+    <div class="subtab-content active" data-group="input" data-sub="excel">
+      <div class="dropzone" id="excelDrop">
+        <b>Klik untuk memilih file Excel (.xlsx / .xls)</b>
+        <p class="hint" style="margin-top:6px;">Baris header akan terdeteksi otomatis dan langsung terbaca di grafik.</p>
+        <input type="file" id="excelInput" accept=".xlsx,.xls">
+      </div>
+    </div>
+
+    <div class="subtab-content" data-group="input" data-sub="csv">
+      <div class="dropzone" id="csvDrop">
+        <b>Klik untuk memilih file CSV</b>
+        <p class="hint" style="margin-top:6px;">Jika data belum berbentuk tabel rapi (misalnya hasil unduhan Grafana), gunakan Text‑to‑Columns di bawah.</p>
+        <input type="file" id="csvInput" accept=".csv,.txt">
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn" id="btnOpenTtc">🧩 Buka Text to Columns</button>
+      </div>
+    </div>
+
+    <div class="subtab-content" data-group="input" data-sub="manual">
+      <p class="hint">Klik pada sel pojok kiri‑atas lalu tempel (Ctrl+V / Cmd+V) data yang sudah di‑block dari Excel/sumber lain — semua sel akan terisi otomatis. Centang kotak di kolom paling kiri untuk memilih beberapa baris sekaligus, lalu klik "Hapus Baris Terpilih".</p>
+      <div id="manualTableWrap">
+        <div class="table-toolbar">
+          <button class="btn small" id="btnAddRow">+ Baris</button>
+          <button class="btn small" id="btnAddCol">+ Kolom</button>
+          <button class="btn small ghost" id="btnDelRow">− Baris Terakhir</button>
+          <button class="btn small ghost" id="btnDelCol">− Kolom Terakhir</button>
+          <button class="btn small" id="btnDeleteSelectedManual">🗑 Hapus Baris Terpilih</button>
+          <button class="btn small ghost" id="btnClearManual">✖ Kosongkan Tabel</button>
+          <button class="btn primary small" id="btnUseManual">✔ Gunakan Data Ini</button>
+        </div>
+        <div class="table-scroll">
+          <table class="datatable" id="manualTable">
+            <thead><tr id="manualHeaderRow"></tr></thead>
+            <tbody id="manualBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="dot"></span> Pratinjau Data</h3>
+    <p class="hint">Sel dapat diklik dua kali untuk diedit langsung. Tipe kolom (angka/tanggal/teks) terdeteksi otomatis.</p>
+    <div id="dataPreviewWrap"><p class="hint">Belum ada data dimuat.</p></div>
+  </div>
+</div>
+
+<!-- ============ TAB: CHART BUILDER ============ -->
+<div class="tab-panel" id="panel-builder">
+  <div class="card">
+    <h3><span class="dot"></span> Pengaturan Grafik</h3>
+    <div class="row between">
+      <div class="row">
+        <div class="field" style="margin-bottom:0;">
+          <label>Jumlah Grafik</label>
+          <select id="chartCountSelect">
+            <option value="1">1 Grafik</option>
+            <option value="2" selected>2 Grafik</option>
+            <option value="3">3 Grafik</option>
+            <option value="4">4 Grafik</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnExportExcel">⬇️ Export Excel</button>
+        <button class="btn" id="btnExportAllPDF">⬇️ Export PDF (Semua)</button>
+        <button class="btn" id="btnExportAllPPT">⬇️ Export PPT (Semua)</button>
+      </div>
+    </div>
+    <p class="hint">Klik "⚙️ Konfigurasi" pada tiap grafik untuk memilih sumbu, series, jenis grafik, rentang tanggal, dan sumbu Y. Klik titik data pada grafik untuk melihat callout nilai; klik lagi callout untuk menghapusnya.</p>
+  </div>
+
+  <div id="chartsContainer" class="chartgrid cols-2"></div>
+</div>
+
+<!-- ============ TAB: KORELASI ============ -->
+<div class="tab-panel" id="panel-korelasi">
+  <div class="card">
+    <h3><span class="dot"></span> Panel Korelasi Antar Data</h3>
+    <p class="hint">Bandingkan dua kolom data numerik dari tabel yang sama untuk melihat apakah keduanya berkorelasi, berdasarkan nilai koefisien korelasi (R).</p>
+    <div class="grid-auto">
+      <div class="field">
+        <label>Data A</label>
+        <select class="col-select" data-kind="numeric" id="corrColA"></select>
+      </div>
+      <div class="field">
+        <label>Data B</label>
+        <select class="col-select" data-kind="numeric" id="corrColB"></select>
+      </div>
+      <div class="field" style="justify-content:flex-end;">
+        <button class="btn primary" id="btnComputeCorr">Hitung Korelasi</button>
+      </div>
+    </div>
+    <div class="corr-result" id="corrResultText">R = —</div>
+    <div class="corr-sub" id="corrInterpretation">Pilih dua kolom data numerik lalu klik "Hitung Korelasi".</div>
+    <div style="height:360px; margin-top:14px;">
+      <canvas id="corrCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Text to Columns Modal -->
+<div class="modal-overlay" id="ttcOverlay">
+  <div class="modal">
+    <h4>Text to Columns</h4>
+    <p class="hint">Layar ini digunakan untuk mengatur pemisah (delimiter) data CSV Anda.</p>
+    <div class="delim-list">
+      <label><input type="checkbox" id="ttcTab" checked> Tab</label>
+      <label><input type="checkbox" id="ttcSemicolon" checked> Semicolon</label>
+      <label><input type="checkbox" id="ttcComma" checked> Comma</label>
+      <label><input type="checkbox" id="ttcSpace" checked> Space</label>
+      <label><input type="checkbox" id="ttcOther"> Other: <input type="text" id="ttcOtherChar" maxlength="3" style="width:50px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--panel-2); color:var(--text);"></label>
+    </div>
+    <div class="hint">Pratinjau:</div>
+    <div class="preview" id="ttcPreview"></div>
+    <div class="row" style="justify-content:flex-end; margin-top:14px;">
+      <button class="btn ghost" id="ttcCancel">Batal</button>
+      <button class="btn primary" id="ttcApply">Terapkan</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= GLOBAL STATE ================= */
+const state = {
+  headers: [],
+  colTypes: [],
+  rows: [],
+  charts: [],
+  nextChartId: 1,
+};
+let manualCols = 6, manualRows = 10;
+
+const THEMES = ['ceria','sunset','ocean','forest','royal'];
+
+/* ================= UTILITIES ================= */
+function $(sel, root){ return (root||document).querySelector(sel); }
+function $all(sel, root){ return Array.from((root||document).querySelectorAll(sel)); }
+
+function showToast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+function toNumberSafe(v){
+  if(v===''||v===undefined||v===null) return null;
+  if(typeof v==='number') return isNaN(v)?null:v;
+  if(v instanceof Date) return null;
+  const s = String(v).trim().replace(/\s/g,'').replace(',', '.');
+  if(s==='') return null;
+  const n = Number(s);
+  return isNaN(n) ? null : n;
+}
+
+function parseFlexibleDate(v){
+  if(v instanceof Date && !isNaN(v)) return v;
+  if(v===''||v===undefined||v===null) return null;
+  if(typeof v==='number'){
+    // excel serial date fallback
+    if(v>20000 && v<80000){
+      const d = new Date(Date.UTC(1899,11,30) + v*86400000);
+      if(!isNaN(d)) return d;
+    }
+    return null;
+  }
+  let str = String(v).trim();
+  if(str==='') return null;
+  let m = str.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(:\d{2})?)$/);
+  if(m){ const d = new Date(m[1]+'T'+m[2]); if(!isNaN(d)) return d; }
+  let d2 = new Date(str);
+  if(!isNaN(d2)) return d2;
+  // dd/mm/yyyy or dd-mm-yyyy
+  m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T](\d{1,2}):(\d{2}))?/);
+  if(m){
+    let yr = parseInt(m[3]); if(yr<100) yr+=2000;
+    const d = new Date(yr, parseInt(m[2])-1, parseInt(m[1]), m[4]?parseInt(m[4]):0, m[5]?parseInt(m[5]):0);
+    if(!isNaN(d)) return d;
+  }
+  return null;
+}
+
+function fmtNum(v){
+  if(v===null||v===undefined||isNaN(v)) return '-';
+  return Number(v).toLocaleString('id-ID',{maximumFractionDigits:2});
+}
+
+function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+function hexAlpha(hex, alpha){
+  if(!hex) return `rgba(120,120,120,${alpha})`;
+  hex = hex.replace('#','');
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const r=parseInt(hex.substring(0,2),16), g=parseInt(hex.substring(2,4),16), b=parseInt(hex.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function textColor(){ return cssVar('--text') || '#2a2620'; }
+function gridColor(){ return cssVar('--grid') || '#eee'; }
+function palette(i){
+  const arr = [cssVar('--accent1'), cssVar('--accent2'), cssVar('--accent4'), cssVar('--accent5'), cssVar('--accent6'), cssVar('--accent3')];
+  return arr[i % arr.length] || '#888';
+}
+
+/* ================= THEME ================= */
+function applyTheme(){
+  const theme = $('#themeSelect').value;
+  const mode = $('#modeToggle').dataset.mode;
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-mode', mode);
+  state.charts.forEach(cfg => renderChart(cfg));
+}
+function toggleMode(){
+  const btn = $('#modeToggle');
+  const cur = btn.dataset.mode;
+  const next = cur === 'dark' ? 'light' : 'dark';
+  btn.dataset.mode = next;
+  btn.textContent = next === 'dark' ? '\u2600\ufe0f Terang' : '\ud83c\udf19 Gelap';
+  applyTheme();
+}
+
+/* ================= TABS ================= */
+function switchTab(name){
+  $all('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===name));
+  $all('.tab-panel').forEach(p=> p.classList.toggle('active', p.id==='panel-'+name));
+  // Charts created while their tab was hidden can end up with a 0x0 canvas.
+  // Force a clean re-render whenever a tab holding charts becomes visible.
+  if(name==='builder'){
+    setTimeout(()=> state.charts.forEach(renderChart), 30);
+  }
+  if(name==='korelasi' && corrChart){
+    setTimeout(()=> corrChart.resize(), 30);
+  }
+}
+function switchSubtab(group, name){
+  $all(`.subtab-btn[data-group="${group}"]`).forEach(b=> b.classList.toggle('active', b.dataset.sub===name));
+  $all(`.subtab-content[data-group="${group}"]`).forEach(c=> c.classList.toggle('active', c.dataset.sub===name));
+}
+
+/* ================= DATA LOADING (shared) ================= */
+function detectHeaderRow(arr){
+  const lim = Math.min(arr.length, 10);
+  for(let i=0;i<lim;i++){
+    const row = arr[i] || [];
+    const nonEmpty = row.filter(c=>c!==undefined && c!==null && String(c).trim()!=='').length;
+    if(nonEmpty < 2) continue;
+    const next = arr[i+1];
+    if(!next) continue;
+    const numericCount = next.filter(c=> toNumberSafe(c)!==null).length;
+    if(numericCount>=1) return i;
+  }
+  return 0;
+}
+
+function loadTableFromArray(arr){
+  const cleaned = arr.filter(r=> r && r.some(c=>c!==undefined && c!==null && String(c).trim()!==''));
+  if(cleaned.length===0){ showToast('Data kosong / tidak terbaca'); return; }
+  const headerIdx = detectHeaderRow(cleaned);
+  const headerRow = cleaned[headerIdx];
+  const width = Math.max(...cleaned.map(r=>r.length));
+  const headers = [];
+  for(let i=0;i<width;i++){
+    const h = headerRow[i];
+    headers.push((h===undefined||h===null||String(h).trim()==='') ? `Kolom ${i+1}` : String(h).trim());
+  }
+  const rows = cleaned.slice(headerIdx+1).map(r=>{
+    const out = [];
+    for(let i=0;i<width;i++) out.push(r[i]===undefined||r[i]===null ? '' : r[i]);
+    return out;
+  });
+  finalizeData(headers, rows);
+}
+
+function finalizeData(headers, rows){
+  state.headers = headers;
+  state.rows = rows.map(r => headers.map((_,i)=> r[i]!==undefined ? r[i] : ''));
+  detectColumnTypes();
+  renderDataPreview();
+  populateAllColumnSelectors();
+  showToast('Data berhasil dimuat: ' + state.rows.length + ' baris, ' + state.headers.length + ' kolom');
+  if(state.charts.length===0){ setChartCount(2); }
+  else { state.charts.forEach(renderChart); }
+}
+
+function detectColumnTypes(){
+  state.colTypes = state.headers.map((_,ci)=>{
+    const sample = state.rows.map(r=>r[ci]).filter(v=>v!==''&&v!==undefined&&v!==null).slice(0,40);
+    if(sample.length===0) return 'string';
+    let numCount=0, dateCount=0;
+    sample.forEach(v=>{
+      if(toNumberSafe(v)!==null){ numCount++; return; }
+      if(parseFlexibleDate(v)){ dateCount++; }
+    });
+    if(dateCount/sample.length>0.6) return 'date';
+    if(numCount/sample.length>0.6) return 'number';
+    return 'string';
+  });
+}
+
+function renderDataPreview(){
+  const wrap = $('#dataPreviewWrap');
+  if(state.headers.length===0){ wrap.innerHTML = '<p class="hint">Belum ada data dimuat.</p>'; return; }
+  let html = '<div class="table-toolbar">';
+  html += '<button class="btn small" id="btnDeleteSelectedRows">🗑 Hapus Baris Terpilih</button>';
+  html += '<button class="btn small ghost" id="btnClearAllData">✖ Hapus Semua Data</button>';
+  html += '</div>';
+  html += '<div class="table-scroll"><table class="datatable"><thead><tr>';
+  html += '<th style="width:30px;"><input type="checkbox" id="previewSelectAll"></th>';
+  state.headers.forEach((h,ci)=> html += `<th>${escapeHtml(h)} <span class="badge">${state.colTypes[ci]}</span></th>`);
+  html += '</tr></thead><tbody>';
+  const maxPreview = 300;
+  state.rows.slice(0, maxPreview).forEach((r, ri)=>{
+    html += `<tr><td style="width:30px;"><input type="checkbox" class="preview-row-check" data-r="${ri}"></td>`;
+    r.forEach((c, ci)=> html += `<td contenteditable="true" data-r="${ri}" data-c="${ci}">${escapeHtml(fmtCell(c))}</td>`);
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  if(state.rows.length>maxPreview) html += `<p class="hint">Menampilkan ${maxPreview} dari ${state.rows.length} baris (centang &amp; hapus hanya berlaku pada baris yang tampil).</p>`;
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('td[contenteditable]').forEach(td=>{
+    td.addEventListener('blur', ()=>{
+      const r = parseInt(td.dataset.r), c = parseInt(td.dataset.c);
+      state.rows[r][c] = td.textContent.trim();
+      detectColumnTypes();
+      state.charts.forEach(renderChart);
+    });
+  });
+  $('#previewSelectAll').addEventListener('change', e=>{
+    $all('.preview-row-check', wrap).forEach(cb=> cb.checked = e.target.checked);
+  });
+  $('#btnDeleteSelectedRows').addEventListener('click', ()=>{
+    const idxs = $all('.preview-row-check:checked', wrap).map(cb=> parseInt(cb.dataset.r));
+    if(idxs.length===0){ showToast('Pilih dulu baris yang ingin dihapus (centang di kolom kiri)'); return; }
+    idxs.sort((a,b)=>b-a).forEach(i=> state.rows.splice(i,1));
+    detectColumnTypes();
+    renderDataPreview();
+    state.charts.forEach(renderChart);
+    showToast(idxs.length + ' baris dihapus');
+  });
+  $('#btnClearAllData').addEventListener('click', ()=>{
+    if(!confirm('Hapus semua data yang sudah dimuat? Tindakan ini tidak bisa dibatalkan.')) return;
+    state.headers = []; state.rows = []; state.colTypes = [];
+    renderDataPreview();
+    populateAllColumnSelectors();
+    state.charts.forEach(renderChart);
+    showToast('Semua data dihapus');
+  });
+}
+function fmtCell(v){
+  if(v instanceof Date && !isNaN(v)) return v.toLocaleString('id-ID');
+  return v===undefined||v===null ? '' : String(v);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ================= EXCEL UPLOAD ================= */
+function handleExcelFile(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+      const sheetName = wb.SheetNames[0];
+      const sheet = wb.Sheets[sheetName];
+      const arr = XLSX.utils.sheet_to_json(sheet, {header:1, raw:true, defval:''});
+      loadTableFromArray(arr);
+    }catch(err){
+      console.error(err);
+      showToast('Gagal membaca file Excel');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ================= CSV UPLOAD ================= */
+let lastCsvRawText = '';
+function handleCsvFile(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const text = String(e.target.result);
+    lastCsvRawText = text;
+    tryParseCsv(text);
+  };
+  reader.readAsText(file);
+}
+function tryParseCsv(text){
+  const result = Papa.parse(text.trim(), {skipEmptyLines:true});
+  const arr = result.data;
+  if(arr.length===0){ showToast('CSV kosong'); return; }
+  const avgCols = arr.reduce((s,r)=>s+r.length,0)/arr.length;
+  if(avgCols <= 1.4){
+    openTextToColumnsModal(text);
+  } else {
+    loadTableFromArray(arr);
+  }
+}
+function openTextToColumnsModal(rawText){
+  lastCsvRawText = rawText;
+  $('#ttcOverlay').classList.add('active');
+  updateTtcPreview();
+}
+function closeTtcModal(){ $('#ttcOverlay').classList.remove('active'); }
+function getTtcDelimRegex(){
+  const parts = [];
+  if($('#ttcTab').checked) parts.push('\\t');
+  if($('#ttcSemicolon').checked) parts.push(';');
+  if($('#ttcComma').checked) parts.push(',');
+  if($('#ttcSpace').checked) parts.push(' +');
+  if($('#ttcOther').checked){
+    const ch = $('#ttcOtherChar').value;
+    if(ch) parts.push(escapeRegex(ch));
+  }
+  if(parts.length===0) return null;
+  return new RegExp(parts.join('|'));
+}
+function updateTtcPreview(){
+  const regex = getTtcDelimRegex();
+  const lines = lastCsvRawText.split(/\r?\n/).filter(l=>l.trim()!=='').slice(0,8);
+  let preview = '';
+  lines.forEach(line=>{
+    const cells = regex ? line.split(regex).map(c=>c.trim()) : [line];
+    preview += cells.join(' | ') + '\n';
+  });
+  $('#ttcPreview').textContent = preview;
+}
+function applyTextToColumns(){
+  const regex = getTtcDelimRegex();
+  const lines = lastCsvRawText.split(/\r?\n/).filter(l=>l.trim()!=='');
+  const arr = lines.map(line => regex ? line.split(regex).map(c=>c.trim()) : [line]);
+  closeTtcModal();
+  loadTableFromArray(arr);
+}
+
+/* ================= MANUAL PASTE TABLE ================= */
+function initManualTable(cols, rows){
+  manualCols = cols; manualRows = rows;
+  const headerRow = $('#manualHeaderRow');
+  headerRow.innerHTML = '<th style="width:30px;"><input type="checkbox" id="manualSelectAll"></th>';
+  for(let c=0;c<cols;c++){
+    const th = document.createElement('th');
+    th.contentEditable = 'true';
+    th.textContent = 'Kolom ' + (c+1);
+    th.dataset.col = c;
+    headerRow.appendChild(th);
+  }
+  const body = $('#manualBody');
+  body.innerHTML = '';
+  for(let r=0;r<rows;r++) appendManualRowDom();
+  const selAll = $('#manualSelectAll');
+  if(selAll) selAll.addEventListener('change', e=>{
+    $all('.manual-row-check').forEach(cb=> cb.checked = e.target.checked);
+  });
+}
+function appendManualRowDom(){
+  const body = $('#manualBody');
+  const rowIndex = body.children.length;
+  const tr = document.createElement('tr');
+  const checkTd = document.createElement('td');
+  checkTd.style.width = '30px';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox'; cb.className = 'manual-row-check'; cb.dataset.row = rowIndex;
+  checkTd.appendChild(cb);
+  tr.appendChild(checkTd);
+  for(let c=0;c<manualCols;c++){
+    const td = document.createElement('td');
+    td.contentEditable = 'true';
+    td.dataset.row = rowIndex;
+    td.dataset.col = c;
+    tr.appendChild(td);
+  }
+  body.appendChild(tr);
+}
+function manualReindexRows(){
+  $all('#manualBody tr').forEach((tr, ri)=>{
+    const cb = tr.querySelector('.manual-row-check');
+    if(cb) cb.dataset.row = ri;
+    $all('td[data-col]', tr).forEach(td=> td.dataset.row = ri);
+  });
+  manualRows = $all('#manualBody tr').length;
+}
+function manualAddRow(){ appendManualRowDom(); manualRows++; }
+function manualAddColumn(){
+  const headerRow = $('#manualHeaderRow');
+  const th = document.createElement('th');
+  th.contentEditable = 'true';
+  th.textContent = 'Kolom ' + (manualCols+1);
+  th.dataset.col = manualCols;
+  headerRow.appendChild(th);
+  $all('#manualBody tr').forEach((tr, ri)=>{
+    const td = document.createElement('td');
+    td.contentEditable = 'true';
+    td.dataset.row = ri; td.dataset.col = manualCols;
+    tr.appendChild(td);
+  });
+  manualCols++;
+}
+function manualDelRow(){
+  const body = $('#manualBody');
+  if(body.children.length<=1) return;
+  body.removeChild(body.lastElementChild);
+  manualRows--;
+}
+function manualDeleteSelectedRows(){
+  const checked = $all('.manual-row-check:checked');
+  if(checked.length===0){ showToast('Centang dulu baris yang ingin dihapus'); return; }
+  const rowsToRemove = checked.map(cb=> cb.closest('tr'));
+  rowsToRemove.forEach(tr=> tr.remove());
+  manualReindexRows();
+  if($all('#manualBody tr').length===0) appendManualRowDom();
+  manualReindexRows();
+  showToast(rowsToRemove.length + ' baris dihapus dari tabel');
+}
+function manualClearAll(){
+  if(!confirm('Kosongkan seluruh isi tabel copy-paste ini?')) return;
+  $all('#manualBody td[data-col]').forEach(td=> td.textContent = '');
+  $all('.manual-row-check').forEach(cb=> cb.checked = false);
+  const selAll = $('#manualSelectAll'); if(selAll) selAll.checked = false;
+  showToast('Tabel dikosongkan');
+}
+function manualDelColumn(){
+  if(manualCols<=1) return;
+  const headerRow = $('#manualHeaderRow');
+  headerRow.removeChild(headerRow.lastElementChild);
+  $all('#manualBody tr').forEach(tr=> tr.removeChild(tr.lastElementChild));
+  manualCols--;
+}
+function setupManualPaste(){
+  $('#manualTableWrap').addEventListener('paste', function(e){
+    const target = e.target;
+    if(target.tagName!=='TD' && target.tagName!=='TH') return;
+    if(target.dataset.col===undefined) return; // control column (checkbox), not a data cell
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    if(!text) return;
+    const gridLines = text.replace(/\r/g,'').split('\n');
+    while(gridLines.length && gridLines[gridLines.length-1]==='') gridLines.pop();
+    const matrix = gridLines.map(line => line.split('\t'));
+    const isHeader = target.tagName==='TH';
+    const startCol = parseInt(target.dataset.col);
+    const maxLineLen = Math.max.apply(null, matrix.map(r=>r.length));
+    while(manualCols < startCol + maxLineLen) manualAddColumn();
+
+    if(isHeader){
+      const headerCells = $all('#manualHeaderRow th[data-col]');
+      matrix[0].forEach((val,ci)=>{ if(headerCells[startCol+ci]) headerCells[startCol+ci].textContent = val; });
+      const bodyMatrix = matrix.slice(1);
+      while(manualRows < bodyMatrix.length) manualAddRow();
+      bodyMatrix.forEach((rowArr, ri)=>{
+        rowArr.forEach((val,ci)=>{
+          const cell = document.querySelector(`#manualBody td[data-row="${ri}"][data-col="${startCol+ci}"]`);
+          if(cell) cell.textContent = val;
+        });
+      });
+    } else {
+      const startRow = parseInt(target.dataset.row);
+      while(manualRows < startRow + matrix.length) manualAddRow();
+      matrix.forEach((rowArr, ri)=>{
+        rowArr.forEach((val,ci)=>{
+          const cell = document.querySelector(`#manualBody td[data-row="${startRow+ri}"][data-col="${startCol+ci}"]`);
+          if(cell) cell.textContent = val;
+        });
+      });
+    }
+  });
+}
+function useManualData(){
+  const headers = $all('#manualHeaderRow th[data-col]').map((th,i)=> th.textContent.trim() || ('Kolom '+(i+1)));
+  const rows = [];
+  $all('#manualBody tr').forEach(tr=>{
+    const cells = $all('td[data-col]', tr).map(td=> td.textContent.trim());
+    if(cells.some(c=>c!=='')) rows.push(cells);
+  });
+  if(rows.length===0){ showToast('Tabel masih kosong'); return; }
+  finalizeData(headers, rows);
+}
+
+/* ================= COLUMN SELECTORS ================= */
+function populateAllColumnSelectors(){
+  $all('select.col-select').forEach(sel=>{
+    const kind = sel.dataset.kind || 'all';
+    const emptyLabel = sel.dataset.role === 'xcol2' ? '-- tidak digabung --' : '-- pilih kolom --';
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">' + emptyLabel + '</option>';
+    state.headers.forEach((h,i)=>{
+      if(kind==='numeric' && state.colTypes[i]!=='number') return;
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = h + ' (' + state.colTypes[i] + ')';
+      sel.appendChild(opt);
+    });
+    if(prev!==undefined && prev!=='' && Array.from(sel.options).some(o=>o.value===prev)) sel.value = prev;
+  });
+}
+
+/* ================= CHART CONFIG MODEL ================= */
+function newChartConfig(){
+  const id = state.nextChartId++;
+  return {
+    id, title: 'Grafik ' + id, mode: 'linebar',
+    xCol: '', xCol2: '', granularity: 'raw', dateFrom: '', dateTo: '',
+    series: [], hiddenSeries: new Set(),
+    yMin: '', yMax: '', y1Min: '', y1Max: '',
+    showAllCallouts: false, chartObj: null,
+  };
+}
+
+function setChartCount(n){
+  n = Math.max(1, Math.min(4, n));
+  while(state.charts.length < n) state.charts.push(newChartConfig());
+  while(state.charts.length > n) state.charts.pop();
+  $('#chartCountSelect').value = String(n);
+  renderChartCards();
+}
+
+function renderChartCards(){
+  const container = $('#chartsContainer');
+  container.className = 'chartgrid ' + (state.charts.length>1 ? 'cols-2' : 'cols-1');
+  container.innerHTML = '';
+  state.charts.forEach(cfg=>{
+    container.appendChild(buildChartCardDom(cfg));
+  });
+  populateAllColumnSelectors();
+  state.charts.forEach(cfg=>{
+    const card = $('#chartcard-' + cfg.id);
+    if(card) syncChartCardControls(card, cfg);
+  });
+  state.charts.forEach(renderChart);
+}
+
+// Ensures the visible form controls reflect the stored config (used after
+// rebuilding the DOM, e.g. when the chart count changes).
+function syncChartCardControls(card, cfg){
+  const setVal = (roleSel, val)=>{ const el = card.querySelector(roleSel); if(el) el.value = val; };
+  setVal('[data-role=mode]', cfg.mode);
+  setVal('[data-role=xcol]', cfg.xCol);
+  setVal('[data-role=xcol2]', cfg.xCol2);
+  setVal('[data-role=granularity]', cfg.granularity);
+  setVal('[data-role=datefrom]', cfg.dateFrom);
+  setVal('[data-role=dateto]', cfg.dateTo);
+  setVal('[data-role=ymin]', cfg.yMin);
+  setVal('[data-role=ymax]', cfg.yMax);
+  setVal('[data-role=y1min]', cfg.y1Min);
+  setVal('[data-role=y1max]', cfg.y1Max);
+  const granwrap = card.querySelector('[data-role=granwrap]');
+  if(granwrap) granwrap.style.display = (cfg.mode==='pie'||cfg.mode==='donut') ? 'none' : '';
+}
+
+function buildChartCardDom(cfg){
+  const card = document.createElement('div');
+  card.className = 'chart-card';
+  card.id = 'chartcard-' + cfg.id;
+  card.innerHTML = `
+    <div class="chart-card-head">
+      <input class="title-input" value="${escapeHtml(cfg.title)}" data-role="title">
+      <div class="row">
+        <button class="btn small" data-role="toggle-config">\u2699\ufe0f Konfigurasi</button>
+        <button class="btn small" data-role="toggle-callouts">\ud83d\udcc8 Callout Semua</button>
+        <button class="btn small ghost" data-role="clear-callouts">\u2716 Hapus Callout</button>
+      </div>
+    </div>
+    <div class="chart-config" data-role="config">
+      <div class="grid-auto">
+        <div class="field">
+          <label>Tipe Grafik</label>
+          <select data-role="mode">
+            <option value="linebar">Garis / Batang (campur)</option>
+            <option value="pie">Pie</option>
+            <option value="donut">Donut</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Sumbu X (kategori / tanggal)</label>
+          <select class="col-select" data-kind="all" data-role="xcol"></select>
+        </div>
+        <div class="field">
+          <label>+ Kolom Jam/Waktu (opsional)</label>
+          <select class="col-select" data-kind="all" data-role="xcol2"></select>
+        </div>
+        <div class="field" data-role="granwrap">
+          <label>Range Sumbu X</label>
+          <select data-role="granularity">
+            <option value="raw">Data Asli (per baris/jam)</option>
+            <option value="hour">Per Jam</option>
+            <option value="day">Per Hari</option>
+            <option value="week">Per Minggu</option>
+            <option value="month">Per Bulan</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Timeline Dari</label>
+          <input type="date" data-role="datefrom">
+        </div>
+        <div class="field">
+          <label>Timeline Sampai</label>
+          <input type="date" data-role="dateto">
+        </div>
+      </div>
+      <p class="hint" style="margin-top:-4px;">Jika tanggal &amp; jam berada di kolom terpisah (mis. "Tanggal" + "Jam"), pilih keduanya — sumbu X akan menggabungkan tanggal dan jam sekaligus, dan pengelompokan per Hari/Minggu/Bulan akan menghitung dengan benar.</p>
+      <div style="margin:10px 0 6px 0;"><b style="font-size:13px;">Data Series</b></div>
+      <div data-role="serieslist"></div>
+      <button class="btn small" data-role="addseries">+ Tambah Series</button>
+      <div class="grid2" style="margin-top:12px;">
+        <div class="card" style="margin:0; padding:10px;">
+          <div class="hint" style="margin:0 0 6px 0;"><b>Sumbu Y Kiri (Primary)</b></div>
+          <div class="row">
+            <div class="field"><label>Min</label><input type="text" placeholder="auto" data-role="ymin" style="width:80px;"></div>
+            <div class="field"><label>Max</label><input type="text" placeholder="auto" data-role="ymax" style="width:80px;"></div>
+            <button class="btn small ghost" data-role="yreset">Reset</button>
+          </div>
+        </div>
+        <div class="card" style="margin:0; padding:10px;">
+          <div class="hint" style="margin:0 0 6px 0;"><b>Sumbu Y Kanan (Secondary)</b></div>
+          <div class="row">
+            <div class="field"><label>Min</label><input type="text" placeholder="auto" data-role="y1min" style="width:80px;"></div>
+            <div class="field"><label>Max</label><input type="text" placeholder="auto" data-role="y1max" style="width:80px;"></div>
+            <button class="btn small ghost" data-role="y1reset">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="canvas-wrap"><canvas id="canvas-${cfg.id}"></canvas></div>
+    <div class="chart-legend-filter" data-role="legendfilter"></div>
+    <div class="chart-actions">
+      <button class="btn small" data-role="exportpdf">Export PDF</button>
+      <button class="btn small" data-role="exportppt">Export PPT</button>
+      <button class="btn small" data-role="removechart">Hapus Grafik</button>
+    </div>
+  `;
+  wireChartCard(card, cfg);
+  return card;
+}
+
+function wireChartCard(card, cfg){
+  card.querySelector('[data-role=title]').addEventListener('input', e=>{ cfg.title = e.target.value; });
+  card.querySelector('[data-role=toggle-config]').addEventListener('click', ()=>{
+    card.querySelector('[data-role=config]').classList.toggle('open');
+  });
+  card.querySelector('[data-role=toggle-callouts]').addEventListener('click', ()=>{
+    cfg.showAllCallouts = !cfg.showAllCallouts;
+    renderChart(cfg);
+  });
+  card.querySelector('[data-role=clear-callouts]').addEventListener('click', ()=>{
+    $all('.callout-box', card).forEach(b=>b.remove());
+  });
+  card.querySelector('[data-role=mode]').addEventListener('change', e=>{
+    cfg.mode = e.target.value;
+    card.querySelector('[data-role=granwrap]').style.display = (cfg.mode==='pie'||cfg.mode==='donut') ? 'none' : '';
+    renderChart(cfg);
+  });
+  const xcolSel = card.querySelector('[data-role=xcol]');
+  xcolSel.addEventListener('change', e=>{ cfg.xCol = e.target.value; renderChart(cfg); });
+  const xcol2Sel = card.querySelector('[data-role=xcol2]');
+  xcol2Sel.addEventListener('change', e=>{ cfg.xCol2 = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=granularity]').addEventListener('change', e=>{ cfg.granularity = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=datefrom]').addEventListener('change', e=>{ cfg.dateFrom = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=dateto]').addEventListener('change', e=>{ cfg.dateTo = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=addseries]').addEventListener('click', ()=>{
+    cfg.series.push({ colIndex:'', axis:'y', chartType:'line', color: palette(cfg.series.length) });
+    renderSeriesList(card, cfg);
+    renderChart(cfg);
+  });
+  card.querySelector('[data-role=ymin]').addEventListener('input', e=>{ cfg.yMin = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=ymax]').addEventListener('input', e=>{ cfg.yMax = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=yreset]').addEventListener('click', ()=>{
+    cfg.yMin=''; cfg.yMax='';
+    card.querySelector('[data-role=ymin]').value=''; card.querySelector('[data-role=ymax]').value='';
+    renderChart(cfg);
+  });
+  card.querySelector('[data-role=y1min]').addEventListener('input', e=>{ cfg.y1Min = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=y1max]').addEventListener('input', e=>{ cfg.y1Max = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=y1reset]').addEventListener('click', ()=>{
+    cfg.y1Min=''; cfg.y1Max='';
+    card.querySelector('[data-role=y1min]').value=''; card.querySelector('[data-role=y1max]').value='';
+    renderChart(cfg);
+  });
+  card.querySelector('[data-role=exportpdf]').addEventListener('click', ()=> exportChartPDF(cfg, card));
+  card.querySelector('[data-role=exportppt]').addEventListener('click', ()=> exportChartPPT(cfg));
+  card.querySelector('[data-role=removechart]').addEventListener('click', ()=>{
+    state.charts = state.charts.filter(c=>c.id!==cfg.id);
+    renderChartCards();
+  });
+  renderSeriesList(card, cfg);
+}
+
+function renderSeriesList(card, cfg){
+  const wrap = card.querySelector('[data-role=serieslist]');
+  wrap.innerHTML = '';
+  cfg.series.forEach((s, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'series-row';
+    row.innerHTML = `
+      <select class="col-select" data-kind="numeric" style="min-width:150px;"></select>
+      <select data-role="stype">
+        <option value="line">Garis</option>
+        <option value="bar">Batang</option>
+      </select>
+      <select data-role="saxis">
+        <option value="y">Sumbu Y Kiri</option>
+        <option value="y1">Sumbu Y Kanan</option>
+      </select>
+      <input type="color" value="${s.color && s.color.startsWith('#') ? s.color : '#E0212B'}" data-role="scolor">
+      <button class="btn small ghost" data-role="sremove">\u2716</button>
+    `;
+    const colSel = row.querySelector('.col-select');
+    const typeSel = row.querySelector('[data-role=stype]');
+    const axisSel = row.querySelector('[data-role=saxis]');
+    const colorInp = row.querySelector('[data-role=scolor]');
+    wrap.appendChild(row);
+    populateAllColumnSelectors();
+    colSel.value = s.colIndex;
+    typeSel.value = s.chartType;
+    axisSel.value = s.axis;
+    colSel.addEventListener('change', e=>{ s.colIndex = e.target.value; renderChart(cfg); renderLegendFilter(card, cfg); });
+    typeSel.addEventListener('change', e=>{ s.chartType = e.target.value; renderChart(cfg); });
+    axisSel.addEventListener('change', e=>{ s.axis = e.target.value; renderChart(cfg); });
+    colorInp.addEventListener('input', e=>{ s.color = e.target.value; renderChart(cfg); });
+    row.querySelector('[data-role=sremove]').addEventListener('click', ()=>{
+      cfg.series.splice(idx,1);
+      renderSeriesList(card, cfg);
+      renderChart(cfg);
+      renderLegendFilter(card, cfg);
+    });
+  });
+  renderLegendFilter(card, cfg);
+}
+
+function renderLegendFilter(card, cfg){
+  const wrap = card.querySelector('[data-role=legendfilter]');
+  wrap.innerHTML = '';
+  cfg.series.filter(s=>s.colIndex!=='').forEach(s=>{
+    const chip = document.createElement('div');
+    const active = !cfg.hiddenSeries.has(s.colIndex);
+    chip.className = 'chip' + (active ? ' active' : '');
+    chip.style.borderColor = s.color;
+    chip.style.background = active ? s.color : 'transparent';
+    chip.style.color = active ? '#fff' : s.color;
+    chip.textContent = state.headers[s.colIndex] || ('Kolom ' + s.colIndex);
+    chip.addEventListener('click', ()=>{
+      if(cfg.hiddenSeries.has(s.colIndex)) cfg.hiddenSeries.delete(s.colIndex);
+      else cfg.hiddenSeries.add(s.colIndex);
+      renderLegendFilter(card, cfg);
+      renderChart(cfg);
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+/* ================= AGGREGATION ================= */
+function periodKey(d, gran){
+  const pad = n=>String(n).padStart(2,'0');
+  const y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate(), h=d.getHours();
+  if(gran==='hour') return `${y}-${pad(m)}-${pad(day)} ${pad(h)}`;
+  if(gran==='day') return `${y}-${pad(m)}-${pad(day)}`;
+  if(gran==='week'){
+    const onejan = new Date(y,0,1);
+    const week = Math.ceil((((d - onejan)/86400000) + onejan.getDay() + 1)/7);
+    return `${y}-W${pad(week)}`;
+  }
+  if(gran==='month') return `${y}-${pad(m)}`;
+  return d.toISOString();
+}
+const MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function formatPeriodLabel(d, gran){
+  const pad = n=>String(n).padStart(2,'0');
+  if(gran==='hour') return `${pad(d.getDate())} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:00`;
+  if(gran==='day') return `${pad(d.getDate())} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;
+  if(gran==='week') return `Mgg ${pad(d.getDate())} ${MONTHS_ID[d.getMonth()]}`;
+  if(gran==='month') return `${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;
+  return d.toLocaleString('id-ID');
+}
+function formatXLabelRaw(v, xType){
+  if(xType==='date'){
+    const d = parseFlexibleDate(v);
+    if(d) return formatPeriodLabel(d, 'hour');
+  }
+  return String(v===undefined||v===null?'':v);
+}
+
+// Combines the main X column (usually a date) with an optional second
+// X column (usually a time-of-day like "08:00") into one real Date object,
+// so grouping (per jam/hari/minggu/bulan) and labels reflect both.
+function getEffectiveDateValue(row, xColIdx, xCol2Idx){
+  const base = parseFlexibleDate(row[xColIdx]);
+  if(xCol2Idx!==null){
+    const timeRaw = row[xCol2Idx];
+    const timeStr = String(timeRaw===undefined||timeRaw===null ? '' : timeRaw).trim();
+    const m = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if(base && m){
+      return new Date(base.getFullYear(), base.getMonth(), base.getDate(),
+        parseInt(m[1]), parseInt(m[2]), m[3] ? parseInt(m[3]) : 0);
+    }
+    if(!base){
+      const d2 = parseFlexibleDate(timeStr);
+      if(d2) return d2;
+    }
+  }
+  return base;
+}
+
+function getAggregatedData(cfg){
+  if(cfg.xCol===''||cfg.xCol===undefined||cfg.xCol===null) return {labels:[], seriesData:{}};
+  const xColIdx = parseInt(cfg.xCol);
+  const xColType = state.colTypes[xColIdx];
+  const xCol2Idx = (cfg.xCol2!=='' && cfg.xCol2!==undefined && cfg.xCol2!==null) ? parseInt(cfg.xCol2) : null;
+
+  let items = state.rows.map(r=>({ row:r, date: getEffectiveDateValue(r, xColIdx, xCol2Idx) }));
+  const isDateMode = (xColType==='date') || (xCol2Idx!==null && items.some(it=>it.date));
+
+  if(isDateMode && (cfg.dateFrom || cfg.dateTo)){
+    items = items.filter(it=>{
+      if(!it.date) return false;
+      if(cfg.dateFrom && it.date < new Date(cfg.dateFrom)) return false;
+      if(cfg.dateTo && it.date > new Date(cfg.dateTo + 'T23:59:59')) return false;
+      return true;
+    });
+  }
+
+  const validSeries = cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined);
+
+  if(!isDateMode || cfg.granularity==='raw'){
+    const labels = items.map(it=>{
+      if(isDateMode && it.date) return formatPeriodLabel(it.date, 'hour');
+      return formatXLabelRaw(it.row[xColIdx], xColType);
+    });
+    const seriesData = {};
+    validSeries.forEach(s=>{
+      const ci = parseInt(s.colIndex);
+      seriesData[s.colIndex] = items.map(it=> toNumberSafe(it.row[ci]));
+    });
+    return {labels, seriesData};
+  }
+
+  const buckets = new Map();
+  items.forEach(it=>{
+    if(!it.date) return;
+    const key = periodKey(it.date, cfg.granularity);
+    if(!buckets.has(key)) buckets.set(key, {date: it.date, sums:{}, counts:{}});
+    const b = buckets.get(key);
+    validSeries.forEach(s=>{
+      const ci = parseInt(s.colIndex);
+      const v = toNumberSafe(it.row[ci]);
+      if(v===null) return;
+      b.sums[s.colIndex] = (b.sums[s.colIndex]||0) + v;
+      b.counts[s.colIndex] = (b.counts[s.colIndex]||0) + 1;
+    });
+  });
+  const keys = Array.from(buckets.keys()).sort();
+  const labels = keys.map(k=> formatPeriodLabel(buckets.get(k).date, cfg.granularity));
+  const seriesData = {};
+  validSeries.forEach(s=>{
+    seriesData[s.colIndex] = keys.map(k=>{
+      const b = buckets.get(k);
+      const sum = b.sums[s.colIndex], cnt = b.counts[s.colIndex];
+      return cnt ? (sum/cnt) : null;
+    });
+  });
+  return {labels, seriesData};
+}
+
+/* ================= CHART RENDER ================= */
+function clearChartError(wrap){
+  const err = wrap.querySelector('.chart-error');
+  if(err) err.remove();
+}
+function showChartError(wrap, msg){
+  clearChartError(wrap);
+  const div = document.createElement('div');
+  div.className = 'chart-error';
+  div.textContent = msg;
+  wrap.appendChild(div);
+}
+
+function renderChart(cfg){
+  const canvas = document.getElementById('canvas-' + cfg.id);
+  if(!canvas) return;
+  const wrap = canvas.parentElement;
+  if(cfg.chartObj){ try{ cfg.chartObj.destroy(); }catch(e){} cfg.chartObj = null; }
+  $all('.callout-box', wrap).forEach(b=>b.remove());
+  clearChartError(wrap);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width, canvas.height);
+
+  const validSeries = cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined);
+  if(cfg.xCol===''|| validSeries.length===0){
+    showChartError(wrap, 'Pilih Sumbu X dan minimal 1 Data Series pada bagian Konfigurasi untuk menampilkan grafik.');
+    return;
+  }
+
+  try{
+    const {labels, seriesData} = getAggregatedData(cfg);
+    if(labels.length===0){
+      showChartError(wrap, 'Tidak ada data yang cocok (periksa filter Timeline / isi kolom yang dipilih).');
+      return;
+    }
+
+    if(cfg.mode==='pie' || cfg.mode==='donut'){
+      const s = validSeries[0];
+      const data = (seriesData[s.colIndex]||[]).map(v=>v===null?0:v);
+      cfg.chartObj = new Chart(canvas, {
+        type: cfg.mode==='donut' ? 'doughnut' : 'pie',
+        data: { labels, datasets:[{ data, backgroundColor: labels.map((_,i)=>palette(i)) }] },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins:{
+            legend:{ position:'right', labels:{ color: textColor() } },
+            datalabels: cfg.showAllCallouts ? { color:'#fff', formatter:v=>fmtNum(v) } : { display:false },
+          },
+          onClick: (evt, els)=> handleChartClick(cfg, els, wrap),
+        },
+      });
+      return;
+    }
+
+    const visibleSeries = validSeries.filter(s=> !cfg.hiddenSeries.has(s.colIndex));
+    if(visibleSeries.length===0){
+      showChartError(wrap, 'Semua series disembunyikan lewat filter legend. Aktifkan minimal 1 series.');
+      return;
+    }
+    const datasets = visibleSeries.map(s=>({
+      label: state.headers[parseInt(s.colIndex)],
+      data: seriesData[s.colIndex],
+      type: s.chartType,
+      borderColor: s.color,
+      backgroundColor: s.chartType==='bar' ? hexAlpha(s.color, 0.75) : hexAlpha(s.color, 0.12),
+      yAxisID: s.axis,
+      tension: 0.3, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2, fill: false,
+    }));
+    const hasSecondary = visibleSeries.some(s=>s.axis==='y1');
+    const scales = {
+      x: { grid:{color:gridColor()}, ticks:{color:textColor(), maxRotation:60, minRotation:0, autoSkip:true} },
+      y: {
+        position:'left',
+        min: cfg.yMin===''?undefined:Number(cfg.yMin),
+        max: cfg.yMax===''?undefined:Number(cfg.yMax),
+        grid:{color:gridColor()}, ticks:{color:textColor()},
+      },
+    };
+    if(hasSecondary){
+      scales.y1 = {
+        position:'right',
+        min: cfg.y1Min===''?undefined:Number(cfg.y1Min),
+        max: cfg.y1Max===''?undefined:Number(cfg.y1Max),
+        grid:{drawOnChartArea:false}, ticks:{color:textColor()},
+      };
+    }
+    cfg.chartObj = new Chart(canvas, {
+      type:'bar',
+      data:{ labels, datasets },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ labels:{ color:textColor() } },
+          tooltip:{ enabled:true },
+          datalabels: cfg.showAllCallouts ? {
+            color: textColor(), anchor:'end', align:'top', font:{size:9},
+            formatter: v => (v===null||v===undefined) ? '' : fmtNum(v),
+          } : { display:false },
+        },
+        scales,
+        onClick: (evt, els) => handleChartClick(cfg, els, wrap),
+      },
+    });
+  }catch(err){
+    console.error('Gagal membuat grafik', cfg.id, err);
+    showChartError(wrap, 'Gagal membuat grafik: ' + (err && err.message ? err.message : err));
+  }
+}
+
+function handleChartClick(cfg, elements, wrap){
+  if(!elements || !elements.length) return;
+  const el = elements[0];
+  const chart = cfg.chartObj;
+  const label = chart.data.labels[el.index];
+  const meta = chart.getDatasetMeta(el.datasetIndex);
+  const point = meta.data[el.index];
+  if(!point) return;
+  const box = document.createElement('div');
+  box.className = 'callout-box';
+  let html = `<div class="callout-date">${escapeHtml(String(label))}</div>`;
+  chart.data.datasets.forEach(ds=>{
+    const v = ds.data[el.index];
+    if(v===null||v===undefined) return;
+    html += `<div class="callout-item" style="color:${ds.borderColor}">${escapeHtml(ds.label)}: ${fmtNum(v)}</div>`;
+  });
+  box.innerHTML = html;
+  box.style.left = point.x + 'px';
+  box.style.top = point.y + 'px';
+  box.addEventListener('click', ()=> box.remove());
+  wrap.style.position = 'relative';
+  wrap.appendChild(box);
+}
+
+/* ================= EXPORTS ================= */
+async function exportChartPDF(cfg, card){
+  showToast('Membuat PDF...');
+  try{
+    const canvasImg = await html2canvas(card, { scale:2, backgroundColor: getComputedStyle(document.body).backgroundColor });
+    const imgData = canvasImg.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const props = pdf.getImageProperties(imgData);
+    const imgHeight = (props.height * pageWidth) / props.width;
+    pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
+    pdf.save((cfg.title || 'grafik') + '.pdf');
+  }catch(err){ console.error(err); showToast('Gagal export PDF'); }
+}
+async function exportAllPDF(){
+  showToast('Membuat PDF semua grafik...');
+  try{
+    const container = $('#chartsContainer');
+    const canvasImg = await html2canvas(container, { scale:2, backgroundColor: getComputedStyle(document.body).backgroundColor });
+    const imgData = canvasImg.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const props = pdf.getImageProperties(imgData);
+    const imgHeight = (props.height * pageWidth) / props.width;
+    pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
+    pdf.save('semua-grafik.pdf');
+  }catch(err){ console.error(err); showToast('Gagal export PDF'); }
+}
+function exportExcel(){
+  if(state.headers.length===0){ showToast('Belum ada data'); return; }
+  const wsData = [state.headers, ...state.rows.map(r=>r.map(c=> c instanceof Date ? c.toLocaleString('id-ID') : c))];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  XLSX.writeFile(wb, 'data-export.xlsx');
+}
+async function exportChartPPT(cfg){
+  if(!cfg.chartObj){ showToast('Grafik belum siap'); return; }
+  showToast('Membuat PPT...');
+  try{
+    const pptx = new PptxGenJS();
+    const slide = pptx.addSlide();
+    slide.addText(cfg.title, { x:0.4, y:0.25, fontSize:20, bold:true, color:'E0212B' });
+    const img = cfg.chartObj.toBase64Image();
+    slide.addImage({ data:img, x:0.5, y:0.9, w:9, h:4.8 });
+    await pptx.writeFile({ fileName: (cfg.title||'grafik') + '.pptx' });
+  }catch(err){ console.error(err); showToast('Gagal export PPT'); }
+}
+async function exportAllPPT(){
+  const withData = state.charts.filter(c=>c.chartObj);
+  if(withData.length===0){ showToast('Belum ada grafik'); return; }
+  showToast('Membuat PPT semua grafik...');
+  try{
+    const pptx = new PptxGenJS();
+    withData.forEach(cfg=>{
+      const slide = pptx.addSlide();
+      slide.addText(cfg.title, { x:0.4, y:0.25, fontSize:20, bold:true, color:'E0212B' });
+      const img = cfg.chartObj.toBase64Image();
+      slide.addImage({ data:img, x:0.5, y:0.9, w:9, h:4.8 });
+    });
+    await pptx.writeFile({ fileName:'semua-grafik.pptx' });
+  }catch(err){ console.error(err); showToast('Gagal export PPT'); }
+}
+
+/* ================= CORRELATION PANEL ================= */
+let corrChart = null;
+function computeCorrelation(){
+  const colA = $('#corrColA').value;
+  const colB = $('#corrColB').value;
+  if(colA===''||colB===''){ showToast('Pilih kedua kolom data'); return; }
+  const ciA = parseInt(colA), ciB = parseInt(colB);
+  const pairs = state.rows.map(r=>[toNumberSafe(r[ciA]), toNumberSafe(r[ciB])]).filter(p=>p[0]!==null && p[1]!==null);
+  const n = pairs.length;
+  if(n<2){ showToast('Data numerik tidak cukup untuk kedua kolom ini'); return; }
+  const xs = pairs.map(p=>p[0]), ys = pairs.map(p=>p[1]);
+  const mean = a=> a.reduce((x,y)=>x+y,0)/a.length;
+  const mx = mean(xs), my = mean(ys);
+  let num=0, dx2=0, dy2=0;
+  for(let i=0;i<n;i++){ const dx=xs[i]-mx, dy=ys[i]-my; num+=dx*dy; dx2+=dx*dx; dy2+=dy*dy; }
+  const r = (dx2===0||dy2===0) ? 0 : num/Math.sqrt(dx2*dy2);
+  const labelA = state.headers[ciA], labelB = state.headers[ciB];
+
+  $('#corrResultText').textContent = 'R = ' + r.toFixed(4);
+  $('#corrInterpretation').textContent = interpretR(r, n) + ` (n = ${n} data pasangan)`;
+
+  const ctx = document.getElementById('corrCanvas');
+  if(corrChart) corrChart.destroy();
+  corrChart = new Chart(ctx, {
+    type:'scatter',
+    data:{ datasets:[{
+      label: labelA + ' vs ' + labelB,
+      data: pairs.map(p=>({x:p[0], y:p[1]})),
+      backgroundColor: hexAlpha(cssVar('--accent1'),0.7),
+      borderColor: cssVar('--accent1'),
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:textColor()}} },
+      scales:{
+        x:{ title:{display:true, text:labelA, color:textColor()}, grid:{color:gridColor()}, ticks:{color:textColor()} },
+        y:{ title:{display:true, text:labelB, color:textColor()}, grid:{color:gridColor()}, ticks:{color:textColor()} },
+      }
+    }
+  });
+}
+function interpretR(r, n){
+  const abs = Math.abs(r);
+  let strength = abs>=0.8 ? 'sangat kuat' : abs>=0.6 ? 'kuat' : abs>=0.4 ? 'sedang' : abs>=0.2 ? 'lemah' : 'sangat lemah / tidak berkorelasi';
+  const dir = r>0.001 ? 'positif' : r<-0.001 ? 'negatif' : '';
+  return `Korelasi ${strength} ${dir} antara kedua data (R\u00b2 = ${(r*r).toFixed(3)}).`;
+}
+
+/* ================= INIT ================= */
+function init(){
+  $all('.tab-btn').forEach(b=> b.addEventListener('click', ()=> switchTab(b.dataset.tab)));
+  $all('.subtab-btn').forEach(b=> b.addEventListener('click', ()=> switchSubtab(b.dataset.group, b.dataset.sub)));
+
+  $('#excelInput').addEventListener('change', e=>{ if(e.target.files[0]) handleExcelFile(e.target.files[0]); });
+  $('#excelDrop').addEventListener('click', ()=> $('#excelInput').click());
+  $('#csvInput').addEventListener('change', e=>{ if(e.target.files[0]) handleCsvFile(e.target.files[0]); });
+  $('#csvDrop').addEventListener('click', ()=> $('#csvInput').click());
+  $('#btnOpenTtc').addEventListener('click', ()=>{
+    if(!lastCsvRawText){ showToast('Unggah CSV terlebih dahulu'); return; }
+    openTextToColumnsModal(lastCsvRawText);
+  });
+  ['ttcTab','ttcSemicolon','ttcComma','ttcSpace','ttcOther'].forEach(id=>{
+    $('#'+id).addEventListener('change', updateTtcPreview);
+  });
+  $('#ttcOtherChar').addEventListener('input', updateTtcPreview);
+  $('#ttcApply').addEventListener('click', applyTextToColumns);
+  $('#ttcCancel').addEventListener('click', closeTtcModal);
+
+  initManualTable(manualCols, manualRows);
+  setupManualPaste();
+  $('#btnAddRow').addEventListener('click', manualAddRow);
+  $('#btnAddCol').addEventListener('click', manualAddColumn);
+  $('#btnDelRow').addEventListener('click', manualDelRow);
+  $('#btnDelCol').addEventListener('click', manualDelColumn);
+  $('#btnDeleteSelectedManual').addEventListener('click', manualDeleteSelectedRows);
+  $('#btnClearManual').addEventListener('click', manualClearAll);
+  $('#btnUseManual').addEventListener('click', useManualData);
+
+  $('#chartCountSelect').addEventListener('change', e=> setChartCount(parseInt(e.target.value)));
+  $('#btnExportAllPDF').addEventListener('click', exportAllPDF);
+  $('#btnExportAllPPT').addEventListener('click', exportAllPPT);
+  $('#btnExportExcel').addEventListener('click', exportExcel);
+
+  $('#themeSelect').addEventListener('change', applyTheme);
+  $('#modeToggle').addEventListener('click', toggleMode);
+
+  $('#btnComputeCorr').addEventListener('click', computeCorrelation);
+
+  try{
+    Chart.register(ChartDataLabels);
+    Chart.defaults.font.family = "'Segoe UI', system-ui, Arial, sans-serif";
+  }catch(e){ console.error('Chart.js / ChartDataLabels tidak tersedia', e); }
+
+  applyTheme();
+  renderDataPreview();
+  setChartCount(2);
+}
+
+function showLibWarningBanner(missing){
+  const banner = document.createElement('div');
+  banner.className = 'lib-warning-banner';
+  banner.innerHTML = '⚠️ Gagal memuat pustaka berikut dari internet: <b>' + missing.map(escapeHtml).join(', ') +
+    '</b>. Beberapa fitur (grafik dan/atau export) mungkin tidak berfungsi. ' +
+    'Periksa koneksi internet, ad‑blocker, atau firewall jaringan Anda, lalu muat ulang halaman. ' +
+    '<button id="dismissLibWarning">Tutup</button>';
+  document.body.insertBefore(banner, document.body.firstChild);
+  const dismiss = document.getElementById('dismissLibWarning');
+  if(dismiss) dismiss.addEventListener('click', ()=> banner.remove());
+}
+
+let __domReady = false, __libsReady = false;
+function __tryStartApp(){
+  if(!__domReady || !__libsReady) return;
+  init();
+  if(window.__csMissingLibs && window.__csMissingLibs.length){
+    showLibWarningBanner(window.__csMissingLibs);
+  }
+}
+document.addEventListener('DOMContentLoaded', ()=>{ __domReady = true; __tryStartApp(); });
+document.addEventListener('cs-libs-ready', ()=>{ __libsReady = true; __tryStartApp(); });
+// Safety net: don't wait forever if the loader script itself never runs/finishes.
+setTimeout(()=>{ if(!__libsReady){ __libsReady = true; __tryStartApp(); } }, 8000);
+
+</script>
+</body>
+</html>
