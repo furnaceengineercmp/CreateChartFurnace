@@ -90,11 +90,16 @@ body{
   transition:background .25s ease, color .25s ease;
 }
 button, select, input{ font-family:inherit; }
+/* The closed <select> box can be themed freely, but the open dropdown POPUP
+   is drawn by the OS/browser using its own background in many browsers even
+   when the select's own color is customized — so force readable option text
+   everywhere to avoid ever getting light-on-light or dark-on-dark options. */
+select option{ color:#1a1a1a; background:#ffffff; }
 a{color:var(--accent1);}
 
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
-  padding:12px 22px; background:linear-gradient(90deg, var(--accent3), var(--accent4) 55%, var(--accent1));
+  padding:12px 22px; background:linear-gradient(90deg, var(--accent3), var(--accent1));
   color:#fff; box-shadow:var(--shadow); position:sticky; top:0; z-index:50; flex-wrap:wrap; gap:10px;
 }
 .topbar .brand{display:flex; align-items:center; gap:12px;}
@@ -106,6 +111,13 @@ a{color:var(--accent1);}
 .topbar select, .topbar .iconbtn{
   background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.35);
   border-radius:8px; padding:6px 10px; cursor:pointer; font-size:13px;
+}
+.topbar select option{
+  /* The select box itself uses white text on a colored background, but the
+     dropdown POPUP list is rendered by the OS with a plain white background.
+     Force dark text + white background here so open dropdown options stay
+     readable regardless of the theme colors above. */
+  color:#1a1a1a; background:#ffffff;
 }
 .topbar .iconbtn:hover{background:rgba(255,255,255,.28);}
 
@@ -201,7 +213,7 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 .chart-config.open{display:block;}
 .series-row{ display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap; background:var(--panel-2); padding:6px 8px; border-radius:8px; }
 .series-row input[type=color]{width:30px; height:26px; border:none; padding:0; background:none; cursor:pointer;}
-.canvas-wrap{ position:relative; padding:14px; height:380px; box-sizing:border-box; }
+.canvas-wrap{ position:relative; padding:14px; height:410px; box-sizing:border-box; }
 .canvas-wrap canvas{ width:100% !important; height:100% !important; display:block; }
 .chart-error{
   position:absolute; inset:14px; display:flex; align-items:center; justify-content:center;
@@ -958,6 +970,7 @@ function buildChartCardDom(cfg){
           <label>Tipe Grafik</label>
           <select data-role="mode">
             <option value="linebar">Garis / Batang (campur)</option>
+            <option value="scatter">Scatter (cek distribusi data)</option>
             <option value="pie">Pie</option>
             <option value="donut">Donut</option>
           </select>
@@ -1087,6 +1100,7 @@ function renderSeriesList(card, cfg){
       <select data-role="stype">
         <option value="line">Garis</option>
         <option value="bar">Batang</option>
+        <option value="point">Titik</option>
       </select>
       <select data-role="saxis">
         <option value="y">Sumbu Y Kiri</option>
@@ -1169,6 +1183,14 @@ function formatXLabelRaw(v, xType){
   }
   return String(v===undefined||v===null?'':v);
 }
+function formatDateOnly(d){
+  const pad = n=>String(n).padStart(2,'0');
+  return `${pad(d.getDate())} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;
+}
+function formatTimeOnly(d){
+  const pad = n=>String(n).padStart(2,'0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 // Combines the main X column (usually a date) with an optional second
 // X column (usually a time-of-day like "08:00") into one real Date object,
@@ -1192,7 +1214,7 @@ function getEffectiveDateValue(row, xColIdx, xCol2Idx){
 }
 
 function getAggregatedData(cfg){
-  if(cfg.xCol===''||cfg.xCol===undefined||cfg.xCol===null) return {labels:[], seriesData:{}};
+  if(cfg.xCol===''||cfg.xCol===undefined||cfg.xCol===null) return {labels:[], seriesData:{}, dateGroups:null};
   const xColIdx = parseInt(cfg.xCol);
   const xColType = state.colTypes[xColIdx];
   const xCol2Idx = (cfg.xCol2!=='' && cfg.xCol2!==undefined && cfg.xCol2!==null) ? parseInt(cfg.xCol2) : null;
@@ -1212,16 +1234,22 @@ function getAggregatedData(cfg){
   const validSeries = cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined);
 
   if(!isDateMode || cfg.granularity==='raw'){
-    const labels = items.map(it=>{
-      if(isDateMode && it.date) return formatPeriodLabel(it.date, 'hour');
-      return formatXLabelRaw(it.row[xColIdx], xColType);
-    });
+    // Raw / per-row display. When it's date-based, split the label into a
+    // short time-only tick plus a parallel "date group" array so the chart
+    // can show the date once per day instead of repeating it on every tick.
+    let labels, dateGroups = null;
+    if(isDateMode){
+      labels = items.map(it=> it.date ? formatTimeOnly(it.date) : '');
+      dateGroups = items.map(it=> it.date ? formatDateOnly(it.date) : '');
+    } else {
+      labels = items.map(it=> formatXLabelRaw(it.row[xColIdx], xColType));
+    }
     const seriesData = {};
     validSeries.forEach(s=>{
       const ci = parseInt(s.colIndex);
       seriesData[s.colIndex] = items.map(it=> toNumberSafe(it.row[ci]));
     });
-    return {labels, seriesData};
+    return {labels, seriesData, dateGroups};
   }
 
   const buckets = new Map();
@@ -1239,7 +1267,14 @@ function getAggregatedData(cfg){
     });
   });
   const keys = Array.from(buckets.keys()).sort();
-  const labels = keys.map(k=> formatPeriodLabel(buckets.get(k).date, cfg.granularity));
+  let labels, dateGroups = null;
+  if(cfg.granularity==='hour'){
+    // Same decluttering trick for hourly aggregated buckets spanning many days.
+    labels = keys.map(k=> formatTimeOnly(buckets.get(k).date));
+    dateGroups = keys.map(k=> formatDateOnly(buckets.get(k).date));
+  } else {
+    labels = keys.map(k=> formatPeriodLabel(buckets.get(k).date, cfg.granularity));
+  }
   const seriesData = {};
   validSeries.forEach(s=>{
     seriesData[s.colIndex] = keys.map(k=>{
@@ -1248,8 +1283,50 @@ function getAggregatedData(cfg){
       return cnt ? (sum/cnt) : null;
     });
   });
-  return {labels, seriesData};
+  return {labels, seriesData, dateGroups};
 }
+
+// Draws a once-per-day date label under the (now time-only) x tick labels,
+// plus a subtle separator line at each day boundary, using cfg._dateGroups
+// stashed on the chart instance by renderChart().
+const dateGroupPlugin = {
+  id: 'csDateGroupPlugin',
+  afterDraw(chart){
+    const groups = chart.__csDateGroups;
+    if(!groups || !groups.length) return;
+    const xScale = chart.scales.x;
+    if(!xScale) return;
+    const area = chart.chartArea;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = '600 11.5px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = textColor();
+    let segStart = 0;
+    for(let i=1;i<=groups.length;i++){
+      if(i===groups.length || groups[i]!==groups[segStart]){
+        const startPx = xScale.getPixelForValue(segStart);
+        const endPx = xScale.getPixelForValue(i-1);
+        const centerPx = (startPx+endPx)/2;
+        if(groups[segStart]) ctx.fillText(groups[segStart], centerPx, area.bottom + 26);
+        if(segStart>0){
+          const boundaryPx = (xScale.getPixelForValue(segStart-1) + startPx)/2;
+          ctx.beginPath();
+          ctx.moveTo(boundaryPx, area.top);
+          ctx.lineTo(boundaryPx, area.bottom);
+          ctx.setLineDash([4,3]);
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = hexAlpha(cssVar('--accent1'), 0.4);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        segStart = i;
+      }
+    }
+    ctx.restore();
+  }
+};
 
 /* ================= CHART RENDER ================= */
 function clearChartError(wrap){
@@ -1281,7 +1358,7 @@ function renderChart(cfg){
   }
 
   try{
-    const {labels, seriesData} = getAggregatedData(cfg);
+    const {labels, seriesData, dateGroups} = getAggregatedData(cfg);
     if(labels.length===0){
       showChartError(wrap, 'Tidak ada data yang cocok (periksa filter Timeline / isi kolom yang dipilih).');
       return;
@@ -1310,18 +1387,65 @@ function renderChart(cfg){
       showChartError(wrap, 'Semua series disembunyikan lewat filter legend. Aktifkan minimal 1 series.');
       return;
     }
+
+    if(cfg.mode==='scatter'){
+      // Distribution view: every data point plotted as a dot (row order on X),
+      // useful for spotting spread, clusters and outliers rather than trends.
+      const datasets = visibleSeries.map(s=>({
+        label: state.headers[parseInt(s.colIndex)],
+        data: (seriesData[s.colIndex]||[]).map((v,i)=> ({x:i, y:v})).filter(p=> p.y!==null && p.y!==undefined),
+        backgroundColor: hexAlpha(s.color, 0.7),
+        borderColor: s.color,
+        pointRadius: 4, pointHoverRadius: 6,
+      }));
+      cfg.chartObj = new Chart(canvas, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins:{
+            legend:{ labels:{ color:textColor() } },
+            tooltip:{ callbacks:{ label: item => {
+              const idx = item.raw.x;
+              const lbl = labels[idx] !== undefined ? labels[idx] : idx;
+              return (item.dataset.label||'') + ': ' + fmtNum(item.raw.y) + ' (' + lbl + ')';
+            } } },
+          },
+          scales:{
+            x:{
+              title:{ display:true, text:'Urutan data', color:textColor() },
+              grid:{ color:gridColor() },
+              ticks:{ color:textColor(), callback: val => labels[val]!==undefined ? labels[val] : val },
+            },
+            y:{
+              grid:{ color:gridColor() }, ticks:{ color:textColor() },
+              min: cfg.yMin===''?undefined:Number(cfg.yMin),
+              max: cfg.yMax===''?undefined:Number(cfg.yMax),
+            },
+          },
+          onClick: (evt, els) => handleChartClick(cfg, els, wrap),
+        },
+      });
+      cfg.chartObj.__csLabels = labels;
+      return;
+    }
+
     const datasets = visibleSeries.map(s=>({
       label: state.headers[parseInt(s.colIndex)],
       data: seriesData[s.colIndex],
-      type: s.chartType,
+      type: s.chartType==='point' ? 'line' : s.chartType,
+      showLine: s.chartType!=='point',
       borderColor: s.color,
       backgroundColor: s.chartType==='bar' ? hexAlpha(s.color, 0.75) : hexAlpha(s.color, 0.12),
+      pointBackgroundColor: s.color,
       yAxisID: s.axis,
-      tension: 0.3, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2, fill: false,
+      tension: 0.3, pointRadius: s.chartType==='point' ? 5 : 3, pointHoverRadius: 7, borderWidth: 2, fill: false,
     }));
     const hasSecondary = visibleSeries.some(s=>s.axis==='y1');
     const scales = {
-      x: { grid:{color:gridColor()}, ticks:{color:textColor(), maxRotation:60, minRotation:0, autoSkip:true} },
+      x: {
+        grid:{color:gridColor()}, ticks:{color:textColor(), maxRotation: dateGroups ? 0 : 60, minRotation:0, autoSkip:true},
+      },
       y: {
         position:'left',
         min: cfg.yMin===''?undefined:Number(cfg.yMin),
@@ -1343,9 +1467,19 @@ function renderChart(cfg){
       options:{
         responsive:true, maintainAspectRatio:false,
         interaction:{ mode:'index', intersect:false },
+        layout: dateGroups ? { padding:{ bottom: 40 } } : {},
         plugins:{
           legend:{ labels:{ color:textColor() } },
-          tooltip:{ enabled:true },
+          tooltip:{
+            enabled:true,
+            callbacks:{
+              title: items=>{
+                if(!items.length) return '';
+                const idx = items[0].dataIndex;
+                return dateGroups && dateGroups[idx] ? (dateGroups[idx] + ' ' + items[0].label) : items[0].label;
+              },
+            },
+          },
           datalabels: cfg.showAllCallouts ? {
             color: textColor(), anchor:'end', align:'top', font:{size:9},
             formatter: v => (v===null||v===undefined) ? '' : fmtNum(v),
@@ -1354,7 +1488,9 @@ function renderChart(cfg){
         scales,
         onClick: (evt, els) => handleChartClick(cfg, els, wrap),
       },
+      plugins: [dateGroupPlugin],
     });
+    cfg.chartObj.__csDateGroups = dateGroups;
   }catch(err){
     console.error('Gagal membuat grafik', cfg.id, err);
     showChartError(wrap, 'Gagal membuat grafik: ' + (err && err.message ? err.message : err));
@@ -1365,18 +1501,31 @@ function handleChartClick(cfg, elements, wrap){
   if(!elements || !elements.length) return;
   const el = elements[0];
   const chart = cfg.chartObj;
-  const label = chart.data.labels[el.index];
+  const isScatter = chart.config.type === 'scatter';
   const meta = chart.getDatasetMeta(el.datasetIndex);
   const point = meta.data[el.index];
   if(!point) return;
   const box = document.createElement('div');
   box.className = 'callout-box';
-  let html = `<div class="callout-date">${escapeHtml(String(label))}</div>`;
-  chart.data.datasets.forEach(ds=>{
-    const v = ds.data[el.index];
-    if(v===null||v===undefined) return;
-    html += `<div class="callout-item" style="color:${ds.borderColor}">${escapeHtml(ds.label)}: ${fmtNum(v)}</div>`;
-  });
+  let html;
+  if(isScatter){
+    const ds = chart.data.datasets[el.datasetIndex];
+    const raw = ds.data[el.index];
+    const lbls = chart.__csLabels || [];
+    const label = lbls[raw.x] !== undefined ? lbls[raw.x] : raw.x;
+    html = `<div class="callout-date">${escapeHtml(String(label))}</div>`;
+    html += `<div class="callout-item" style="color:${ds.borderColor}">${escapeHtml(ds.label)}: ${fmtNum(raw.y)}</div>`;
+  } else {
+    const dateGroups = chart.__csDateGroups;
+    const rawLabel = chart.data.labels[el.index];
+    const label = (dateGroups && dateGroups[el.index]) ? (dateGroups[el.index] + ' ' + rawLabel) : rawLabel;
+    html = `<div class="callout-date">${escapeHtml(String(label))}</div>`;
+    chart.data.datasets.forEach(ds=>{
+      const v = ds.data[el.index];
+      if(v===null||v===undefined) return;
+      html += `<div class="callout-item" style="color:${ds.borderColor}">${escapeHtml(ds.label)}: ${fmtNum(v)}</div>`;
+    });
+  }
   box.innerHTML = html;
   box.style.left = point.x + 'px';
   box.style.top = point.y + 'px';
