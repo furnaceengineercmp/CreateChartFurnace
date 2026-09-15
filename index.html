@@ -211,8 +211,16 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 .chart-card-head input.title-input:focus{ outline:1px solid var(--accent1); background:var(--panel); }
 .chart-config{ padding:12px 14px; border-bottom:1px solid var(--border); display:none; }
 .chart-config.open{display:block;}
-.series-row{ display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap; background:var(--panel-2); padding:6px 8px; border-radius:8px; }
+.series-block{ margin-bottom:6px; }
+.series-row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel-2); padding:6px 8px; border-radius:8px 8px 0 0; }
 .series-row input[type=color]{width:30px; height:26px; border:none; padding:0; background:none; cursor:pointer;}
+.series-target-row{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:var(--panel);
+  border:1px dashed var(--border); border-top:none; padding:8px; border-radius:0 0 8px 8px;
+}
+.series-target-row select, .series-target-row input{
+  padding:6px 8px; border-radius:7px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:12.5px;
+}
 .canvas-wrap{ position:relative; padding:14px; height:410px; box-sizing:border-box; }
 .canvas-wrap canvas{ width:100% !important; height:100% !important; display:block; }
 .chart-error{
@@ -234,12 +242,57 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 .chip.active{ color:#fff; }
 .chart-actions{ display:flex; gap:6px; padding:0 14px 14px 14px; flex-wrap:wrap;}
 
-.callout-box{
-  position:absolute; transform:translate(-50%,-100%); background:var(--panel); border:1px solid var(--border);
-  border-radius:10px; padding:8px 10px; box-shadow:var(--shadow); font-size:11.5px; z-index:20; cursor:pointer; min-width:140px;
+.chart-stats{ padding:0 14px 14px 14px; }
+.chart-stats-summary{ font-size:12px; color:var(--text-soft); margin-bottom:10px; }
+.chart-stats-grid{ display:flex; gap:10px; flex-wrap:wrap; }
+.stat-card{
+  background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+  padding:10px 14px; min-width:150px; flex:1 1 150px;
 }
-.callout-box .callout-date{ font-weight:700; color:var(--text-soft); margin-bottom:3px; font-size:11px;}
-.callout-box .callout-item{ font-weight:700; }
+.stat-card .stat-name{ font-size:11.5px; font-weight:700; margin-bottom:5px; display:flex; align-items:center; gap:6px; color:var(--text); }
+.stat-card .stat-name .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; flex:none; }
+.stat-card .stat-total{ font-size:12px; color:var(--text-soft); }
+.stat-card .stat-pct{ font-size:21px; font-weight:800; margin-top:3px; line-height:1.1; }
+.stat-card .stat-pct-label{ font-size:11px; color:var(--text-soft); margin-top:1px; }
+.stat-card .stat-none{ font-size:11.5px; color:var(--text-soft); margin-top:6px; font-style:italic; }
+
+/* Callout panel now sits INSIDE canvas-wrap, exactly overlaying the canvas
+   (inset matches canvas-wrap's own 14px padding), so flags are positioned
+   in real chart pixel coordinates and always appear over/near the clicked
+   point instead of in a separate strip below the chart. The panel itself
+   ignores clicks (pointer-events:none) so it never blocks chart
+   interaction; each flag re-enables pointer-events for its own close-tap. */
+.callout-panel{ position:absolute; inset:14px; padding:0; pointer-events:none; z-index:5; }
+.callout-flag{
+  position:absolute; pointer-events:auto;
+  background:var(--panel); border:1px solid var(--border); border-radius:10px;
+  padding:8px 10px; box-shadow:var(--shadow); font-size:11.5px; min-width:140px; max-width:220px;
+  cursor:pointer; z-index:6;
+}
+/* flag-below: box sits below the clicked point, arrow points up (used when
+   the point is too close to the top of the chart to fit the box above). */
+.callout-flag.flag-below{ transform:translateX(-50%); }
+.callout-flag.flag-below::before{
+  content:''; position:absolute; top:-7px; left:50%; transform:translateX(-50%);
+  border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:7px solid var(--border);
+}
+.callout-flag.flag-below::after{
+  content:''; position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+  border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:7px solid var(--panel);
+}
+/* flag-above: box sits above the clicked point (default/preferred), arrow
+   points down toward the point. */
+.callout-flag.flag-above{ transform:translate(-50%,-100%); }
+.callout-flag.flag-above::before{
+  content:''; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%);
+  border-left:6px solid transparent; border-right:6px solid transparent; border-top:7px solid var(--border);
+}
+.callout-flag.flag-above::after{
+  content:''; position:absolute; bottom:-6px; left:50%; transform:translateX(-50%);
+  border-left:6px solid transparent; border-right:6px solid transparent; border-top:7px solid var(--panel);
+}
+.callout-flag .callout-date{ font-weight:700; color:var(--text-soft); margin-bottom:3px; font-size:11px;}
+.callout-flag .callout-item{ font-weight:700; }
 
 .toast{
   position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--accent3); color:#fff;
@@ -514,7 +567,17 @@ function applyTheme(){
   const mode = $('#modeToggle').dataset.mode;
   document.documentElement.setAttribute('data-theme', theme);
   document.documentElement.setAttribute('data-mode', mode);
-  state.charts.forEach(cfg => renderChart(cfg));
+  // Series whose color was never manually customized by the user
+  // (colorAuto !== false) follow the new theme's palette; series colors
+  // the user picked by hand are left untouched.
+  state.charts.forEach(cfg => {
+    cfg.series.forEach((s, idx) => {
+      if(s.colorAuto !== false) s.color = palette(idx);
+    });
+    const card = document.getElementById('chartcard-' + cfg.id);
+    if(card) renderSeriesList(card, cfg);
+    renderChart(cfg);
+  });
 }
 function toggleMode(){
   const btn = $('#modeToggle');
@@ -1025,8 +1088,12 @@ function buildChartCardDom(cfg){
         </div>
       </div>
     </div>
-    <div class="canvas-wrap"><canvas id="canvas-${cfg.id}"></canvas></div>
+    <div class="canvas-wrap">
+      <canvas id="canvas-${cfg.id}"></canvas>
+      <div class="callout-panel" data-role="calloutpanel"></div>
+    </div>
     <div class="chart-legend-filter" data-role="legendfilter"></div>
+    <div class="chart-stats" data-role="statspanel"></div>
     <div class="chart-actions">
       <button class="btn small" data-role="exportpdf">Export PDF</button>
       <button class="btn small" data-role="exportppt">Export PPT</button>
@@ -1047,7 +1114,8 @@ function wireChartCard(card, cfg){
     renderChart(cfg);
   });
   card.querySelector('[data-role=clear-callouts]').addEventListener('click', ()=>{
-    $all('.callout-box', card).forEach(b=>b.remove());
+    const panel = card.querySelector('[data-role=calloutpanel]');
+    if(panel){ panel.innerHTML = ''; panel.style.minHeight = '0'; }
   });
   card.querySelector('[data-role=mode]').addEventListener('change', e=>{
     cfg.mode = e.target.value;
@@ -1062,7 +1130,7 @@ function wireChartCard(card, cfg){
   card.querySelector('[data-role=datefrom]').addEventListener('change', e=>{ cfg.dateFrom = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=dateto]').addEventListener('change', e=>{ cfg.dateTo = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=addseries]').addEventListener('click', ()=>{
-    cfg.series.push({ colIndex:'', axis:'y', chartType:'line', color: palette(cfg.series.length) });
+    cfg.series.push({ colIndex:'', axis:'y', chartType:'line', color: palette(cfg.series.length), colorAuto:true, target:{type:'none', value:'', min:'', max:''} });
     renderSeriesList(card, cfg);
     renderChart(cfg);
   });
@@ -1093,36 +1161,91 @@ function renderSeriesList(card, cfg){
   const wrap = card.querySelector('[data-role=serieslist]');
   wrap.innerHTML = '';
   cfg.series.forEach((s, idx)=>{
-    const row = document.createElement('div');
-    row.className = 'series-row';
-    row.innerHTML = `
-      <select class="col-select" data-kind="numeric" style="min-width:150px;"></select>
-      <select data-role="stype">
-        <option value="line">Garis</option>
-        <option value="bar">Batang</option>
-        <option value="point">Titik</option>
-      </select>
-      <select data-role="saxis">
-        <option value="y">Sumbu Y Kiri</option>
-        <option value="y1">Sumbu Y Kanan</option>
-      </select>
-      <input type="color" value="${s.color && s.color.startsWith('#') ? s.color : '#E0212B'}" data-role="scolor">
-      <button class="btn small ghost" data-role="sremove">\u2716</button>
+    if(!s.target) s.target = { type:'none', value:'', min:'', max:'', direction:'above' };
+    if(!s.target.direction) s.target.direction = 'above';
+    const block = document.createElement('div');
+    block.className = 'series-block';
+    block.innerHTML = `
+      <div class="series-row">
+        <select class="col-select" data-kind="numeric" style="min-width:150px;"></select>
+        <select data-role="stype">
+          <option value="line">Garis</option>
+          <option value="bar">Batang</option>
+          <option value="point">Titik</option>
+        </select>
+        <select data-role="saxis">
+          <option value="y">Sumbu Y Kiri</option>
+          <option value="y1">Sumbu Y Kanan</option>
+        </select>
+        <input type="color" value="${s.color && s.color.startsWith('#') ? s.color : '#E0212B'}" data-role="scolor">
+        <button class="btn small ghost" data-role="stargettoggle">🎯 Target/Standar</button>
+        <button class="btn small ghost" data-role="sremove">✖</button>
+      </div>
+      <div class="series-target-row" data-role="targetrow" style="display:none;">
+        <select data-role="ttype">
+          <option value="none">Tanpa target</option>
+          <option value="line">Garis putus-putus (nilai tunggal)</option>
+          <option value="range">Rentang warna (range min–max)</option>
+        </select>
+        <span data-role="tlinefields">
+          <input type="text" placeholder="Nilai target" data-role="tvalue" style="width:120px;">
+          <select data-role="tdirection">
+            <option value="above">Standar: di atas / ≥ target</option>
+            <option value="below">Standar: di bawah / ≤ target</option>
+          </select>
+        </span>
+        <span data-role="trangefields" style="display:none;">
+          <input type="text" placeholder="Min" data-role="tmin" style="width:80px;">
+          <input type="text" placeholder="Max" data-role="tmax" style="width:80px;">
+        </span>
+        <span class="hint" style="margin:0;">Ditampilkan pada sumbu Y series ini, memakai warna series di atas.</span>
+      </div>
     `;
-    const colSel = row.querySelector('.col-select');
-    const typeSel = row.querySelector('[data-role=stype]');
-    const axisSel = row.querySelector('[data-role=saxis]');
-    const colorInp = row.querySelector('[data-role=scolor]');
-    wrap.appendChild(row);
+    const colSel = block.querySelector('.col-select');
+    const typeSel = block.querySelector('[data-role=stype]');
+    const axisSel = block.querySelector('[data-role=saxis]');
+    const colorInp = block.querySelector('[data-role=scolor]');
+    const targetToggleBtn = block.querySelector('[data-role=stargettoggle]');
+    const targetRow = block.querySelector('[data-role=targetrow]');
+    const ttypeSel = block.querySelector('[data-role=ttype]');
+    const tlineFields = block.querySelector('[data-role=tlinefields]');
+    const trangeFields = block.querySelector('[data-role=trangefields]');
+    const tvalueInp = block.querySelector('[data-role=tvalue]');
+    const tdirectionSel = block.querySelector('[data-role=tdirection]');
+    const tminInp = block.querySelector('[data-role=tmin]');
+    const tmaxInp = block.querySelector('[data-role=tmax]');
+    wrap.appendChild(block);
     populateAllColumnSelectors();
     colSel.value = s.colIndex;
     typeSel.value = s.chartType;
     axisSel.value = s.axis;
+    ttypeSel.value = s.target.type;
+    tvalueInp.value = s.target.value;
+    tdirectionSel.value = s.target.direction;
+    tminInp.value = s.target.min;
+    tmaxInp.value = s.target.max;
+    if(s.target.type!=='none') targetRow.style.display = 'flex';
+    tlineFields.style.display = s.target.type==='line' ? '' : 'none';
+    trangeFields.style.display = s.target.type==='range' ? '' : 'none';
+
     colSel.addEventListener('change', e=>{ s.colIndex = e.target.value; renderChart(cfg); renderLegendFilter(card, cfg); });
     typeSel.addEventListener('change', e=>{ s.chartType = e.target.value; renderChart(cfg); });
     axisSel.addEventListener('change', e=>{ s.axis = e.target.value; renderChart(cfg); });
-    colorInp.addEventListener('input', e=>{ s.color = e.target.value; renderChart(cfg); });
-    row.querySelector('[data-role=sremove]').addEventListener('click', ()=>{
+    colorInp.addEventListener('input', e=>{ s.color = e.target.value; s.colorAuto = false; renderChart(cfg); });
+    targetToggleBtn.addEventListener('click', ()=>{
+      targetRow.style.display = targetRow.style.display==='none' ? 'flex' : 'none';
+    });
+    ttypeSel.addEventListener('change', e=>{
+      s.target.type = e.target.value;
+      tlineFields.style.display = s.target.type==='line' ? '' : 'none';
+      trangeFields.style.display = s.target.type==='range' ? '' : 'none';
+      renderChart(cfg);
+    });
+    tvalueInp.addEventListener('input', e=>{ s.target.value = e.target.value; renderChart(cfg); });
+    tdirectionSel.addEventListener('change', e=>{ s.target.direction = e.target.value; renderChart(cfg); });
+    tminInp.addEventListener('input', e=>{ s.target.min = e.target.value; renderChart(cfg); });
+    tmaxInp.addEventListener('input', e=>{ s.target.max = e.target.value; renderChart(cfg); });
+    block.querySelector('[data-role=sremove]').addEventListener('click', ()=>{
       cfg.series.splice(idx,1);
       renderSeriesList(card, cfg);
       renderChart(cfg);
@@ -1151,6 +1274,64 @@ function renderLegendFilter(card, cfg){
     });
     wrap.appendChild(chip);
   });
+}
+
+// For each configured series, counts how many of its (filtered) values fall
+// inside its target/standard: the min–max range for a "range" target, or on
+// the chosen side (above/below) of the line for a single-value target.
+// Series with no target still report their total count, just no percentage.
+function computeSeriesStats(cfg, seriesData){
+  return cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined).map(s=>{
+    const arr = (seriesData[s.colIndex]||[]).filter(v=>v!==null && v!==undefined && !isNaN(v));
+    const total = arr.length;
+    let inTarget = null, label = null;
+    if(s.target && s.target.type==='range'){
+      const minV = parseFloat(s.target.min), maxV = parseFloat(s.target.max);
+      if(!isNaN(minV) && !isNaN(maxV)){
+        const lo = Math.min(minV,maxV), hi = Math.max(minV,maxV);
+        inTarget = arr.filter(v=>v>=lo && v<=hi).length;
+        label = 'Dalam standar';
+      }
+    } else if(s.target && s.target.type==='line'){
+      const val = parseFloat(s.target.value);
+      if(!isNaN(val)){
+        const dir = s.target.direction==='below' ? 'below' : 'above';
+        inTarget = dir==='above' ? arr.filter(v=>v>=val).length : arr.filter(v=>v<=val).length;
+        label = dir==='above' ? 'Di atas target' : 'Di bawah target';
+      }
+    }
+    const pct = (inTarget!==null && total>0) ? (inTarget/total*100) : null;
+    return {
+      name: state.headers[parseInt(s.colIndex)] || ('Kolom ' + s.colIndex),
+      color: s.color, total, inTarget, pct, label,
+    };
+  });
+}
+
+function renderStatsPanel(card, cfg, labels, seriesData){
+  const panel = card.querySelector('[data-role=statspanel]');
+  if(!panel) return;
+  if(!labels || !labels.length){ panel.innerHTML=''; return; }
+  const stats = computeSeriesStats(cfg, seriesData);
+  const rangeText = (cfg.dateFrom || cfg.dateTo)
+    ? `Rentang waktu: ${cfg.dateFrom || 'awal data'} s/d ${cfg.dateTo || 'akhir data'}`
+    : 'Rentang waktu: seluruh data';
+  let html = `<div class="chart-stats-summary">${escapeHtml(rangeText)} · Total titik data pada grafik ini: <b>${labels.length}</b></div>`;
+  html += '<div class="chart-stats-grid">';
+  stats.forEach(st=>{
+    html += `<div class="stat-card">
+      <div class="stat-name"><span class="dot" style="background:${st.color}"></span>${escapeHtml(st.name)}</div>
+      <div class="stat-total">Total data: <b>${st.total}</b></div>`;
+    if(st.pct!==null){
+      html += `<div class="stat-pct" style="color:${st.color}">${st.pct.toFixed(1)}%</div>
+        <div class="stat-pct-label">${escapeHtml(st.label)}: ${st.inTarget} dari ${st.total}</div>`;
+    } else {
+      html += `<div class="stat-none">Tanpa target/standar</div>`;
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  panel.innerHTML = html;
 }
 
 /* ================= AGGREGATION ================= */
@@ -1287,8 +1468,12 @@ function getAggregatedData(cfg){
 }
 
 // Draws a once-per-day date label under the (now time-only) x tick labels,
-// plus a subtle separator line at each day boundary, using cfg._dateGroups
-// stashed on the chart instance by renderChart().
+// spanning the full width of that day's data as one range instead of
+// repeating the date on every tick. A short tick mark (not a full-height
+// line through the plotted data) marks each day boundary on the axis
+// itself. If a day's segment is too narrow for its label to fit without
+// overlapping the previous one, that label is skipped (like axis
+// autoSkip) so dates never stack on top of each other.
 const dateGroupPlugin = {
   id: 'csDateGroupPlugin',
   afterDraw(chart){
@@ -1303,28 +1488,92 @@ const dateGroupPlugin = {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = textColor();
+    ctx.strokeStyle = hexAlpha(cssVar('--accent1'), 0.55);
+    ctx.lineWidth = 1.5;
     let segStart = 0;
+    let lastLabelRight = -Infinity;
     for(let i=1;i<=groups.length;i++){
       if(i===groups.length || groups[i]!==groups[segStart]){
         const startPx = xScale.getPixelForValue(segStart);
         const endPx = xScale.getPixelForValue(i-1);
         const centerPx = (startPx+endPx)/2;
-        if(groups[segStart]) ctx.fillText(groups[segStart], centerPx, area.bottom + 26);
+        const label = groups[segStart];
+        if(label){
+          const textWidth = ctx.measureText(label).width;
+          const left = centerPx - textWidth/2;
+          if(left > lastLabelRight + 6){
+            ctx.fillText(label, centerPx, area.bottom + 26);
+            lastLabelRight = centerPx + textWidth/2;
+          }
+        }
+        // Short boundary tick just below the axis line — marks where one
+        // date's data ends and the next begins, without cutting through
+        // the plotted data above.
         if(segStart>0){
           const boundaryPx = (xScale.getPixelForValue(segStart-1) + startPx)/2;
           ctx.beginPath();
-          ctx.moveTo(boundaryPx, area.top);
-          ctx.lineTo(boundaryPx, area.bottom);
-          ctx.setLineDash([4,3]);
-          ctx.lineWidth = 1;
-          ctx.strokeStyle = hexAlpha(cssVar('--accent1'), 0.4);
+          ctx.moveTo(boundaryPx, area.bottom);
+          ctx.lineTo(boundaryPx, area.bottom + 6);
           ctx.stroke();
-          ctx.setLineDash([]);
         }
         segStart = i;
       }
     }
     ctx.restore();
+  }
+};
+
+// Draws per-series target/standard lines (single value, dashed) or bands
+// (min-max range, translucent fill) using each series' own axis + color.
+const targetPlugin = {
+  id: 'csTargetPlugin',
+  beforeDatasetsDraw(chart){
+    const cfg = chart.__csCfg;
+    if(!cfg) return;
+    const ctx = chart.ctx;
+    const area = chart.chartArea;
+    (cfg.series||[]).forEach(s=>{
+      if(!s.target || s.target.type!=='range') return;
+      const scale = chart.scales[s.axis] || chart.scales.y;
+      if(!scale) return;
+      const minV = parseFloat(s.target.min), maxV = parseFloat(s.target.max);
+      if(isNaN(minV) || isNaN(maxV)) return;
+      const yTop = scale.getPixelForValue(Math.max(minV,maxV));
+      const yBot = scale.getPixelForValue(Math.min(minV,maxV));
+      ctx.save();
+      ctx.fillStyle = hexAlpha(s.color, 0.16);
+      ctx.fillRect(area.left, yTop, area.right-area.left, yBot-yTop);
+      ctx.restore();
+    });
+  },
+  afterDraw(chart){
+    const cfg = chart.__csCfg;
+    if(!cfg) return;
+    const ctx = chart.ctx;
+    const area = chart.chartArea;
+    (cfg.series||[]).forEach(s=>{
+      if(!s.target || s.target.type!=='line') return;
+      const scale = chart.scales[s.axis] || chart.scales.y;
+      if(!scale) return;
+      const val = parseFloat(s.target.value);
+      if(isNaN(val)) return;
+      const y = scale.getPixelForValue(val);
+      ctx.save();
+      ctx.setLineDash([6,4]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = s.color;
+      ctx.beginPath();
+      ctx.moveTo(area.left, y);
+      ctx.lineTo(area.right, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = s.color;
+      ctx.font = '600 10px "Segoe UI", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('Target: ' + fmtNum(val), area.left + 4, y - 3);
+      ctx.restore();
+    });
   }
 };
 
@@ -1346,7 +1595,11 @@ function renderChart(cfg){
   if(!canvas) return;
   const wrap = canvas.parentElement;
   if(cfg.chartObj){ try{ cfg.chartObj.destroy(); }catch(e){} cfg.chartObj = null; }
-  $all('.callout-box', wrap).forEach(b=>b.remove());
+  const panel = wrap.querySelector('[data-role=calloutpanel]');
+  if(panel){ panel.innerHTML = ''; }
+  const chartCard = wrap.closest('.chart-card');
+  const statsPanelEl = chartCard ? chartCard.querySelector('[data-role=statspanel]') : null;
+  if(statsPanelEl){ statsPanelEl.innerHTML = ''; }
   clearChartError(wrap);
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width, canvas.height);
@@ -1389,20 +1642,52 @@ function renderChart(cfg){
     }
 
     if(cfg.mode==='scatter'){
-      // Distribution view: every data point plotted as a dot (row order on X),
-      // useful for spotting spread, clusters and outliers rather than trends.
+      // Distribution view: every data point plotted as a dot, positioned by
+      // row order, but LABELED with whatever X column the user picked
+      // (date, category, anything) — same as the line/bar chart — so this
+      // still works for comparing two arbitrary data series, not just dates.
       const datasets = visibleSeries.map(s=>({
         label: state.headers[parseInt(s.colIndex)],
         data: (seriesData[s.colIndex]||[]).map((v,i)=> ({x:i, y:v})).filter(p=> p.y!==null && p.y!==undefined),
         backgroundColor: hexAlpha(s.color, 0.7),
         borderColor: s.color,
+        yAxisID: s.axis,
         pointRadius: 4, pointHoverRadius: 6,
       }));
+      const xColHeader = state.headers[parseInt(cfg.xCol)] || 'Sumbu X';
+      const xColHeader2 = (cfg.xCol2!=='' && cfg.xCol2!==undefined && cfg.xCol2!==null) ? state.headers[parseInt(cfg.xCol2)] : null;
+      const xAxisTitle = xColHeader2 ? (xColHeader + ' / ' + xColHeader2) : xColHeader;
+      const hasSecondaryScatter = visibleSeries.some(s=>s.axis==='y1');
+      const scatterScales = {
+        x:{
+          title:{ display:true, text: xAxisTitle, color:textColor() },
+          grid:{ color:gridColor() },
+          ticks:{
+            color:textColor(), maxRotation: dateGroups ? 0 : 60, minRotation:0, autoSkip:true,
+            callback: val => labels[val]!==undefined ? labels[val] : '',
+          },
+        },
+        y:{
+          position:'left',
+          grid:{ color:gridColor() }, ticks:{ color:textColor() },
+          min: cfg.yMin===''?undefined:Number(cfg.yMin),
+          max: cfg.yMax===''?undefined:Number(cfg.yMax),
+        },
+      };
+      if(hasSecondaryScatter){
+        scatterScales.y1 = {
+          position:'right',
+          min: cfg.y1Min===''?undefined:Number(cfg.y1Min),
+          max: cfg.y1Max===''?undefined:Number(cfg.y1Max),
+          grid:{ drawOnChartArea:false }, ticks:{ color:textColor() },
+        };
+      }
       cfg.chartObj = new Chart(canvas, {
         type: 'scatter',
         data: { datasets },
         options: {
           responsive:true, maintainAspectRatio:false,
+          layout: dateGroups ? { padding:{ bottom: 40 } } : {},
           plugins:{
             legend:{ labels:{ color:textColor() } },
             tooltip:{ callbacks:{ label: item => {
@@ -1411,22 +1696,15 @@ function renderChart(cfg){
               return (item.dataset.label||'') + ': ' + fmtNum(item.raw.y) + ' (' + lbl + ')';
             } } },
           },
-          scales:{
-            x:{
-              title:{ display:true, text:'Urutan data', color:textColor() },
-              grid:{ color:gridColor() },
-              ticks:{ color:textColor(), callback: val => labels[val]!==undefined ? labels[val] : val },
-            },
-            y:{
-              grid:{ color:gridColor() }, ticks:{ color:textColor() },
-              min: cfg.yMin===''?undefined:Number(cfg.yMin),
-              max: cfg.yMax===''?undefined:Number(cfg.yMax),
-            },
-          },
+          scales: scatterScales,
           onClick: (evt, els) => handleChartClick(cfg, els, wrap),
         },
+        plugins: [dateGroupPlugin, targetPlugin],
       });
       cfg.chartObj.__csLabels = labels;
+      cfg.chartObj.__csDateGroups = dateGroups;
+      cfg.chartObj.__csCfg = cfg;
+      renderStatsPanel(chartCard, cfg, labels, seriesData);
       return;
     }
 
@@ -1488,9 +1766,11 @@ function renderChart(cfg){
         scales,
         onClick: (evt, els) => handleChartClick(cfg, els, wrap),
       },
-      plugins: [dateGroupPlugin],
+      plugins: [dateGroupPlugin, targetPlugin],
     });
     cfg.chartObj.__csDateGroups = dateGroups;
+    cfg.chartObj.__csCfg = cfg;
+    renderStatsPanel(chartCard, cfg, labels, seriesData);
   }catch(err){
     console.error('Gagal membuat grafik', cfg.id, err);
     showChartError(wrap, 'Gagal membuat grafik: ' + (err && err.message ? err.message : err));
@@ -1505,8 +1785,9 @@ function handleChartClick(cfg, elements, wrap){
   const meta = chart.getDatasetMeta(el.datasetIndex);
   const point = meta.data[el.index];
   if(!point) return;
-  const box = document.createElement('div');
-  box.className = 'callout-box';
+  const panel = wrap.querySelector('[data-role=calloutpanel]');
+  if(!panel) return;
+  const flag = document.createElement('div');
   let html;
   if(isScatter){
     const ds = chart.data.datasets[el.datasetIndex];
@@ -1526,12 +1807,23 @@ function handleChartClick(cfg, elements, wrap){
       html += `<div class="callout-item" style="color:${ds.borderColor}">${escapeHtml(ds.label)}: ${fmtNum(v)}</div>`;
     });
   }
-  box.innerHTML = html;
-  box.style.left = point.x + 'px';
-  box.style.top = point.y + 'px';
-  box.addEventListener('click', ()=> box.remove());
-  wrap.style.position = 'relative';
-  wrap.appendChild(box);
+  flag.innerHTML = html;
+  // panel is inset:14px inside canvas-wrap, matching the canvas exactly, so
+  // point.x/point.y (chart pixel coords) map 1:1 onto panel coordinates —
+  // no extra padding offset needed.
+  const panelWidth = panel.clientWidth || wrap.clientWidth || 300;
+  const panelHeight = panel.clientHeight || wrap.clientHeight || 300;
+  const halfFlagW = 110; // ~ half of max-width
+  const clampedX = Math.max(halfFlagW, Math.min(point.x, panelWidth - halfFlagW));
+  const gap = 10;
+  const placeAbove = point.y > 90; // enough headroom to sit above the point
+  flag.className = 'callout-flag ' + (placeAbove ? 'flag-above' : 'flag-below');
+  flag.style.left = clampedX + 'px';
+  flag.style.top = placeAbove
+    ? Math.max(4, point.y - gap) + 'px'
+    : Math.min(panelHeight - 20, point.y + gap) + 'px';
+  flag.addEventListener('click', ()=> flag.remove());
+  panel.appendChild(flag);
 }
 
 /* ================= EXPORTS ================= */
