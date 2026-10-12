@@ -237,6 +237,17 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
   background:transparent; color:#fff; cursor:pointer; font-size:12px;
 }
 .lib-warning-banner button:hover{ background:rgba(255,255,255,.15); }
+.restore-banner{
+  position:sticky; top:0; z-index:998; background:var(--accent3); color:#fff;
+  padding:10px 18px; font-size:13px; text-align:center; line-height:1.8;
+}
+.restore-banner button{
+  margin-left:8px; padding:4px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.7);
+  background:transparent; color:#fff; cursor:pointer; font-size:12px; font-weight:600;
+}
+.restore-banner button.primary{ background:#fff; color:#1a1a1a; }
+.restore-banner button:hover{ background:rgba(255,255,255,.2); }
+.restore-banner button.primary:hover{ background:#f1f1f1; }
 .chart-legend-filter{ display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px 14px; }
 .chip{ padding:4px 10px; border-radius:20px; font-size:11.5px; border:1px solid var(--border); cursor:pointer; user-select:none; }
 .chip.active{ color:#fff; }
@@ -321,6 +332,9 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
     </div>
   </div>
   <div class="controls">
+    <button class="iconbtn" id="btnSaveProject" title="Simpan data + semua pengaturan grafik ke file .json">💾 Simpan Proyek</button>
+    <button class="iconbtn" id="btnOpenProject" title="Buka file proyek .json yang pernah disimpan">📂 Buka Proyek</button>
+    <input type="file" id="projectInput" accept=".json,application/json" style="display:none">
     <select id="themeSelect" title="Tema warna">
       <option value="ceria">Tema Ceria</option>
       <option value="sunset">Tema Sunset</option>
@@ -419,7 +433,7 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
         <button class="btn" id="btnExportAllPPT">⬇️ Export PPT (Semua)</button>
       </div>
     </div>
-    <p class="hint">Klik "⚙️ Konfigurasi" pada tiap grafik untuk memilih sumbu, series, jenis grafik, rentang tanggal, dan sumbu Y. Klik titik data pada grafik untuk melihat callout nilai; klik lagi callout untuk menghapusnya.</p>
+    <p class="hint">Klik "⚙️ Konfigurasi" pada tiap grafik untuk memilih sumbu, series, jenis grafik, rentang tanggal, dan sumbu Y. Klik titik data pada grafik untuk melihat callout nilai; klik lagi callout untuk menghapusnya. Data &amp; susunan grafik tersimpan otomatis di browser ini; gunakan "💾 Simpan Proyek" di atas untuk membuat file cadangan .json.</p>
   </div>
 
   <div id="chartsContainer" class="chartgrid cols-2"></div>
@@ -578,6 +592,7 @@ function applyTheme(){
     if(card) renderSeriesList(card, cfg);
     renderChart(cfg);
   });
+  scheduleAutosave();
 }
 function toggleMode(){
   const btn = $('#modeToggle');
@@ -1105,7 +1120,7 @@ function buildChartCardDom(cfg){
 }
 
 function wireChartCard(card, cfg){
-  card.querySelector('[data-role=title]').addEventListener('input', e=>{ cfg.title = e.target.value; });
+  card.querySelector('[data-role=title]').addEventListener('input', e=>{ cfg.title = e.target.value; scheduleAutosave(); });
   card.querySelector('[data-role=toggle-config]').addEventListener('click', ()=>{
     card.querySelector('[data-role=config]').classList.toggle('open');
   });
@@ -1591,6 +1606,7 @@ function showChartError(wrap, msg){
 }
 
 function renderChart(cfg){
+  scheduleAutosave();
   const canvas = document.getElementById('canvas-' + cfg.id);
   if(!canvas) return;
   const wrap = canvas.parentElement;
@@ -1940,6 +1956,158 @@ function interpretR(r, n){
   return `Korelasi ${strength} ${dir} antara kedua data (R\u00b2 = ${(r*r).toFixed(3)}).`;
 }
 
+/* ================= SIMPAN / BUKA PROYEK ================= */
+// Satu "proyek" = data tabel + semua pengaturan grafik + tema. Disimpan di
+// dua tempat: (1) otomatis di browser (localStorage) dan (2) sebagai file
+// .json yang bisa dibuka lagi kapan saja, juga di komputer lain.
+const PROJECT_KEY = 'chartStudioProject_v1';
+let __autosaveBlocked = false, __autosaveTimer = null, __autosaveWarned = false;
+
+function buildProject(){
+  return {
+    app: 'chart-studio-ceria',
+    version: 1,
+    savedAt: new Date().toISOString(),
+    theme: $('#themeSelect').value,
+    mode: $('#modeToggle').dataset.mode,
+    headers: state.headers,
+    rows: state.rows.map(r => r.map(c => c instanceof Date ? c.toISOString() : c)),
+    charts: state.charts.map(cfg => ({
+      id: cfg.id, title: cfg.title, mode: cfg.mode,
+      xCol: cfg.xCol, xCol2: cfg.xCol2, granularity: cfg.granularity,
+      dateFrom: cfg.dateFrom, dateTo: cfg.dateTo,
+      yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
+      showAllCallouts: !!cfg.showAllCallouts,
+      hiddenSeries: Array.from(cfg.hiddenSeries),
+      series: cfg.series.map(s => ({
+        colIndex: s.colIndex, axis: s.axis, chartType: s.chartType,
+        color: s.color, colorAuto: s.colorAuto !== false,
+        target: s.target ? Object.assign({}, s.target) : { type:'none', value:'', min:'', max:'', direction:'above' },
+      })),
+    })),
+  };
+}
+
+function loadProject(p){
+  if(!p || !Array.isArray(p.headers) || !Array.isArray(p.rows)){
+    throw new Error('Format file proyek tidak dikenali');
+  }
+  __autosaveBlocked = true;
+  state.headers = p.headers.map(String);
+  state.rows = p.rows.map(r => state.headers.map((_,i)=> (r && r[i]!==undefined) ? r[i] : ''));
+  detectColumnTypes();
+
+  if(p.theme && THEMES.indexOf(p.theme) >= 0) $('#themeSelect').value = p.theme;
+  const mode = p.mode === 'dark' ? 'dark' : 'light';
+  const btn = $('#modeToggle');
+  btn.dataset.mode = mode;
+  btn.textContent = mode === 'dark' ? '\u2600\ufe0f Terang' : '\ud83c\udf19 Gelap';
+  document.documentElement.setAttribute('data-theme', $('#themeSelect').value);
+  document.documentElement.setAttribute('data-mode', mode);
+
+  const base = { mode:'linebar', xCol:'', xCol2:'', granularity:'raw', dateFrom:'', dateTo:'',
+                 yMin:'', yMax:'', y1Min:'', y1Max:'', showAllCallouts:false };
+  const saved = Array.isArray(p.charts) ? p.charts.slice(0,4) : [];
+  state.charts = saved.map((c, i) => Object.assign({}, base, c, {
+    id: i + 1,
+    title: c.title || ('Grafik ' + (i+1)),
+    series: (c.series || []).map(s => ({
+      colIndex: s.colIndex, axis: s.axis || 'y', chartType: s.chartType || 'line',
+      color: s.color, colorAuto: s.colorAuto !== false,
+      target: Object.assign({ type:'none', value:'', min:'', max:'', direction:'above' }, s.target || {}),
+    })),
+    hiddenSeries: new Set(c.hiddenSeries || []),
+    chartObj: null,
+  }));
+  state.nextChartId = state.charts.length + 1;
+
+  renderDataPreview();
+  populateAllColumnSelectors();
+  if(state.charts.length === 0){
+    setChartCount(2);
+  } else {
+    $('#chartCountSelect').value = String(state.charts.length);
+    renderChartCards();
+  }
+  __autosaveBlocked = false;
+  scheduleAutosave();
+}
+
+function saveProjectFile(){
+  const hasChart = state.charts.some(c => c.series.length > 0);
+  if(state.headers.length === 0 && !hasChart){ showToast('Belum ada data/grafik untuk disimpan'); return; }
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const stamp = d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes());
+  const blob = new Blob([JSON.stringify(buildProject())], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'proyek-chart-' + stamp + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 1500);
+  showToast('Proyek disimpan sebagai file .json');
+}
+
+function openProjectFile(file){
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      loadProject(JSON.parse(String(e.target.result)));
+      showToast('Proyek berhasil dibuka: ' + state.rows.length + ' baris, ' + state.charts.length + ' grafik');
+    }catch(err){
+      console.error(err);
+      __autosaveBlocked = false;
+      showToast('Gagal membuka proyek: ' + (err && err.message ? err.message : 'file tidak valid'));
+    }
+  };
+  reader.readAsText(file);
+}
+
+function scheduleAutosave(){
+  if(__autosaveBlocked) return;
+  clearTimeout(__autosaveTimer);
+  __autosaveTimer = setTimeout(doAutosave, 800);
+}
+function doAutosave(){
+  if(__autosaveBlocked || state.headers.length === 0) return;
+  try{
+    localStorage.setItem(PROJECT_KEY, JSON.stringify(buildProject()));
+  }catch(e){
+    if(!__autosaveWarned){
+      __autosaveWarned = true;
+      showToast('Simpan otomatis di browser gagal (data terlalu besar / diblokir). Gunakan tombol "Simpan Proyek".');
+    }
+  }
+}
+
+function checkSavedProject(){
+  let raw = null;
+  try{ raw = localStorage.getItem(PROJECT_KEY); }catch(e){ return; }
+  if(!raw) return;
+  let p;
+  try{ p = JSON.parse(raw); }catch(e){ return; }
+  if(!p || !Array.isArray(p.headers) || p.headers.length === 0) return;
+  __autosaveBlocked = true; // jangan timpa proyek tersimpan sebelum user memilih
+  const when = p.savedAt ? new Date(p.savedAt).toLocaleString('id-ID') : '';
+  const banner = document.createElement('div');
+  banner.className = 'restore-banner';
+  banner.innerHTML = '📂 Proyek terakhir ditemukan' + (when ? ' (disimpan ' + escapeHtml(when) + ')' : '') +
+    ': ' + p.rows.length + ' baris data, ' + (p.charts ? p.charts.length : 0) + ' grafik. ' +
+    '<button class="primary" id="btnRestoreYes">Pulihkan</button>' +
+    '<button id="btnRestoreNo">Mulai Baru</button>';
+  document.body.insertBefore(banner, document.body.firstChild);
+  document.getElementById('btnRestoreYes').addEventListener('click', ()=>{
+    try{ loadProject(p); showToast('Proyek terakhir dipulihkan'); }
+    catch(err){ console.error(err); __autosaveBlocked = false; showToast('Gagal memulihkan proyek'); }
+    banner.remove();
+  });
+  document.getElementById('btnRestoreNo').addEventListener('click', ()=>{
+    try{ localStorage.removeItem(PROJECT_KEY); }catch(e){}
+    __autosaveBlocked = false;
+    banner.remove();
+  });
+}
+
 /* ================= INIT ================= */
 function init(){
   $all('.tab-btn').forEach(b=> b.addEventListener('click', ()=> switchTab(b.dataset.tab)));
@@ -1975,6 +2143,14 @@ function init(){
   $('#btnExportAllPPT').addEventListener('click', exportAllPPT);
   $('#btnExportExcel').addEventListener('click', exportExcel);
 
+  $('#btnSaveProject').addEventListener('click', saveProjectFile);
+  $('#btnOpenProject').addEventListener('click', ()=> $('#projectInput').click());
+  $('#projectInput').addEventListener('change', e=>{
+    if(e.target.files[0]) openProjectFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  window.addEventListener('beforeunload', doAutosave);
+
   $('#themeSelect').addEventListener('change', applyTheme);
   $('#modeToggle').addEventListener('click', toggleMode);
 
@@ -1988,6 +2164,7 @@ function init(){
   applyTheme();
   renderDataPreview();
   setChartCount(2);
+  checkSavedProject();
 }
 
 function showLibWarningBanner(missing){
