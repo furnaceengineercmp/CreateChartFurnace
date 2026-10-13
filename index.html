@@ -464,14 +464,42 @@ table.datatable thead tr.target-row td{
         <label>Data B</label>
         <select class="col-select" data-kind="numeric" id="corrColB"></select>
       </div>
+      <div class="field">
+        <label>Geser Data B terhadap Data A</label>
+        <select id="corrShift"></select>
+      </div>
+      <div class="field">
+        <label>Urutkan berdasarkan kolom tanggal (opsional)</label>
+        <select class="col-select" data-kind="date" data-role="corrdate" id="corrDateCol"></select>
+      </div>
       <div class="field" style="justify-content:flex-end;">
         <button class="btn primary" id="btnComputeCorr">Hitung Korelasi</button>
       </div>
+    </div>
+    <p class="hint"><b>Geser (lag):</b> untuk data yang efeknya tertunda. Contoh geser <b>+1</b> = data A hari ini dipasangkan dengan data B <b>1 baris sesudahnya</b> (mis. Calcine Consume hari ini vs FeNi Packed besok). Geser <b>−1</b> = data B diambil 1 baris sebelumnya. Satu baris = satu hari jika data Anda harian dan berurutan; pilih kolom tanggal di atas agar data diurutkan dulu.</p>
+    <div class="row" style="margin-bottom:8px;">
+      <div class="field" style="margin-bottom:0;">
+        <label>Rentang pemindaian geser</label>
+        <select id="corrMaxLag">
+          <option value="3">± 3 baris</option>
+          <option value="5">± 5 baris</option>
+          <option value="7" selected>± 7 baris</option>
+          <option value="10">± 10 baris</option>
+          <option value="14">± 14 baris</option>
+        </select>
+      </div>
+      <button class="btn" id="btnScanLag" style="align-self:flex-end;">🔎 Cari Geser Terbaik</button>
     </div>
     <div class="corr-result" id="corrResultText">R = —</div>
     <div class="corr-sub" id="corrInterpretation">Pilih dua kolom data numerik lalu klik "Hitung Korelasi".</div>
     <div style="height:360px; margin-top:14px;">
       <canvas id="corrCanvas"></canvas>
+    </div>
+    <div id="lagPanel" style="display:none; margin-top:18px;">
+      <h3 style="margin:0 0 6px 0; font-size:14px;">Korelasi (R) untuk setiap geser</h3>
+      <div class="corr-sub" id="lagSummary"></div>
+      <div style="height:240px; margin-top:10px;"><canvas id="lagCanvas"></canvas></div>
+      <p class="hint">Klik sebuah batang untuk memakai geser tersebut pada grafik di atas. Hati-hati: mencari dari banyak pilihan geser bisa menemukan korelasi yang hanya kebetulan — pastikan jumlah data (n) cukup dan jedanya masuk akal secara proses.</p>
     </div>
   </div>
 </div>
@@ -635,7 +663,7 @@ function switchTab(name){
     setTimeout(()=> state.charts.forEach(renderChart), 30);
   }
   if(name==='korelasi' && corrChart){
-    setTimeout(()=> corrChart.resize(), 30);
+    setTimeout(()=>{ corrChart.resize(); if(typeof lagChart!=='undefined' && lagChart) lagChart.resize(); }, 30);
   }
 }
 function switchSubtab(group, name){
@@ -1217,11 +1245,13 @@ function applyAutoTarget(s){
 function populateAllColumnSelectors(){
   $all('select.col-select').forEach(sel=>{
     const kind = sel.dataset.kind || 'all';
-    const emptyLabel = sel.dataset.role === 'xcol2' ? '-- tidak digabung --' : '-- pilih kolom --';
+    const emptyLabel = sel.dataset.role === 'xcol2' ? '-- tidak digabung --'
+      : sel.dataset.role === 'corrdate' ? '-- urut sesuai tabel --' : '-- pilih kolom --';
     const prev = sel.value;
     sel.innerHTML = '<option value="">' + emptyLabel + '</option>';
     state.headers.forEach((h,i)=>{
       if(kind==='numeric' && state.colTypes[i]!=='number') return;
+      if(kind==='date' && state.colTypes[i]!=='date') return;
       const opt = document.createElement('option');
       opt.value = i; opt.textContent = h + ' (' + state.colTypes[i] + ')';
       sel.appendChild(opt);
@@ -2173,32 +2203,82 @@ async function exportAllPPT(){
 }
 
 /* ================= CORRELATION PANEL ================= */
-let corrChart = null;
-function computeCorrelation(){
-  const colA = $('#corrColA').value;
-  const colB = $('#corrColB').value;
-  if(colA===''||colB===''){ showToast('Pilih kedua kolom data'); return; }
-  const ciA = parseInt(colA), ciB = parseInt(colB);
-  const pairs = state.rows.map(r=>[toNumberSafe(r[ciA]), toNumberSafe(r[ciB])]).filter(p=>p[0]!==null && p[1]!==null);
-  const n = pairs.length;
-  if(n<2){ showToast('Data numerik tidak cukup untuk kedua kolom ini'); return; }
-  const xs = pairs.map(p=>p[0]), ys = pairs.map(p=>p[1]);
-  const mean = a=> a.reduce((x,y)=>x+y,0)/a.length;
-  const mx = mean(xs), my = mean(ys);
-  let num=0, dx2=0, dy2=0;
-  for(let i=0;i<n;i++){ const dx=xs[i]-mx, dy=ys[i]-my; num+=dx*dy; dx2+=dx*dx; dy2+=dy*dy; }
-  const r = (dx2===0||dy2===0) ? 0 : num/Math.sqrt(dx2*dy2);
-  const labelA = state.headers[ciA], labelB = state.headers[ciB];
+let corrChart = null, lagChart = null;
 
-  $('#corrResultText').textContent = 'R = ' + r.toFixed(4);
-  $('#corrInterpretation').textContent = interpretR(r, n) + ` (n = ${n} data pasangan)`;
+function initCorrShiftOptions(){
+  const sel = $('#corrShift');
+  sel.innerHTML = '';
+  for(let k=-14;k<=14;k++){
+    const o = document.createElement('option');
+    o.value = String(k);
+    o.textContent = k===0 ? '0 (tanpa geser)'
+      : (k>0 ? '+' + k + ' baris (B ' + k + ' baris sesudah A)' : k + ' baris (B ' + Math.abs(k) + ' baris sebelum A)');
+    sel.appendChild(o);
+  }
+  sel.value = '0';
+}
+
+// Baris data, opsional diurutkan menurut kolom tanggal.
+function corrOrderedRows(){
+  const dc = $('#corrDateCol').value;
+  if(dc==='') return state.rows;
+  const ci = parseInt(dc);
+  return state.rows.map((r,i)=>({r, i, d: parseFlexibleDate(r[ci])}))
+    .filter(o=>o.d).sort((a,b)=> (a.d-b.d) || (a.i-b.i)).map(o=>o.r);
+}
+// Pasangan (A pada baris i, B pada baris i+k); hanya yang keduanya angka.
+function lagPairs(rows, ciA, ciB, k){
+  const out = [];
+  for(let i=0;i<rows.length;i++){
+    const j = i + k;
+    if(j<0 || j>=rows.length) continue;
+    const a = toNumberSafe(rows[i][ciA]), b = toNumberSafe(rows[j][ciB]);
+    if(a!==null && b!==null) out.push([a,b]);
+  }
+  return out;
+}
+function pearsonR(pairs){
+  const n = pairs.length;
+  if(n<3) return null;
+  let sx=0, sy=0;
+  pairs.forEach(p=>{ sx+=p[0]; sy+=p[1]; });
+  const mx = sx/n, my = sy/n;
+  let num=0, dx2=0, dy2=0;
+  pairs.forEach(p=>{ const dx=p[0]-mx, dy=p[1]-my; num+=dx*dy; dx2+=dx*dx; dy2+=dy*dy; });
+  if(dx2===0 || dy2===0) return 0;
+  return num/Math.sqrt(dx2*dy2);
+}
+function shiftText(k){
+  if(k===0) return 'tanpa geser';
+  return k>0 ? ('B diambil ' + k + ' baris SESUDAH A (efek tertunda)')
+             : ('B diambil ' + Math.abs(k) + ' baris SEBELUM A');
+}
+function corrSelection(){
+  const colA = $('#corrColA').value, colB = $('#corrColB').value;
+  if(colA===''||colB===''){ showToast('Pilih kedua kolom data'); return null; }
+  return { ciA: parseInt(colA), ciB: parseInt(colB), k: parseInt($('#corrShift').value)||0 };
+}
+
+function computeCorrelation(){
+  const sel = corrSelection(); if(!sel) return;
+  const { ciA, ciB, k } = sel;
+  const rows = corrOrderedRows();
+  const pairs = lagPairs(rows, ciA, ciB, k);
+  const n = pairs.length;
+  const r = pearsonR(pairs);
+  if(r===null){ showToast('Data numerik tidak cukup untuk kombinasi kolom/geser ini (n=' + n + ')'); return; }
+  const labelA = state.headers[ciA], labelB = state.headers[ciB];
+  const shiftTag = k===0 ? '' : ' (digeser ' + (k>0?'+':'') + k + ' baris)';
+
+  $('#corrResultText').textContent = 'R = ' + r.toFixed(4) + (k===0 ? '' : '  · geser ' + (k>0?'+':'') + k);
+  $('#corrInterpretation').textContent = interpretR(r, n) + ` (n = ${n} data pasangan; ${shiftText(k)})`;
 
   const ctx = document.getElementById('corrCanvas');
   if(corrChart) corrChart.destroy();
   corrChart = new Chart(ctx, {
     type:'scatter',
     data:{ datasets:[{
-      label: labelA + ' vs ' + labelB,
+      label: labelA + ' vs ' + labelB + shiftTag,
       data: pairs.map(p=>({x:p[0], y:p[1]})),
       backgroundColor: hexAlpha(cssVar('--accent1'),0.7),
       borderColor: cssVar('--accent1'),
@@ -2208,10 +2288,69 @@ function computeCorrelation(){
       plugins:{ legend:{labels:{color:textColor()}} },
       scales:{
         x:{ title:{display:true, text:labelA, color:textColor()}, grid:{color:gridColor()}, ticks:{color:textColor()} },
-        y:{ title:{display:true, text:labelB, color:textColor()}, grid:{color:gridColor()}, ticks:{color:textColor()} },
+        y:{ title:{display:true, text:labelB + shiftTag, color:textColor()}, grid:{color:gridColor()}, ticks:{color:textColor()} },
       }
     }
   });
+}
+
+function scanLags(){
+  const sel = corrSelection(); if(!sel) return;
+  const { ciA, ciB } = sel;
+  const L = parseInt($('#corrMaxLag').value) || 7;
+  const rows = corrOrderedRows();
+  const res = [];
+  for(let k=-L;k<=L;k++){
+    const pairs = lagPairs(rows, ciA, ciB, k);
+    res.push({ k, n: pairs.length, r: pearsonR(pairs) });
+  }
+  const valid = res.filter(o=>o.r!==null && o.n>=5);
+  if(valid.length===0){ showToast('Data terlalu sedikit untuk memindai geser'); return; }
+  let best = valid[0];
+  valid.forEach(o=>{ if(Math.abs(o.r) > Math.abs(best.r)) best = o; });
+  const zero = res.find(o=>o.k===0);
+
+  $('#lagPanel').style.display = '';
+  const dir = best.r>0 ? 'positif' : 'negatif';
+  $('#lagSummary').textContent =
+    'Korelasi terkuat pada geser ' + (best.k>0?'+':'') + best.k + ' baris (' + shiftText(best.k) + '): R = ' +
+    best.r.toFixed(3) + ' (' + dir + ', n = ' + best.n + '). ' +
+    (zero && zero.r!==null ? 'Tanpa geser: R = ' + zero.r.toFixed(3) + '.' : '');
+
+  const colors = res.map(o=> o.r===null ? 'rgba(150,150,150,.3)' : (o.r>=0 ? hexAlpha(cssVar('--accent1'),0.75) : hexAlpha(cssVar('--accent2'),0.85)));
+  const borders = res.map(o=> (o.k===best.k) ? textColor() : 'transparent');
+  const ctx = document.getElementById('lagCanvas');
+  if(lagChart) lagChart.destroy();
+  lagChart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels: res.map(o=> (o.k>0?'+':'') + o.k),
+      datasets:[{ label:'R', data: res.map(o=> o.r===null ? 0 : o.r),
+        backgroundColor: colors, borderColor: borders, borderWidth: 2 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{
+          title: items => 'Geser ' + items[0].label + ' baris',
+          label: item => { const o = res[item.dataIndex]; return o.r===null ? 'data tidak cukup' : 'R = ' + o.r.toFixed(3) + '  (n = ' + o.n + ')'; },
+        }},
+        datalabels:{ display:false },
+      },
+      scales:{
+        x:{ title:{display:true, text:'Geser Data B (baris)', color:textColor()}, grid:{color:gridColor()}, ticks:{color:textColor()} },
+        y:{ min:-1, max:1, title:{display:true, text:'R', color:textColor()}, grid:{color:gridColor()}, ticks:{color:textColor()} },
+      },
+      onClick:(evt, els)=>{
+        if(!els.length) return;
+        const k = res[els[0].index].k;
+        $('#corrShift').value = String(k);
+        computeCorrelation();
+      },
+    }
+  });
+  // tampilkan juga grafik pada geser terbaik
+  $('#corrShift').value = String(best.k);
+  computeCorrelation();
 }
 function interpretR(r, n){
   const abs = Math.abs(r);
@@ -2423,7 +2562,10 @@ function init(){
   $('#themeSelect').addEventListener('change', applyTheme);
   $('#modeToggle').addEventListener('click', toggleMode);
 
+  initCorrShiftOptions();
   $('#btnComputeCorr').addEventListener('click', computeCorrelation);
+  $('#btnScanLag').addEventListener('click', scanLags);
+  $('#corrShift').addEventListener('change', ()=>{ if(corrChart) computeCorrelation(); });
 
   try{
     Chart.register(ChartDataLabels);
