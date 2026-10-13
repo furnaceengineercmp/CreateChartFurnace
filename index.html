@@ -315,6 +315,16 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 .corr-result{ font-size:22px; font-weight:800; margin:10px 0 4px 0;}
 .corr-sub{ color:var(--text-soft); font-size:13px;}
 
+/* tabel dengan 2 baris header + baris Target */
+table.datatable thead th, table.datatable thead td{ height:32px; box-sizing:border-box; }
+table.datatable thead th.grouphead{ text-align:center; }
+table.datatable thead td.rowlabel{ background:var(--panel-2); text-align:center; }
+table.datatable thead tr.target-row td{
+  position:sticky; background:var(--panel-2); font-weight:700; color:var(--accent1); z-index:2;
+}
+#manualTable thead tr:nth-child(2) th{ top:32px; font-weight:600; }
+#manualTable thead tr:nth-child(3) th{ top:64px; font-weight:600; color:var(--accent1); }
+#manualTable thead th:not([data-col]){ text-align:center; }
 ::-webkit-scrollbar{width:10px; height:10px;}
 ::-webkit-scrollbar-thumb{background:var(--border); border-radius:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -384,6 +394,7 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 
     <div class="subtab-content" data-group="input" data-sub="manual">
       <p class="hint">Klik pada sel pojok kiri‑atas lalu tempel (Ctrl+V / Cmd+V) data yang sudah di‑block dari Excel/sumber lain — semua sel akan terisi otomatis. Centang kotak di kolom paling kiri untuk memilih beberapa baris sekaligus, lalu klik "Hapus Baris Terpilih".</p>
+      <p class="hint"><b>Tabel dengan 2 baris header (sel merge) + baris Target:</b> di Excel, block seluruh tabel mulai dari baris header paling atas, lalu di sini klik sel header paling kiri (baris "Kolom 1") dan tempel (Ctrl+V). Baris 1 = header grup, baris 2 = sub-header, dan baris yang diawali tulisan "Target" otomatis menjadi baris target/standar (mis. &gt;22%, &lt;0,37%, 680-750). Jika tabel hanya 1 baris header, tempel dengan cara yang sama.</p>
       <div id="manualTableWrap">
         <div class="table-toolbar">
           <button class="btn small" id="btnAddRow">+ Baris</button>
@@ -396,7 +407,7 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
         </div>
         <div class="table-scroll">
           <table class="datatable" id="manualTable">
-            <thead><tr id="manualHeaderRow"></tr></thead>
+            <thead><tr id="manualHeaderRow"></tr><tr id="manualHeaderRow2"></tr><tr id="manualTargetRow"></tr></thead>
             <tbody id="manualBody"></tbody>
           </table>
         </div>
@@ -496,6 +507,9 @@ const state = {
   rows: [],
   charts: [],
   nextChartId: 1,
+  h1: [],          // header baris 1 (grup)
+  h2: [],          // header baris 2 (sub-header)
+  targetRow: null, // teks target/standar per kolom
 };
 let manualCols = 6, manualRows = 10;
 
@@ -517,8 +531,16 @@ function toNumberSafe(v){
   if(v===''||v===undefined||v===null) return null;
   if(typeof v==='number') return isNaN(v)?null:v;
   if(v instanceof Date) return null;
-  const s = String(v).trim().replace(/\s/g,'').replace(',', '.');
+  return parseNumberString(String(v));
+}
+// Angka dari teks: mendukung "95.6%", "1,392" (pemisah ribuan), "0,37" (koma desimal).
+function parseNumberString(str){
+  let s = String(str).trim().replace(/\s/g,'');
   if(s==='') return null;
+  if(s.charAt(s.length-1)==='%') s = s.slice(0,-1);
+  if(/^-?[1-9]\d{0,2}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g,'');
+  else s = s.replace(',', '.');
+  if(s==='' || s==='-' || s==='.') return null;
   const n = Number(s);
   return isNaN(n) ? null : n;
 }
@@ -655,8 +677,11 @@ function loadTableFromArray(arr){
   finalizeData(headers, rows);
 }
 
-function finalizeData(headers, rows){
+function finalizeData(headers, rows, extra){
   state.headers = headers;
+  state.h1 = (extra && extra.h1) ? extra.h1 : headers.slice();
+  state.h2 = (extra && extra.h2) ? extra.h2 : headers.map(()=> '');
+  state.targetRow = (extra && extra.targets) ? extra.targets : null;
   state.rows = rows.map(r => headers.map((_,i)=> r[i]!==undefined ? r[i] : ''));
   detectColumnTypes();
   renderDataPreview();
@@ -688,10 +713,8 @@ function renderDataPreview(){
   html += '<button class="btn small" id="btnDeleteSelectedRows">🗑 Hapus Baris Terpilih</button>';
   html += '<button class="btn small ghost" id="btnClearAllData">✖ Hapus Semua Data</button>';
   html += '</div>';
-  html += '<div class="table-scroll"><table class="datatable"><thead><tr>';
-  html += '<th style="width:30px;"><input type="checkbox" id="previewSelectAll"></th>';
-  state.headers.forEach((h,ci)=> html += `<th>${escapeHtml(h)} <span class="badge">${state.colTypes[ci]}</span></th>`);
-  html += '</tr></thead><tbody>';
+  const headInfo = buildPreviewHead();
+  html += '<div class="table-scroll"><table class="datatable' + (headInfo.multi ? ' multi-head' : '') + '">' + headInfo.html + '<tbody>';
   const maxPreview = 300;
   state.rows.slice(0, maxPreview).forEach((r, ri)=>{
     html += `<tr><td style="width:30px;"><input type="checkbox" class="preview-row-check" data-r="${ri}"></td>`;
@@ -709,6 +732,13 @@ function renderDataPreview(){
       state.charts.forEach(renderChart);
     });
   });
+  wrap.querySelectorAll('td[data-tc]').forEach(td=>{
+    td.addEventListener('blur', ()=>{
+      const ci = parseInt(td.dataset.tc);
+      if(!state.targetRow) state.targetRow = state.headers.map(()=> '');
+      state.targetRow[ci] = td.textContent.trim();
+    });
+  });
   $('#previewSelectAll').addEventListener('change', e=>{
     $all('.preview-row-check', wrap).forEach(cb=> cb.checked = e.target.checked);
   });
@@ -724,11 +754,50 @@ function renderDataPreview(){
   $('#btnClearAllData').addEventListener('click', ()=>{
     if(!confirm('Hapus semua data yang sudah dimuat? Tindakan ini tidak bisa dibatalkan.')) return;
     state.headers = []; state.rows = []; state.colTypes = [];
+    state.h1 = []; state.h2 = []; state.targetRow = null;
     renderDataPreview();
     populateAllColumnSelectors();
     state.charts.forEach(renderChart);
     showToast('Semua data dihapus');
   });
+}
+// Header pratinjau: mendukung 2 baris header (sel grup di-merge dengan colspan,
+// kolom tanpa sub-header di-merge ke bawah dengan rowspan) + baris Target.
+function buildPreviewHead(){
+  const n = state.headers.length;
+  const h1 = (state.h1 && state.h1.length===n) ? state.h1 : state.headers;
+  const h2 = (state.h2 && state.h2.length===n) ? state.h2 : state.headers.map(()=> '');
+  const hasTwo = h2.some(x=>x!=='');
+  const hasTarget = !!(state.targetRow && state.targetRow.some(x=>x!==''));
+  const badge = ci => ` <span class="badge">${state.colTypes[ci]}</span>`;
+  const label1 = i => h1[i] || (h2[i] ? '' : state.headers[i]);
+  let html = '<thead>';
+  if(!hasTwo){
+    html += '<tr><th style="width:30px;"><input type="checkbox" id="previewSelectAll"></th>';
+    for(let i=0;i<n;i++) html += `<th>${escapeHtml(label1(i))}${badge(i)}</th>`;
+    html += '</tr>';
+  } else {
+    html += '<tr><th rowspan="2" style="width:30px;"><input type="checkbox" id="previewSelectAll"></th>';
+    let i = 0;
+    while(i < n){
+      if(h2[i]===''){ html += `<th rowspan="2">${escapeHtml(label1(i))}${badge(i)}</th>`; i++; continue; }
+      let j = i;
+      while(j+1<n && h2[j+1]!=='' && h1[j+1]===h1[i]) j++;
+      html += `<th colspan="${j-i+1}" class="grouphead">${escapeHtml(label1(i))}</th>`;
+      i = j + 1;
+    }
+    html += '</tr><tr>';
+    for(let k=0;k<n;k++) if(h2[k]!=='') html += `<th style="top:32px;">${escapeHtml(h2[k])}${badge(k)}</th>`;
+    html += '</tr>';
+  }
+  if(hasTarget){
+    const top = hasTwo ? 64 : 32;
+    html += '<tr class="target-row"><td class="rowlabel" style="top:' + top + 'px;">🎯</td>';
+    for(let i=0;i<n;i++) html += `<td contenteditable="true" data-tc="${i}" style="top:${top}px;">${escapeHtml(state.targetRow[i]||'')}</td>`;
+    html += '</tr>';
+  }
+  html += '</thead>';
+  return { html, multi: hasTwo || hasTarget };
 }
 function fmtCell(v){
   if(v instanceof Date && !isNaN(v)) return v.toLocaleString('id-ID');
@@ -817,16 +886,23 @@ function applyTextToColumns(){
 }
 
 /* ================= MANUAL PASTE TABLE ================= */
+function makeHeadCell(hrow, c, text){
+  const th = document.createElement('th');
+  th.contentEditable = 'true';
+  th.dataset.col = c; th.dataset.hrow = hrow;
+  th.textContent = text;
+  return th;
+}
 function initManualTable(cols, rows){
   manualCols = cols; manualRows = rows;
-  const headerRow = $('#manualHeaderRow');
-  headerRow.innerHTML = '<th style="width:30px;"><input type="checkbox" id="manualSelectAll"></th>';
+  const h1 = $('#manualHeaderRow'), h2 = $('#manualHeaderRow2'), ht = $('#manualTargetRow');
+  h1.innerHTML = '<th style="width:30px;"><input type="checkbox" id="manualSelectAll"></th>';
+  h2.innerHTML = '<th title="Baris header ke-2 (sub-header, opsional)" style="width:30px;">H2</th>';
+  ht.innerHTML = '<th title="Baris Target / standar (opsional)" style="width:30px;">🎯</th>';
   for(let c=0;c<cols;c++){
-    const th = document.createElement('th');
-    th.contentEditable = 'true';
-    th.textContent = 'Kolom ' + (c+1);
-    th.dataset.col = c;
-    headerRow.appendChild(th);
+    h1.appendChild(makeHeadCell(0, c, 'Kolom ' + (c+1)));
+    h2.appendChild(makeHeadCell(1, c, ''));
+    ht.appendChild(makeHeadCell(2, c, ''));
   }
   const body = $('#manualBody');
   body.innerHTML = '';
@@ -865,12 +941,9 @@ function manualReindexRows(){
 }
 function manualAddRow(){ appendManualRowDom(); manualRows++; }
 function manualAddColumn(){
-  const headerRow = $('#manualHeaderRow');
-  const th = document.createElement('th');
-  th.contentEditable = 'true';
-  th.textContent = 'Kolom ' + (manualCols+1);
-  th.dataset.col = manualCols;
-  headerRow.appendChild(th);
+  $('#manualHeaderRow').appendChild(makeHeadCell(0, manualCols, 'Kolom ' + (manualCols+1)));
+  $('#manualHeaderRow2').appendChild(makeHeadCell(1, manualCols, ''));
+  $('#manualTargetRow').appendChild(makeHeadCell(2, manualCols, ''));
   $all('#manualBody tr').forEach((tr, ri)=>{
     const td = document.createElement('td');
     td.contentEditable = 'true';
@@ -896,67 +969,248 @@ function manualDeleteSelectedRows(){
   showToast(rowsToRemove.length + ' baris dihapus dari tabel');
 }
 function manualClearAll(){
-  if(!confirm('Kosongkan seluruh isi tabel copy-paste ini?')) return;
+  if(!confirm('Kosongkan seluruh isi tabel copy-paste ini (termasuk header & target)?')) return;
   $all('#manualBody td[data-col]').forEach(td=> td.textContent = '');
+  $all('#manualHeaderRow th[data-col]').forEach(th=> th.textContent = 'Kolom ' + (parseInt(th.dataset.col)+1));
+  $all('#manualHeaderRow2 th[data-col]').forEach(th=> th.textContent = '');
+  $all('#manualTargetRow th[data-col]').forEach(th=> th.textContent = '');
   $all('.manual-row-check').forEach(cb=> cb.checked = false);
   const selAll = $('#manualSelectAll'); if(selAll) selAll.checked = false;
   showToast('Tabel dikosongkan');
 }
 function manualDelColumn(){
   if(manualCols<=1) return;
-  const headerRow = $('#manualHeaderRow');
-  headerRow.removeChild(headerRow.lastElementChild);
+  ['#manualHeaderRow','#manualHeaderRow2','#manualTargetRow'].forEach(sel=>{
+    const row = $(sel); row.removeChild(row.lastElementChild);
+  });
   $all('#manualBody tr').forEach(tr=> tr.removeChild(tr.lastElementChild));
   manualCols--;
 }
+
+// Parser TSV yang benar untuk sel ber-kutip (sel Excel dengan baris baru di dalamnya).
+function parseTSV(text){
+  const rows = []; let row = [], cur = '', inQ = false;
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    if(inQ){
+      if(ch==='"'){ if(text[i+1]==='"'){ cur += '"'; i++; } else inQ = false; }
+      else cur += ch;
+    } else {
+      if(ch==='"' && cur==='') inQ = true;
+      else if(ch==='\t'){ row.push(cur); cur = ''; }
+      else if(ch==='\n' || ch==='\r'){
+        if(ch==='\r' && text[i+1]==='\n') i++;
+        row.push(cur); rows.push(row); row = []; cur = '';
+      } else cur += ch;
+    }
+  }
+  if(cur!=='' || row.length){ row.push(cur); rows.push(row); }
+  while(rows.length && rows[rows.length-1].every(c=>c==='')) rows.pop();
+  return rows;
+}
+
+// Membaca tabel dari clipboard HTML (Excel): colspan/rowspan (sel merge)
+// diisi ke semua sel yang tercakup.
+function parseHtmlTable(html){
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const table = doc.querySelector('table');
+  if(!table) return null;
+  const grid = [];
+  Array.from(table.querySelectorAll('tr')).forEach((tr, r)=>{
+    grid[r] = grid[r] || [];
+    let c = 0;
+    Array.from(tr.children).forEach(cell=>{
+      if(!/^t[dh]$/i.test(cell.tagName)) return;
+      while(grid[r][c] !== undefined) c++;
+      const text = cell.textContent.replace(/\s+/g,' ').trim();
+      const cs = parseInt(cell.getAttribute('colspan')||'1',10) || 1;
+      const rs = parseInt(cell.getAttribute('rowspan')||'1',10) || 1;
+      for(let dr=0; dr<rs; dr++){
+        for(let dc=0; dc<cs; dc++){
+          const rr = r + dr;
+          grid[rr] = grid[rr] || [];
+          grid[rr][c+dc] = text;
+        }
+      }
+      c += cs;
+    });
+  });
+  const width = Math.max.apply(null, grid.map(r=> r ? r.length : 0).concat([0]));
+  return grid.map(r=>{
+    const row = [];
+    for(let i=0;i<width;i++) row.push(r && r[i]!==undefined ? r[i] : '');
+    return row;
+  });
+}
+
+// Menafsirkan blok tempelan: baris 1 = header grup, baris 2 = sub-header
+// (jika bukan data), lalu baris "Target" (opsional), sisanya data.
+function interpretStructured(grid){
+  const clean = grid.map(r=> r.map(c=> String(c==null ? '' : c).replace(/\s+/g,' ').trim()));
+  while(clean.length && clean[clean.length-1].every(c=>c==='')) clean.pop();
+  if(clean.length===0) return null;
+  const width = Math.max.apply(null, clean.map(r=>r.length));
+  const rows = clean.map(r=>{ const o = r.slice(); while(o.length<width) o.push(''); return o; });
+  const isDataish = c => c!=='' && (parseNumberString(c)!==null || (/\d/.test(c) && parseFlexibleDate(c)!==null));
+  const h1 = rows[0].slice();
+  let h2 = new Array(width).fill('');
+  let idx = 1;
+  if(rows.length > 1){
+    const nonEmpty = rows[1].filter(c=>c!=='');
+    const dataish = nonEmpty.filter(isDataish).length;
+    if(nonEmpty.length>0 && dataish/nonEmpty.length < 0.5){ h2 = rows[1].slice(); idx = 2; }
+  }
+  for(let i=1;i<width;i++){ if(h1[i]==='' && h2[i]!=='' && h1[i-1]!=='') h1[i] = h1[i-1]; }
+  for(let i=0;i<width;i++){ if(h2[i]!=='' && h2[i]===h1[i]) h2[i] = ''; }
+  let targets = null;
+  if(idx < rows.length){
+    const r = rows[idx];
+    const looksTarget = /^(target|standar|standard|std)\b/i.test(r[0]) || r.some(c=>/^[<>\u2265\u2264]/.test(c));
+    if(looksTarget){ targets = r.slice(); idx++; }
+  }
+  return { h1, h2, targets, rows: rows.slice(idx), headerRows: idx - (targets ? 1 : 0) };
+}
+
+function getManualBodyCells(){
+  return $all('#manualBody tr').map(tr=> Array.from(tr.querySelectorAll('td[data-col]')));
+}
+
+function pasteStructured(grid, startCol){
+  const info = interpretStructured(grid);
+  if(!info){ showToast('Data yang ditempel kosong'); return; }
+  const width = info.h1.length;
+  while(manualCols < startCol + width) manualAddColumn();
+  const hc1 = $all('#manualHeaderRow th[data-col]');
+  const hc2 = $all('#manualHeaderRow2 th[data-col]');
+  const hct = $all('#manualTargetRow th[data-col]');
+  for(let i=0;i<width;i++){
+    const c = startCol + i;
+    hc1[c].textContent = info.h1[i];
+    hc2[c].textContent = info.h2[i];
+    hct[c].textContent = info.targets ? info.targets[i] : '';
+  }
+  getManualBodyCells().forEach(cells=>{
+    for(let i=0;i<width;i++) if(cells[startCol+i]) cells[startCol+i].textContent = '';
+  });
+  while(manualRows < info.rows.length) manualAddRow();
+  const cellRows = getManualBodyCells();
+  info.rows.forEach((rowArr, ri)=>{
+    rowArr.forEach((val, ci)=>{ const cell = cellRows[ri] && cellRows[ri][startCol+ci]; if(cell) cell.textContent = val; });
+  });
+  const hdr = info.h2.some(x=>x!=='') ? '2 baris header' : '1 baris header';
+  showToast('Tabel ditempel: ' + hdr + (info.targets ? ' + baris Target' : '') + ', ' + info.rows.length + ' baris data');
+}
+
 function setupManualPaste(){
   $('#manualTableWrap').addEventListener('paste', function(e){
     const target = e.target;
     if(target.tagName!=='TD' && target.tagName!=='TH') return;
-    if(target.dataset.col===undefined) return; // control column (checkbox), not a data cell
+    if(target.dataset.col===undefined) return; // kolom kontrol (checkbox), bukan sel data
     e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData('text');
-    if(!text) return;
-    const gridLines = text.replace(/\r/g,'').split('\n');
-    while(gridLines.length && gridLines[gridLines.length-1]==='') gridLines.pop();
-    const matrix = gridLines.map(line => line.split('\t'));
-    const isHeader = target.tagName==='TH';
+    const cd = e.clipboardData || window.clipboardData;
+    const text = cd.getData('text');
+    const html = cd.getData('text/html');
     const startCol = parseInt(target.dataset.col);
+
+    // Tempel dari sel header / sub-header / target => tempel tabel lengkap
+    if(target.dataset.hrow !== undefined){
+      let grid = (html && /<table/i.test(html)) ? parseHtmlTable(html) : null;
+      if(!grid || !grid.length) grid = parseTSV(text || '');
+      if(!grid.length) return;
+      pasteStructured(grid, startCol);
+      return;
+    }
+
+    // Tempel dari sel data => hanya mengisi data (seperti sebelumnya)
+    if(!text) return;
+    const matrix = parseTSV(text);
+    if(!matrix.length) return;
+    const startRow = parseInt(target.dataset.row);
     const maxLineLen = Math.max.apply(null, matrix.map(r=>r.length));
     while(manualCols < startCol + maxLineLen) manualAddColumn();
+    while(manualRows < startRow + matrix.length) manualAddRow();
+    const cellRows = getManualBodyCells();
+    matrix.forEach((rowArr, ri)=>{
+      rowArr.forEach((val, ci)=>{
+        const cell = cellRows[startRow+ri] && cellRows[startRow+ri][startCol+ci];
+        if(cell) cell.textContent = val.replace(/\s+/g,' ').trim();
+      });
+    });
+  });
+}
 
-    if(isHeader){
-      const headerCells = $all('#manualHeaderRow th[data-col]');
-      matrix[0].forEach((val,ci)=>{ if(headerCells[startCol+ci]) headerCells[startCol+ci].textContent = val; });
-      const bodyMatrix = matrix.slice(1);
-      while(manualRows < bodyMatrix.length) manualAddRow();
-      bodyMatrix.forEach((rowArr, ri)=>{
-        rowArr.forEach((val,ci)=>{
-          const cell = document.querySelector(`#manualBody td[data-row="${ri}"][data-col="${startCol+ci}"]`);
-          if(cell) cell.textContent = val;
-        });
-      });
-    } else {
-      const startRow = parseInt(target.dataset.row);
-      while(manualRows < startRow + matrix.length) manualAddRow();
-      matrix.forEach((rowArr, ri)=>{
-        rowArr.forEach((val,ci)=>{
-          const cell = document.querySelector(`#manualBody td[data-row="${startRow+ri}"][data-col="${startCol+ci}"]`);
-          if(cell) cell.textContent = val;
-        });
-      });
-    }
+// Gabungkan header grup + sub-header menjadi satu nama kolom unik.
+function flattenHeaders(h1, h2){
+  const seen = {};
+  return h1.map((a, i)=>{
+    const b = h2[i] || '';
+    let name = (a && b && a!==b) ? (a + ' - ' + b) : (a || b || ('Kolom ' + (i+1)));
+    if(seen[name]){ seen[name]++; name += ' (' + seen[name] + ')'; } else seen[name] = 1;
+    return name;
   });
 }
 function useManualData(){
-  const headers = $all('#manualHeaderRow th[data-col]').map((th,i)=> th.textContent.trim() || ('Kolom '+(i+1)));
+  const h1 = $all('#manualHeaderRow th[data-col]').map(th=> th.textContent.trim());
+  const h2 = $all('#manualHeaderRow2 th[data-col]').map(th=> th.textContent.trim());
+  const tg = $all('#manualTargetRow th[data-col]').map(th=> th.textContent.trim());
+  const headers = flattenHeaders(h1, h2);
   const rows = [];
   $all('#manualBody tr').forEach(tr=>{
     const cells = $all('td[data-col]', tr).map(td=> td.textContent.trim());
     if(cells.some(c=>c!=='')) rows.push(cells);
   });
   if(rows.length===0){ showToast('Tabel masih kosong'); return; }
-  finalizeData(headers, rows);
+  finalizeData(headers, rows, {
+    h1: h1.map((x,i)=> x || (h2[i] ? '' : headers[i])),
+    h2: h2,
+    targets: tg.some(x=>x!=='') ? tg : null,
+  });
+}
+
+// Membaca teks target dari baris Target: ">22%" (di atas), "<0,37%" (di bawah),
+// "680-750" (rentang), "167.5" (nilai tunggal).
+function parseTargetText(raw){
+  if(raw===undefined || raw===null) return null;
+  const s = String(raw).trim().replace(/\s+/g,'').replace(/%/g,'');
+  if(!s) return null;
+  const num = '(-?\\d+(?:[.,]\\d+)*)';
+  let m;
+  if((m = s.match(new RegExp('^(>=|\u2265|>)' + num + '$')))){
+    const v = parseNumberString(m[2]); if(v!==null) return { type:'line', value:v, direction:'above' };
+  }
+  if((m = s.match(new RegExp('^(<=|\u2264|<)' + num + '$')))){
+    const v = parseNumberString(m[2]); if(v!==null) return { type:'line', value:v, direction:'below' };
+  }
+  if((m = s.match(new RegExp('^' + num + '[-\u2013~]' + num + '$')))){
+    const a = parseNumberString(m[1]), b = parseNumberString(m[2]);
+    if(a!==null && b!==null) return { type:'range', min:Math.min(a,b), max:Math.max(a,b) };
+  }
+  if((m = s.match(new RegExp('^' + num + '$')))){
+    const v = parseNumberString(m[1]); if(v!==null) return { type:'line', value:v, direction:'above' };
+  }
+  return null;
+}
+// Saat kolom series dipilih: isi target otomatis dari baris Target (jika ada
+// dan target series belum diatur manual).
+function applyAutoTarget(s){
+  if(!s.target) s.target = { type:'none', value:'', min:'', max:'', direction:'above' };
+  if(!(s.target.type==='none' || s.target.auto)) return false;
+  const ci = parseInt(s.colIndex);
+  const parsed = (state.targetRow && !isNaN(ci)) ? parseTargetText(state.targetRow[ci]) : null;
+  const before = JSON.stringify(s.target);
+  if(parsed){
+    s.target = {
+      type: parsed.type,
+      value: parsed.value!==undefined ? String(parsed.value) : '',
+      min: parsed.min!==undefined ? String(parsed.min) : '',
+      max: parsed.max!==undefined ? String(parsed.max) : '',
+      direction: parsed.direction || 'above',
+      auto: true,
+    };
+  } else if(s.target.auto){
+    s.target = { type:'none', value:'', min:'', max:'', direction:'above' };
+  }
+  return JSON.stringify(s.target) !== before;
 }
 
 /* ================= COLUMN SELECTORS ================= */
@@ -1243,7 +1497,17 @@ function renderSeriesList(card, cfg){
     tlineFields.style.display = s.target.type==='line' ? '' : 'none';
     trangeFields.style.display = s.target.type==='range' ? '' : 'none';
 
-    colSel.addEventListener('change', e=>{ s.colIndex = e.target.value; renderChart(cfg); renderLegendFilter(card, cfg); });
+    colSel.addEventListener('change', e=>{
+      s.colIndex = e.target.value;
+      const changed = applyAutoTarget(s);
+      renderChart(cfg);
+      if(changed){
+        renderSeriesList(card, cfg);
+        if(s.target.type!=='none') showToast('Target diisi otomatis dari baris Target');
+      } else {
+        renderLegendFilter(card, cfg);
+      }
+    });
     typeSel.addEventListener('change', e=>{ s.chartType = e.target.value; renderChart(cfg); });
     axisSel.addEventListener('change', e=>{ s.axis = e.target.value; renderChart(cfg); });
     colorInp.addEventListener('input', e=>{ s.color = e.target.value; s.colorAuto = false; renderChart(cfg); });
@@ -1251,15 +1515,15 @@ function renderSeriesList(card, cfg){
       targetRow.style.display = targetRow.style.display==='none' ? 'flex' : 'none';
     });
     ttypeSel.addEventListener('change', e=>{
-      s.target.type = e.target.value;
+      s.target.type = e.target.value; s.target.auto = false;
       tlineFields.style.display = s.target.type==='line' ? '' : 'none';
       trangeFields.style.display = s.target.type==='range' ? '' : 'none';
       renderChart(cfg);
     });
-    tvalueInp.addEventListener('input', e=>{ s.target.value = e.target.value; renderChart(cfg); });
-    tdirectionSel.addEventListener('change', e=>{ s.target.direction = e.target.value; renderChart(cfg); });
-    tminInp.addEventListener('input', e=>{ s.target.min = e.target.value; renderChart(cfg); });
-    tmaxInp.addEventListener('input', e=>{ s.target.max = e.target.value; renderChart(cfg); });
+    tvalueInp.addEventListener('input', e=>{ s.target.value = e.target.value; s.target.auto = false; renderChart(cfg); });
+    tdirectionSel.addEventListener('change', e=>{ s.target.direction = e.target.value; s.target.auto = false; renderChart(cfg); });
+    tminInp.addEventListener('input', e=>{ s.target.min = e.target.value; s.target.auto = false; renderChart(cfg); });
+    tmaxInp.addEventListener('input', e=>{ s.target.max = e.target.value; s.target.auto = false; renderChart(cfg); });
     block.querySelector('[data-role=sremove]').addEventListener('click', ()=>{
       cfg.series.splice(idx,1);
       renderSeriesList(card, cfg);
@@ -1971,6 +2235,7 @@ function buildProject(){
     theme: $('#themeSelect').value,
     mode: $('#modeToggle').dataset.mode,
     headers: state.headers,
+    h1: state.h1, h2: state.h2, targetRow: state.targetRow,
     rows: state.rows.map(r => r.map(c => c instanceof Date ? c.toISOString() : c)),
     charts: state.charts.map(cfg => ({
       id: cfg.id, title: cfg.title, mode: cfg.mode,
@@ -1996,6 +2261,10 @@ function loadProject(p){
   state.headers = p.headers.map(String);
   state.rows = p.rows.map(r => state.headers.map((_,i)=> (r && r[i]!==undefined) ? r[i] : ''));
   detectColumnTypes();
+  const nCols = state.headers.length;
+  state.h1 = (Array.isArray(p.h1) && p.h1.length===nCols) ? p.h1.map(String) : state.headers.slice();
+  state.h2 = (Array.isArray(p.h2) && p.h2.length===nCols) ? p.h2.map(String) : state.headers.map(()=> '');
+  state.targetRow = (Array.isArray(p.targetRow) && p.targetRow.length===nCols) ? p.targetRow.map(String) : null;
 
   if(p.theme && THEMES.indexOf(p.theme) >= 0) $('#themeSelect').value = p.theme;
   const mode = p.mode === 'dark' ? 'dark' : 'light';
