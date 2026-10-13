@@ -315,6 +315,8 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 .corr-result{ font-size:22px; font-weight:800; margin:10px 0 4px 0;}
 .corr-sub{ color:var(--text-soft); font-size:13px;}
 
+.filter-row input[type=text]{ padding:6px 8px; border-radius:7px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:12.5px; }
+.filter-badge{ display:inline-block; padding:1px 8px; border-radius:10px; background:var(--accent1); color:#fff; font-size:11px; font-weight:700; margin-left:6px; }
 /* tabel dengan 2 baris header + baris Target */
 table.datatable thead th, table.datatable thead td{ height:32px; box-sizing:border-box; }
 table.datatable thead th.grouphead{ text-align:center; }
@@ -1247,7 +1249,7 @@ function populateAllColumnSelectors(){
     const kind = sel.dataset.kind || 'all';
     const emptyLabel = sel.dataset.role === 'xcol2' ? '-- tidak digabung --'
       : sel.dataset.role === 'corrdate' ? '-- urut sesuai tabel --' : '-- pilih kolom --';
-    const prev = sel.value;
+    const prev = sel.value !== '' ? sel.value : (sel.dataset.want || '');
     sel.innerHTML = '<option value="">' + emptyLabel + '</option>';
     state.headers.forEach((h,i)=>{
       if(kind==='numeric' && state.colTypes[i]!=='number') return;
@@ -1266,7 +1268,7 @@ function newChartConfig(){
   return {
     id, title: 'Grafik ' + id, mode: 'linebar',
     xCol: '', xCol2: '', granularity: 'raw', dateFrom: '', dateTo: '',
-    series: [], hiddenSeries: new Set(),
+    series: [], hiddenSeries: new Set(), filters: [],
     yMin: '', yMax: '', y1Min: '', y1Max: '',
     showAllCallouts: false, chartObj: null,
   };
@@ -1365,7 +1367,10 @@ function buildChartCardDom(cfg){
         </div>
       </div>
       <p class="hint" style="margin-top:-4px;">Jika tanggal &amp; jam berada di kolom terpisah (mis. "Tanggal" + "Jam"), pilih keduanya — sumbu X akan menggabungkan tanggal dan jam sekaligus, dan pengelompokan per Hari/Minggu/Bulan akan menghitung dengan benar.</p>
-      <div style="margin:10px 0 6px 0;"><b style="font-size:13px;">Data Series</b></div>
+      <div style="margin:10px 0 6px 0;"><b style="font-size:13px;">Filter Data</b> <span class="hint" style="margin:0;">— hanya baris yang memenuhi semua filter yang tampil di grafik ini</span></div>
+      <div data-role="filterlist"></div>
+      <button class="btn small" data-role="addfilter">+ Tambah Filter</button>
+      <div style="margin:14px 0 6px 0;"><b style="font-size:13px;">Data Series</b></div>
       <div data-role="serieslist"></div>
       <button class="btn small" data-role="addseries">+ Tambah Series</button>
       <div class="grid2" style="margin-top:12px;">
@@ -1428,6 +1433,11 @@ function wireChartCard(card, cfg){
   card.querySelector('[data-role=granularity]').addEventListener('change', e=>{ cfg.granularity = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=datefrom]').addEventListener('change', e=>{ cfg.dateFrom = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=dateto]').addEventListener('change', e=>{ cfg.dateTo = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=addfilter]').addEventListener('click', ()=>{
+    if(!cfg.filters) cfg.filters = [];
+    cfg.filters.push({ col:'', op:'gte', v1:'', v2:'' });
+    renderFiltersList(card, cfg);
+  });
   card.querySelector('[data-role=addseries]').addEventListener('click', ()=>{
     cfg.series.push({ colIndex:'', axis:'y', chartType:'line', color: palette(cfg.series.length), colorAuto:true, target:{type:'none', value:'', min:'', max:''} });
     renderSeriesList(card, cfg);
@@ -1453,7 +1463,92 @@ function wireChartCard(card, cfg){
     state.charts = state.charts.filter(c=>c.id!==cfg.id);
     renderChartCards();
   });
+  renderFiltersList(card, cfg);
   renderSeriesList(card, cfg);
+}
+
+const FILTER_OPS = [
+  ['gte','≥  lebih dari sama dengan'],
+  ['lte','≤  kurang dari sama dengan'],
+  ['gt','>  lebih dari'],
+  ['lt','<  kurang dari'],
+  ['eq','=  sama dengan'],
+  ['between','antara (min – maks)'],
+];
+function renderFiltersList(card, cfg){
+  if(!cfg.filters) cfg.filters = [];
+  const wrap = card.querySelector('[data-role=filterlist]');
+  wrap.innerHTML = '';
+  cfg.filters.forEach((f, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'series-row filter-row';
+    row.style.borderRadius = '8px';
+    row.style.marginBottom = '6px';
+    row.innerHTML = `
+      <select class="col-select" data-kind="numeric" data-role="fcol" style="min-width:150px;"></select>
+      <select data-role="fop">${FILTER_OPS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select>
+      <input type="text" data-role="fv1" placeholder="Nilai" style="width:90px;">
+      <input type="text" data-role="fv2" placeholder="Maks" style="width:90px;">
+      <button class="btn small ghost" data-role="fremove">✖</button>`;
+    const colSel = row.querySelector('[data-role=fcol]');
+    const opSel = row.querySelector('[data-role=fop]');
+    const v1 = row.querySelector('[data-role=fv1]');
+    const v2 = row.querySelector('[data-role=fv2]');
+    wrap.appendChild(row);
+    colSel.dataset.want = f.col;
+    populateAllColumnSelectors();
+    colSel.value = f.col;
+    opSel.value = f.op;
+    v1.value = f.v1; v2.value = f.v2;
+    const syncVis = ()=>{
+      v2.style.display = f.op==='between' ? '' : 'none';
+      v1.placeholder = f.op==='between' ? 'Min' : 'Nilai';
+    };
+    syncVis();
+    colSel.addEventListener('change', e=>{ f.col = e.target.value; colSel.dataset.want = f.col; renderChart(cfg); });
+    opSel.addEventListener('change', e=>{ f.op = e.target.value; syncVis(); renderChart(cfg); });
+    v1.addEventListener('input', e=>{ f.v1 = e.target.value; renderChart(cfg); });
+    v2.addEventListener('input', e=>{ f.v2 = e.target.value; renderChart(cfg); });
+    row.querySelector('[data-role=fremove]').addEventListener('click', ()=>{
+      cfg.filters.splice(idx, 1);
+      renderFiltersList(card, cfg);
+      renderChart(cfg);
+    });
+  });
+}
+
+// Baris lolos jika memenuhi SEMUA filter yang sudah lengkap diisi.
+function passesFilters(cfg, row){
+  const list = cfg.filters || [];
+  for(let i=0;i<list.length;i++){
+    const f = list[i];
+    if(f.col==='' || f.col===undefined) continue;
+    const a = parseNumberString(String(f.v1===undefined ? '' : f.v1));
+    const b = parseNumberString(String(f.v2===undefined ? '' : f.v2));
+    if(a===null || (f.op==='between' && b===null)) continue;
+    const x = toNumberSafe(row[parseInt(f.col)]);
+    if(x===null) return false;
+    if(f.op==='gte' && !(x>=a)) return false;
+    if(f.op==='lte' && !(x<=a)) return false;
+    if(f.op==='gt' && !(x>a)) return false;
+    if(f.op==='lt' && !(x<a)) return false;
+    if(f.op==='eq' && !(x===a)) return false;
+    if(f.op==='between' && (x<Math.min(a,b) || x>Math.max(a,b))) return false;
+  }
+  return true;
+}
+function describeFilters(cfg){
+  const sym = { gte:'≥', lte:'≤', gt:'>', lt:'<', eq:'=' };
+  const out = [];
+  (cfg.filters||[]).forEach(f=>{
+    if(f.col==='' || f.col===undefined) return;
+    const a = parseNumberString(String(f.v1===undefined ? '' : f.v1));
+    const b = parseNumberString(String(f.v2===undefined ? '' : f.v2));
+    if(a===null || (f.op==='between' && b===null)) return;
+    const name = state.headers[parseInt(f.col)] || ('Kolom ' + f.col);
+    out.push(f.op==='between' ? (name + ' antara ' + Math.min(a,b) + '–' + Math.max(a,b)) : (name + ' ' + sym[f.op] + ' ' + a));
+  });
+  return out;
 }
 
 function renderSeriesList(card, cfg){
@@ -1516,6 +1611,7 @@ function renderSeriesList(card, cfg){
     wrap.appendChild(block);
     populateAllColumnSelectors();
     colSel.value = s.colIndex;
+    colSel.dataset.want = s.colIndex;
     typeSel.value = s.chartType;
     axisSel.value = s.axis;
     ttypeSel.value = s.target.type;
@@ -1529,6 +1625,7 @@ function renderSeriesList(card, cfg){
 
     colSel.addEventListener('change', e=>{
       s.colIndex = e.target.value;
+      colSel.dataset.want = e.target.value;
       const changed = applyAutoTarget(s);
       renderChart(cfg);
       if(changed){
@@ -1625,7 +1722,8 @@ function renderStatsPanel(card, cfg, labels, seriesData){
   const rangeText = (cfg.dateFrom || cfg.dateTo)
     ? `Rentang waktu: ${cfg.dateFrom || 'awal data'} s/d ${cfg.dateTo || 'akhir data'}`
     : 'Rentang waktu: seluruh data';
-  let html = `<div class="chart-stats-summary">${escapeHtml(rangeText)} · Total titik data pada grafik ini: <b>${labels.length}</b></div>`;
+  const fdesc = describeFilters(cfg);
+  let html = `<div class="chart-stats-summary">${escapeHtml(rangeText)}${fdesc.length ? ' · Filter: <b>' + escapeHtml(fdesc.join('; ')) + '</b>' : ''} · Total titik data pada grafik ini: <b>${labels.length}</b></div>`;
   html += '<div class="chart-stats-grid">';
   stats.forEach(st=>{
     html += `<div class="stat-card">
@@ -1719,6 +1817,10 @@ function getAggregatedData(cfg){
       if(cfg.dateTo && it.date > new Date(cfg.dateTo + 'T23:59:59')) return false;
       return true;
     });
+  }
+
+  if(cfg.filters && cfg.filters.length){
+    items = items.filter(it=> passesFilters(cfg, it.row));
   }
 
   const validSeries = cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined);
@@ -1923,7 +2025,7 @@ function renderChart(cfg){
   try{
     const {labels, seriesData, dateGroups} = getAggregatedData(cfg);
     if(labels.length===0){
-      showChartError(wrap, 'Tidak ada data yang cocok (periksa filter Timeline / isi kolom yang dipilih).');
+      showChartError(wrap, 'Tidak ada data yang cocok (periksa filter data, Timeline, atau isi kolom yang dipilih).');
       return;
     }
 
@@ -2383,6 +2485,7 @@ function buildProject(){
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
       showAllCallouts: !!cfg.showAllCallouts,
       hiddenSeries: Array.from(cfg.hiddenSeries),
+      filters: (cfg.filters || []).map(f => Object.assign({}, f)),
       series: cfg.series.map(s => ({
         colIndex: s.colIndex, axis: s.axis, chartType: s.chartType,
         color: s.color, colorAuto: s.colorAuto !== false,
@@ -2425,6 +2528,7 @@ function loadProject(p){
       target: Object.assign({ type:'none', value:'', min:'', max:'', direction:'above' }, s.target || {}),
     })),
     hiddenSeries: new Set(c.hiddenSeries || []),
+    filters: (c.filters || []).map(f => Object.assign({ col:'', op:'gte', v1:'', v2:'' }, f)),
     chartObj: null,
   }));
   state.nextChartId = state.charts.length + 1;
