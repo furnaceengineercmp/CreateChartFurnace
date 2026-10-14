@@ -1355,7 +1355,7 @@ function buildChartCardDom(cfg){
           <select class="col-select" data-kind="all" data-role="xcol"></select>
         </div>
         <div class="field">
-          <label>+ Kolom Jam/Waktu (opsional)</label>
+          <label>+ Kolom ke-2 Sumbu X (opsional)</label>
           <select class="col-select" data-kind="all" data-role="xcol2"></select>
         </div>
         <div class="field" data-role="granwrap">
@@ -1377,7 +1377,7 @@ function buildChartCardDom(cfg){
           <input type="date" data-role="dateto">
         </div>
       </div>
-      <p class="hint" style="margin-top:-4px;">Jika tanggal &amp; jam berada di kolom terpisah (mis. "Tanggal" + "Jam"), pilih keduanya — sumbu X akan menggabungkan tanggal dan jam sekaligus, dan pengelompokan per Hari/Minggu/Bulan akan menghitung dengan benar.</p>
+      <p class="hint" style="margin-top:-4px;">Kolom ke-2 Sumbu X: jika berisi <b>jam</b> (mis. 08:00) digabung dengan tanggal. Jika berisi <b>No/angka/teks lain</b>, nilainya tampil sebagai label di sumbu X dan kolom utama (mis. Date) tampil sekali per kelompok di bawahnya (hanya untuk Range "Data Asli").</p>
       <div style="margin:10px 0 6px 0;"><b style="font-size:13px;">Filter Data</b> <span class="hint" style="margin:0;">— hanya baris yang memenuhi semua filter yang tampil di grafik ini</span></div>
       <div data-role="filterlist"></div>
       <button class="btn small" data-role="addfilter">+ Tambah Filter</button>
@@ -1933,14 +1933,33 @@ function getEffectiveDateValue(row, xColIdx, xCol2Idx){
   return base;
 }
 
+// Apakah kolom berisi jam seperti "08:00"? (jika ya, digabung ke tanggal)
+function isTimeLikeColumn(ci){
+  const vals = state.rows.map(r=>r[ci]).filter(v=> v!=='' && v!==undefined && v!==null).slice(0,40).map(v=> String(v).trim());
+  if(!vals.length) return false;
+  return vals.filter(v=> /^\d{1,2}:\d{2}(:\d{2})?/.test(v)).length / vals.length > 0.6;
+}
+
 function getAggregatedData(cfg){
   if(cfg.xCol===''||cfg.xCol===undefined||cfg.xCol===null) return {labels:[], seriesData:{}, dateGroups:null};
   const xColIdx = parseInt(cfg.xCol);
   const xColType = state.colTypes[xColIdx];
   const xCol2Idx = (cfg.xCol2!=='' && cfg.xCol2!==undefined && cfg.xCol2!==null) ? parseInt(cfg.xCol2) : null;
 
-  let items = state.rows.map(r=>({ row:r, date: getEffectiveDateValue(r, xColIdx, xCol2Idx) }));
-  const isDateMode = (xColType==='date') || (xCol2Idx!==null && items.some(it=>it.date));
+  // Kolom ke-2 Sumbu X: berisi jam (08:00) => digabung ke tanggal. Selain itu
+  // (No, kategori, dll.) => jadi label tick, sedangkan tanggal/kolom utama
+  // ditampilkan sebagai grup di bawahnya.
+  const labelMode = xCol2Idx!==null && !isTimeLikeColumn(xCol2Idx);
+  let groupIdx = xColIdx, tickIdx = null;
+  if(labelMode){
+    tickIdx = xCol2Idx;
+    if(state.colTypes[xColIdx]!=='date' && state.colTypes[xCol2Idx]==='date'){ groupIdx = xCol2Idx; tickIdx = xColIdx; }
+  }
+  const groupIsDate = state.colTypes[groupIdx]==='date';
+  let items = labelMode
+    ? state.rows.map(r=>({ row:r, date: groupIsDate ? parseFlexibleDate(r[groupIdx]) : null }))
+    : state.rows.map(r=>({ row:r, date: getEffectiveDateValue(r, xColIdx, xCol2Idx) }));
+  const isDateMode = labelMode ? groupIsDate : ((xColType==='date') || (xCol2Idx!==null && items.some(it=>it.date)));
 
   if(isDateMode && (cfg.dateFrom || cfg.dateTo)){
     items = items.filter(it=>{
@@ -1967,10 +1986,21 @@ function getAggregatedData(cfg){
     // Raw / per-row display. When it's date-based, split the label into a
     // short time-only tick plus a parallel "date group" array so the chart
     // can show the date once per day instead of repeating it on every tick.
-    let labels, dateGroups = null;
-    if(isDateMode){
-      labels = items.map(it=> it.date ? formatTimeOnly(it.date) : '');
-      dateGroups = items.map(it=> it.date ? formatDateOnly(it.date) : '');
+    let labels, dateGroups = null, titles = null;
+    if(labelMode){
+      const tickName = state.headers[tickIdx] || '';
+      labels = items.map(it=> fmtCell(it.row[tickIdx]));
+      dateGroups = items.map(it=> groupIsDate ? (it.date ? formatDateOnly(it.date) : '') : fmtCell(it.row[groupIdx]));
+      titles = items.map((it,i)=> (dateGroups[i] ? dateGroups[i] + ' · ' : '') + tickName + ' ' + labels[i]);
+    } else if(isDateMode){
+      const hasTime = items.some(it=> it.date && (it.date.getHours() || it.date.getMinutes()));
+      if(hasTime){
+        labels = items.map(it=> it.date ? formatTimeOnly(it.date) : '');
+        dateGroups = items.map(it=> it.date ? formatDateOnly(it.date) : '');
+      } else {
+        // data harian tanpa jam: tampilkan tanggalnya langsung (bukan "00:00" berulang)
+        labels = items.map(it=> it.date ? formatDateOnly(it.date) : '');
+      }
     } else {
       labels = items.map(it=> formatXLabelRaw(it.row[xColIdx], xColType));
     }
@@ -1979,7 +2009,7 @@ function getAggregatedData(cfg){
       const ci = parseInt(s.colIndex);
       seriesData[s.colIndex] = items.map(it=> toNumberSafe(it.row[ci]));
     });
-    return {labels, seriesData, dateGroups};
+    return {labels, seriesData, dateGroups, titles};
   }
 
   const buckets = new Map();
@@ -2276,7 +2306,7 @@ function renderChart(cfg){
   }
 
   try{
-    const {labels, seriesData, dateGroups} = getAggregatedData(cfg);
+    const {labels, seriesData, dateGroups, titles} = getAggregatedData(cfg);
     if(labels.length===0){
       showChartError(wrap, 'Tidak ada data yang cocok (periksa filter data, Timeline, atau isi kolom yang dipilih).');
       return;
@@ -2360,7 +2390,9 @@ function renderChart(cfg){
             legend:{ labels:{ color:textColor() } },
             tooltip:{ callbacks:{ label: item => {
               const idx = item.raw.x;
-              const lbl = labels[idx] !== undefined ? labels[idx] : idx;
+              const lbl = (titles && titles[idx]) ? titles[idx]
+                : (dateGroups && dateGroups[idx] && labels[idx]!==undefined ? dateGroups[idx] + ' ' + labels[idx]
+                : (labels[idx] !== undefined ? labels[idx] : idx));
               return (item.dataset.label||'') + ': ' + fmtNum(item.raw.y) + ' (' + lbl + ')';
             } } },
           },
@@ -2371,6 +2403,7 @@ function renderChart(cfg){
       });
       cfg.chartObj.__csLabels = labels;
       cfg.chartObj.__csDateGroups = dateGroups;
+      cfg.chartObj.__csTitles = titles;
       cfg.chartObj.__csCfg = cfg;
       cfg.chartObj.__csPinned = new Set();
       cfg.chartObj.__csSeriesData = seriesData;
@@ -2424,6 +2457,7 @@ function renderChart(cfg){
               title: items=>{
                 if(!items.length) return '';
                 const idx = items[0].dataIndex;
+                if(titles && titles[idx]) return titles[idx];
                 return dateGroups && dateGroups[idx] ? (dateGroups[idx] + ' ' + items[0].label) : items[0].label;
               },
             },
@@ -2439,6 +2473,7 @@ function renderChart(cfg){
       plugins: [dateGroupPlugin, targetPlugin, shadePlugin, valueLabelPlugin],
     });
     cfg.chartObj.__csDateGroups = dateGroups;
+    cfg.chartObj.__csTitles = titles;
     cfg.chartObj.__csCfg = cfg;
     cfg.chartObj.__csPinned = new Set();
     cfg.chartObj.__csSeriesData = seriesData;
@@ -2479,13 +2514,18 @@ function handleChartClick(cfg, elements, wrap){
     const ds = chart.data.datasets[el.datasetIndex];
     const raw = ds.data[el.index];
     const lbls = chart.__csLabels || [];
-    const label = lbls[raw.x] !== undefined ? lbls[raw.x] : raw.x;
+    const tt = chart.__csTitles, dg = chart.__csDateGroups;
+    const label = (tt && tt[raw.x]) ? tt[raw.x]
+      : (dg && dg[raw.x] && lbls[raw.x]!==undefined ? dg[raw.x] + ' ' + lbls[raw.x]
+      : (lbls[raw.x] !== undefined ? lbls[raw.x] : raw.x));
     html = `<div class="callout-date">${escapeHtml(String(label))}</div>`;
     html += `<div class="callout-item" style="color:${ds.borderColor}">${escapeHtml(ds.label)}: ${fmtNum(raw.y)}</div>`;
   } else {
     const dateGroups = chart.__csDateGroups;
     const rawLabel = chart.data.labels[el.index];
-    const label = (dateGroups && dateGroups[el.index]) ? (dateGroups[el.index] + ' ' + rawLabel) : rawLabel;
+    const tt = chart.__csTitles;
+    const label = (tt && tt[el.index]) ? tt[el.index]
+      : ((dateGroups && dateGroups[el.index]) ? (dateGroups[el.index] + ' ' + rawLabel) : rawLabel);
     html = `<div class="callout-date">${escapeHtml(String(label))}</div>`;
     chart.data.datasets.forEach(ds=>{
       const v = ds.data[el.index];
