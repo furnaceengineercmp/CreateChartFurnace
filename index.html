@@ -7,7 +7,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
@@ -21,7 +20,6 @@ window.__csMissingLibs = [];
   function ok(fn){ try{ return !!fn(); }catch(e){ return false; } }
   var libs = [
     { name:'Chart.js', check:function(){return typeof Chart!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js' },
-    { name:'chartjs-plugin-datalabels', check:function(){return typeof ChartDataLabels!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js' },
     { name:'SheetJS (xlsx)', check:function(){return typeof XLSX!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js' },
     { name:'PapaParse', check:function(){return typeof Papa!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js' },
     { name:'jsPDF', check:function(){return typeof window.jspdf!=='undefined';}, url:'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js' },
@@ -322,6 +320,7 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 .shade-swatch{ width:14px; height:14px; border-radius:3px; border:1px solid rgba(0,0,0,.18); display:inline-block; }
 .shade-row input[type=color]{ width:30px; height:26px; border:none; padding:0; background:none; cursor:pointer; }
 .shade-row label.alpha{ font-size:11.5px; color:var(--text-soft); display:flex; align-items:center; gap:4px; }
+.chart-card-head select{ padding:5px 8px; border-radius:9px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:12px; font-weight:600; }
 /* tabel dengan 2 baris header + baris Target */
 table.datatable thead th, table.datatable thead td{ height:32px; box-sizing:border-box; }
 table.datatable thead th.grouphead{ text-align:center; }
@@ -451,7 +450,7 @@ table.datatable thead tr.target-row td{
         <button class="btn" id="btnExportAllPPT">⬇️ Export PPT (Semua)</button>
       </div>
     </div>
-    <p class="hint">Klik "⚙️ Konfigurasi" pada tiap grafik untuk memilih sumbu, series, jenis grafik, rentang tanggal, dan sumbu Y. Klik titik data pada grafik untuk melihat callout nilai; klik lagi callout untuk menghapusnya. Data &amp; susunan grafik tersimpan otomatis di browser ini; gunakan "💾 Simpan Proyek" di atas untuk membuat file cadangan .json.</p>
+    <p class="hint">Klik "⚙️ Konfigurasi" pada tiap grafik untuk memilih sumbu, series, jenis grafik, rentang tanggal, dan sumbu Y. Klik titik data pada grafik untuk melihat callout (pilih gaya "Lengkap" atau "Angka saja"); klik titik yang sama lagi untuk menghapusnya. Tombol "🔢 Angka Semua" menampilkan angka di semua titik. Data &amp; susunan grafik tersimpan otomatis di browser ini; gunakan "💾 Simpan Proyek" di atas untuk membuat file cadangan .json.</p>
   </div>
 
   <div id="chartsContainer" class="chartgrid cols-2"></div>
@@ -1273,7 +1272,7 @@ function newChartConfig(){
   return {
     id, title: 'Grafik ' + id, mode: 'linebar',
     xCol: '', xCol2: '', granularity: 'raw', dateFrom: '', dateTo: '',
-    series: [], hiddenSeries: new Set(), filters: [], shades: [],
+    series: [], hiddenSeries: new Set(), filters: [], shades: [], calloutStyle: 'full',
     yMin: '', yMax: '', y1Min: '', y1Max: '',
     showAllCallouts: false, chartObj: null,
   };
@@ -1307,6 +1306,9 @@ function renderChartCards(){
 function syncChartCardControls(card, cfg){
   const setVal = (roleSel, val)=>{ const el = card.querySelector(roleSel); if(el) el.value = val; };
   setVal('[data-role=mode]', cfg.mode);
+  setVal('[data-role=calloutstyle]', cfg.calloutStyle || 'full');
+  const allBtn = card.querySelector('[data-role=toggle-callouts]');
+  if(allBtn) allBtn.classList.toggle('primary', !!cfg.showAllCallouts);
   setVal('[data-role=xcol]', cfg.xCol);
   setVal('[data-role=xcol2]', cfg.xCol2);
   setVal('[data-role=granularity]', cfg.granularity);
@@ -1329,7 +1331,11 @@ function buildChartCardDom(cfg){
       <input class="title-input" value="${escapeHtml(cfg.title)}" data-role="title">
       <div class="row">
         <button class="btn small" data-role="toggle-config">\u2699\ufe0f Konfigurasi</button>
-        <button class="btn small" data-role="toggle-callouts">\ud83d\udcc8 Callout Semua</button>
+        <select data-role="calloutstyle" title="Gaya callout saat titik grafik diklik">
+          <option value="full">Klik: Lengkap (tanggal + semua series)</option>
+          <option value="number">Klik: Angka saja</option>
+        </select>
+        <button class="btn small" data-role="toggle-callouts" title="Tampilkan angka di semua titik">\ud83d\udd22 Angka Semua</button>
         <button class="btn small ghost" data-role="clear-callouts">\u2716 Hapus Callout</button>
       </div>
     </div>
@@ -1416,19 +1422,31 @@ function buildChartCardDom(cfg){
   return card;
 }
 
+function clearCallouts(card, cfg){
+  const panel = card.querySelector('[data-role=calloutpanel]');
+  if(panel){ panel.innerHTML = ''; panel.style.minHeight = '0'; }
+  if(cfg.chartObj && cfg.chartObj.__csPinned && cfg.chartObj.__csPinned.size){
+    cfg.chartObj.__csPinned.clear();
+    cfg.chartObj.draw();
+  }
+}
+
 function wireChartCard(card, cfg){
   card.querySelector('[data-role=title]').addEventListener('input', e=>{ cfg.title = e.target.value; scheduleAutosave(); });
   card.querySelector('[data-role=toggle-config]').addEventListener('click', ()=>{
     card.querySelector('[data-role=config]').classList.toggle('open');
   });
-  card.querySelector('[data-role=toggle-callouts]').addEventListener('click', ()=>{
+  card.querySelector('[data-role=toggle-callouts]').addEventListener('click', e=>{
     cfg.showAllCallouts = !cfg.showAllCallouts;
+    e.currentTarget.classList.toggle('primary', cfg.showAllCallouts);
     renderChart(cfg);
+    showToast(cfg.showAllCallouts ? 'Angka di semua titik: AKTIF (klik lagi untuk mematikan)' : 'Angka di semua titik: nonaktif');
   });
-  card.querySelector('[data-role=clear-callouts]').addEventListener('click', ()=>{
-    const panel = card.querySelector('[data-role=calloutpanel]');
-    if(panel){ panel.innerHTML = ''; panel.style.minHeight = '0'; }
+  card.querySelector('[data-role=calloutstyle]').addEventListener('change', e=>{
+    cfg.calloutStyle = e.target.value;
+    clearCallouts(card, cfg);
   });
+  card.querySelector('[data-role=clear-callouts]').addEventListener('click', ()=> clearCallouts(card, cfg));
   card.querySelector('[data-role=mode]').addEventListener('change', e=>{
     cfg.mode = e.target.value;
     card.querySelector('[data-role=granwrap]').style.display = (cfg.mode==='pie'||cfg.mode==='donut') ? 'none' : '';
@@ -2089,6 +2107,86 @@ const shadePlugin = {
   }
 };
 
+// Angka saja di dekat titik: dipakai untuk "Angka Semua" dan untuk klik gaya
+// "Angka saja". Posisi otomatis di atas/di bawah titik (puncak -> atas,
+// lembah -> bawah), dijaga agar tidak saling tumpang tindih dan tidak keluar
+// dari area grafik; label yang tidak muat dilewati.
+const valueLabelPlugin = {
+  id: 'csValueLabelPlugin',
+  afterDatasetsDraw(chart){
+    const cfg = chart.__csCfg;
+    if(!cfg) return;
+    const pinned = chart.__csPinned || new Set();
+    const all = !!cfg.showAllCallouts;
+    if(!all && pinned.size === 0) return;
+    const ctx = chart.ctx, area = chart.chartArea, type = chart.config.type;
+    ctx.save();
+    ctx.font = '700 11px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+
+    if(type==='pie' || type==='doughnut'){
+      const meta = chart.getDatasetMeta(0), ds = chart.data.datasets[0];
+      meta.data.forEach((el, i)=>{
+        if(!(all || pinned.has(String(i)))) return;
+        const v = ds.data[i];
+        if(v===null || v===undefined) return;
+        const p = el.tooltipPosition(), t = fmtNum(v);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(t, p.x, p.y);
+        ctx.fillStyle = '#fff'; ctx.fillText(t, p.x, p.y);
+      });
+      ctx.restore();
+      return;
+    }
+
+    const isScatter = type==='scatter';
+    const cands = [];
+    chart.data.datasets.forEach((ds, di)=>{
+      if(!chart.isDatasetVisible(di)) return;
+      const meta = chart.getDatasetMeta(di);
+      meta.data.forEach((el, i)=>{
+        const key = isScatter ? (di + ':' + i) : String(i);
+        if(!(all || pinned.has(key))) return;
+        const raw = ds.data[i];
+        const v = (raw!==null && typeof raw==='object') ? raw.y : raw;
+        if(v===null || v===undefined || isNaN(v) || isNaN(el.x) || isNaN(el.y)) return;
+        const prev = meta.data[i-1], next = meta.data[i+1];
+        const yp = (prev && !isNaN(prev.y)) ? prev.y : el.y;
+        const yn = (next && !isNaN(next.y)) ? next.y : el.y;
+        let pref = 'above', slope = 0;
+        if(ds.type==='bar') pref = v>=0 ? 'above' : 'below';
+        else if(el.y <= Math.min(yp, yn)) pref = 'above';           // puncak
+        else if(el.y >= Math.max(yp, yn)) pref = 'below';           // lembah
+        else slope = (yp > yn) ? -1 : 1;                             // naik / turun
+        cands.push({ x:el.x, y:el.y, text:fmtNum(v), color: ds.borderColor || '#333', pref, slope });
+      });
+    });
+    cands.sort((a,b)=> a.x - b.x);
+
+    const H = 14, placed = [];
+    const overlap = (a,b)=> !(a.x+a.w+2 <= b.x || b.x+b.w+2 <= a.x || a.y+a.h+1 <= b.y || b.y+b.h+1 <= a.y);
+    const halo = cssVar('--panel') || '#fff';
+    cands.forEach(c=>{
+      const w = ctx.measureText(c.text).width + 6;
+      const sides = c.pref==='above' ? ['above','below'] : ['below','above'];
+      for(let s=0; s<sides.length; s++){
+        let rx = c.x - w/2 + c.slope * w * 0.35;
+        rx = Math.max(area.left, Math.min(rx, area.right - w));
+        const ry = sides[s]==='above' ? (c.y - 7 - H) : (c.y + 7);
+        if(ry < area.top - 2 || ry + H > area.bottom + 2) continue;
+        const r = { x:rx, y:ry, w, h:H };
+        if(placed.some(p=> overlap(r, p))) continue;
+        placed.push(r);
+        ctx.lineWidth = 3; ctx.strokeStyle = halo; ctx.strokeText(c.text, rx + w/2, ry + H/2);
+        ctx.fillStyle = c.color; ctx.fillText(c.text, rx + w/2, ry + H/2);
+        break;
+      }
+    });
+    ctx.restore();
+  }
+};
+
 // Draws per-series target/standard lines (single value, dashed) or bands
 // (min-max range, translucent fill) using each series' own axis + color.
 const targetPlugin = {
@@ -2198,7 +2296,10 @@ function renderChart(cfg){
           },
           onClick: (evt, els)=> handleChartClick(cfg, els, wrap),
         },
+        plugins: [valueLabelPlugin],
       });
+      cfg.chartObj.__csCfg = cfg;
+      cfg.chartObj.__csPinned = new Set();
       return;
     }
 
@@ -2266,11 +2367,12 @@ function renderChart(cfg){
           scales: scatterScales,
           onClick: (evt, els) => handleChartClick(cfg, els, wrap),
         },
-        plugins: [dateGroupPlugin, targetPlugin, shadePlugin],
+        plugins: [dateGroupPlugin, targetPlugin, shadePlugin, valueLabelPlugin],
       });
       cfg.chartObj.__csLabels = labels;
       cfg.chartObj.__csDateGroups = dateGroups;
       cfg.chartObj.__csCfg = cfg;
+      cfg.chartObj.__csPinned = new Set();
       cfg.chartObj.__csSeriesData = seriesData;
       renderStatsPanel(chartCard, cfg, labels, seriesData);
       return;
@@ -2334,10 +2436,11 @@ function renderChart(cfg){
         scales,
         onClick: (evt, els) => handleChartClick(cfg, els, wrap),
       },
-      plugins: [dateGroupPlugin, targetPlugin, shadePlugin],
+      plugins: [dateGroupPlugin, targetPlugin, shadePlugin, valueLabelPlugin],
     });
     cfg.chartObj.__csDateGroups = dateGroups;
     cfg.chartObj.__csCfg = cfg;
+    cfg.chartObj.__csPinned = new Set();
     cfg.chartObj.__csSeriesData = seriesData;
     renderStatsPanel(chartCard, cfg, labels, seriesData);
   }catch(err){
@@ -2354,9 +2457,23 @@ function handleChartClick(cfg, elements, wrap){
   const meta = chart.getDatasetMeta(el.datasetIndex);
   const point = meta.data[el.index];
   if(!point) return;
+  const key = isScatter ? (el.datasetIndex + ':' + el.index) : String(el.index);
+
+  // Gaya "Angka saja": angka digambar di kanvas dekat titik; klik lagi = hilang.
+  if((cfg.calloutStyle || 'full') === 'number'){
+    if(!chart.__csPinned) chart.__csPinned = new Set();
+    if(chart.__csPinned.has(key)) chart.__csPinned.delete(key); else chart.__csPinned.add(key);
+    chart.draw();
+    return;
+  }
+
+  // Gaya "Lengkap": kotak callout; klik titik yang sama lagi = hilang.
   const panel = wrap.querySelector('[data-role=calloutpanel]');
   if(!panel) return;
+  const existing = Array.from(panel.children).find(f=> f.dataset.key === key);
+  if(existing){ existing.remove(); return; }
   const flag = document.createElement('div');
+  flag.dataset.key = key;
   let html;
   if(isScatter){
     const ds = chart.data.datasets[el.datasetIndex];
@@ -2377,15 +2494,12 @@ function handleChartClick(cfg, elements, wrap){
     });
   }
   flag.innerHTML = html;
-  // panel is inset:14px inside canvas-wrap, matching the canvas exactly, so
-  // point.x/point.y (chart pixel coords) map 1:1 onto panel coordinates —
-  // no extra padding offset needed.
   const panelWidth = panel.clientWidth || wrap.clientWidth || 300;
   const panelHeight = panel.clientHeight || wrap.clientHeight || 300;
-  const halfFlagW = 110; // ~ half of max-width
+  const halfFlagW = 110;
   const clampedX = Math.max(halfFlagW, Math.min(point.x, panelWidth - halfFlagW));
   const gap = 10;
-  const placeAbove = point.y > 90; // enough headroom to sit above the point
+  const placeAbove = point.y > 90;
   flag.className = 'callout-flag ' + (placeAbove ? 'flag-above' : 'flag-below');
   flag.style.left = clampedX + 'px';
   flag.style.top = placeAbove
@@ -2640,7 +2754,7 @@ function buildProject(){
       xCol: cfg.xCol, xCol2: cfg.xCol2, granularity: cfg.granularity,
       dateFrom: cfg.dateFrom, dateTo: cfg.dateTo,
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
-      showAllCallouts: !!cfg.showAllCallouts,
+      showAllCallouts: !!cfg.showAllCallouts, calloutStyle: cfg.calloutStyle || 'full',
       hiddenSeries: Array.from(cfg.hiddenSeries),
       filters: (cfg.filters || []).map(f => Object.assign({}, f)),
       shades: (cfg.shades || []).map(s => Object.assign({}, s)),
@@ -2675,7 +2789,7 @@ function loadProject(p){
   document.documentElement.setAttribute('data-mode', mode);
 
   const base = { mode:'linebar', xCol:'', xCol2:'', granularity:'raw', dateFrom:'', dateTo:'',
-                 yMin:'', yMax:'', y1Min:'', y1Max:'', showAllCallouts:false };
+                 yMin:'', yMax:'', y1Min:'', y1Max:'', showAllCallouts:false, calloutStyle:'full' };
   const saved = Array.isArray(p.charts) ? p.charts.slice(0,4) : [];
   state.charts = saved.map((c, i) => Object.assign({}, base, c, {
     id: i + 1,
@@ -2831,9 +2945,8 @@ function init(){
   $('#corrShift').addEventListener('change', ()=>{ if(corrChart) computeCorrelation(); });
 
   try{
-    Chart.register(ChartDataLabels);
     Chart.defaults.font.family = "'Segoe UI', system-ui, Arial, sans-serif";
-  }catch(e){ console.error('Chart.js / ChartDataLabels tidak tersedia', e); }
+  }catch(e){ console.error('Chart.js tidak tersedia', e); }
 
   applyTheme();
   renderDataPreview();
