@@ -317,6 +317,11 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 
 .filter-row input[type=text]{ padding:6px 8px; border-radius:7px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:12.5px; }
 .filter-badge{ display:inline-block; padding:1px 8px; border-radius:10px; background:var(--accent1); color:#fff; font-size:11px; font-weight:700; margin-left:6px; }
+.shade-legend{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; font-size:12px; }
+.shade-chip{ display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border:1px solid var(--border); border-radius:14px; background:var(--panel-2); }
+.shade-swatch{ width:14px; height:14px; border-radius:3px; border:1px solid rgba(0,0,0,.18); display:inline-block; }
+.shade-row input[type=color]{ width:30px; height:26px; border:none; padding:0; background:none; cursor:pointer; }
+.shade-row label.alpha{ font-size:11.5px; color:var(--text-soft); display:flex; align-items:center; gap:4px; }
 /* tabel dengan 2 baris header + baris Target */
 table.datatable thead th, table.datatable thead td{ height:32px; box-sizing:border-box; }
 table.datatable thead th.grouphead{ text-align:center; }
@@ -1268,7 +1273,7 @@ function newChartConfig(){
   return {
     id, title: 'Grafik ' + id, mode: 'linebar',
     xCol: '', xCol2: '', granularity: 'raw', dateFrom: '', dateTo: '',
-    series: [], hiddenSeries: new Set(), filters: [],
+    series: [], hiddenSeries: new Set(), filters: [], shades: [],
     yMin: '', yMax: '', y1Min: '', y1Max: '',
     showAllCallouts: false, chartObj: null,
   };
@@ -1370,6 +1375,9 @@ function buildChartCardDom(cfg){
       <div style="margin:10px 0 6px 0;"><b style="font-size:13px;">Filter Data</b> <span class="hint" style="margin:0;">— hanya baris yang memenuhi semua filter yang tampil di grafik ini</span></div>
       <div data-role="filterlist"></div>
       <button class="btn small" data-role="addfilter">+ Tambah Filter</button>
+      <div style="margin:14px 0 6px 0;"><b style="font-size:13px;">Arsir Data</b> <span class="hint" style="margin:0;">— area vertikal transparan dari bawah sampai atas grafik pada titik yang memenuhi syarat (tidak terbatas rentang sumbu Y)</span></div>
+      <div data-role="shadelist"></div>
+      <button class="btn small" data-role="addshade">+ Tambah Arsir</button>
       <div style="margin:14px 0 6px 0;"><b style="font-size:13px;">Data Series</b></div>
       <div data-role="serieslist"></div>
       <button class="btn small" data-role="addseries">+ Tambah Series</button>
@@ -1438,6 +1446,12 @@ function wireChartCard(card, cfg){
     cfg.filters.push({ col:'', op:'gte', v1:'', v2:'' });
     renderFiltersList(card, cfg);
   });
+  card.querySelector('[data-role=addshade]').addEventListener('click', ()=>{
+    if(!cfg.shades) cfg.shades = [];
+    const colors = ['#2F80ED','#27AE60','#F2994A','#9B51E0','#EB5757'];
+    cfg.shades.push({ col:'', op:'gt', v1:'', v2:'', color: colors[cfg.shades.length % colors.length], alpha:20 });
+    renderShadesList(card, cfg);
+  });
   card.querySelector('[data-role=addseries]').addEventListener('click', ()=>{
     cfg.series.push({ colIndex:'', axis:'y', chartType:'line', color: palette(cfg.series.length), colorAuto:true, target:{type:'none', value:'', min:'', max:''} });
     renderSeriesList(card, cfg);
@@ -1464,6 +1478,7 @@ function wireChartCard(card, cfg){
     renderChartCards();
   });
   renderFiltersList(card, cfg);
+  renderShadesList(card, cfg);
   renderSeriesList(card, cfg);
 }
 
@@ -1549,6 +1564,95 @@ function describeFilters(cfg){
     out.push(f.op==='between' ? (name + ' antara ' + Math.min(a,b) + '–' + Math.max(a,b)) : (name + ' ' + sym[f.op] + ' ' + a));
   });
   return out;
+}
+
+const SHADE_OPS = [
+  ['nonzero','ada data (bukan 0)'],
+  ['gt','>  lebih dari'],
+  ['gte','≥  lebih dari sama dengan'],
+  ['lt','<  kurang dari'],
+  ['lte','≤  kurang dari sama dengan'],
+  ['eq','=  sama dengan'],
+  ['between','antara (min – maks)'],
+];
+function renderShadesList(card, cfg){
+  if(!cfg.shades) cfg.shades = [];
+  const wrap = card.querySelector('[data-role=shadelist]');
+  wrap.innerHTML = '';
+  cfg.shades.forEach((sh, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'series-row shade-row';
+    row.style.borderRadius = '8px';
+    row.style.marginBottom = '6px';
+    row.innerHTML = `
+      <select class="col-select" data-kind="numeric" data-role="scol" style="min-width:150px;"></select>
+      <select data-role="sop">${SHADE_OPS.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select>
+      <input type="text" data-role="sv1" placeholder="Nilai" style="width:80px;">
+      <input type="text" data-role="sv2" placeholder="Maks" style="width:80px;">
+      <input type="color" data-role="scolor" value="${sh.color}" title="Warna arsir">
+      <label class="alpha" title="Semakin besar semakin pekat">Pekat <input type="range" min="5" max="60" step="5" data-role="salpha" style="width:80px;"> <span data-role="salphaval"></span></label>
+      <button class="btn small ghost" data-role="sremove">✖</button>`;
+    const colSel = row.querySelector('[data-role=scol]');
+    const opSel = row.querySelector('[data-role=sop]');
+    const v1 = row.querySelector('[data-role=sv1]');
+    const v2 = row.querySelector('[data-role=sv2]');
+    const colorInp = row.querySelector('[data-role=scolor]');
+    const alphaInp = row.querySelector('[data-role=salpha]');
+    const alphaVal = row.querySelector('[data-role=salphaval]');
+    wrap.appendChild(row);
+    colSel.dataset.want = sh.col;
+    populateAllColumnSelectors();
+    colSel.value = sh.col;
+    opSel.value = sh.op;
+    v1.value = sh.v1; v2.value = sh.v2;
+    alphaInp.value = sh.alpha || 20;
+    alphaVal.textContent = (sh.alpha || 20) + '%';
+    const syncVis = ()=>{
+      v1.style.display = sh.op==='nonzero' ? 'none' : '';
+      v2.style.display = sh.op==='between' ? '' : 'none';
+      v1.placeholder = sh.op==='between' ? 'Min' : 'Nilai';
+    };
+    syncVis();
+    colSel.addEventListener('change', e=>{ sh.col = e.target.value; colSel.dataset.want = sh.col; renderChart(cfg); });
+    opSel.addEventListener('change', e=>{ sh.op = e.target.value; syncVis(); renderChart(cfg); });
+    v1.addEventListener('input', e=>{ sh.v1 = e.target.value; renderChart(cfg); });
+    v2.addEventListener('input', e=>{ sh.v2 = e.target.value; renderChart(cfg); });
+    colorInp.addEventListener('input', e=>{ sh.color = e.target.value; renderChart(cfg); });
+    alphaInp.addEventListener('input', e=>{ sh.alpha = parseInt(e.target.value); alphaVal.textContent = sh.alpha + '%'; renderChart(cfg); });
+    row.querySelector('[data-role=sremove]').addEventListener('click', ()=>{
+      cfg.shades.splice(idx, 1);
+      renderShadesList(card, cfg);
+      renderChart(cfg);
+    });
+  });
+}
+
+// Apakah nilai v memenuhi syarat arsir?
+function shadePass(rule, v){
+  if(v===null || v===undefined || isNaN(v)) return false;
+  if(rule.op==='nonzero') return Math.abs(v) > 1e-9;
+  const a = parseNumberString(String(rule.v1===undefined ? '' : rule.v1));
+  const b = parseNumberString(String(rule.v2===undefined ? '' : rule.v2));
+  if(a===null) return false;
+  switch(rule.op){
+    case 'gt': return v > a;
+    case 'gte': return v >= a;
+    case 'lt': return v < a;
+    case 'lte': return v <= a;
+    case 'eq': return v === a;
+    case 'between': return b!==null && v >= Math.min(a,b) && v <= Math.max(a,b);
+  }
+  return false;
+}
+function describeShade(rule){
+  const name = state.headers[parseInt(rule.col)] || ('Kolom ' + rule.col);
+  const sym = { gt:'>', gte:'≥', lt:'<', lte:'≤', eq:'=' };
+  if(rule.op==='nonzero') return name + ' ada data (bukan 0)';
+  const a = parseNumberString(String(rule.v1===undefined ? '' : rule.v1));
+  const b = parseNumberString(String(rule.v2===undefined ? '' : rule.v2));
+  if(a===null) return name + ' (nilai belum diisi)';
+  if(rule.op==='between') return b===null ? name + ' (maks belum diisi)' : name + ' antara ' + Math.min(a,b) + '–' + Math.max(a,b);
+  return name + ' ' + sym[rule.op] + ' ' + a;
 }
 
 function renderSeriesList(card, cfg){
@@ -1724,6 +1828,16 @@ function renderStatsPanel(card, cfg, labels, seriesData){
     : 'Rentang waktu: seluruh data';
   const fdesc = describeFilters(cfg);
   let html = `<div class="chart-stats-summary">${escapeHtml(rangeText)}${fdesc.length ? ' · Filter: <b>' + escapeHtml(fdesc.join('; ')) + '</b>' : ''} · Total titik data pada grafik ini: <b>${labels.length}</b></div>`;
+  const shadeRules = (cfg.shades||[]).filter(sh=> sh.col!=='' && sh.col!==undefined);
+  if(shadeRules.length){
+    html += '<div class="shade-legend">';
+    shadeRules.forEach(sh=>{
+      const vals = (seriesData[sh.col]||[]);
+      const cnt = vals.filter(v=> shadePass(sh, v)).length;
+      html += `<span class="shade-chip"><span class="shade-swatch" style="background:${hexAlpha(sh.color, Math.min(0.9,(sh.alpha||20)/100*2))}"></span>Arsir: ${escapeHtml(describeShade(sh))} · ${cnt} dari ${vals.length} titik</span>`;
+    });
+    html += '</div>';
+  }
   html += '<div class="chart-stats-grid">';
   stats.forEach(st=>{
     html += `<div class="stat-card">
@@ -1824,6 +1938,12 @@ function getAggregatedData(cfg){
   }
 
   const validSeries = cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined);
+  // kolom yang dipakai arsir ikut dihitung (walau bukan series yang digambar)
+  (cfg.shades||[]).forEach(sh=>{
+    if(sh.col!=='' && sh.col!==undefined && !validSeries.some(s=> String(s.colIndex)===String(sh.col))){
+      validSeries.push({ colIndex: String(sh.col) });
+    }
+  });
 
   if(!isDateMode || cfg.granularity==='raw'){
     // Raw / per-row display. When it's date-based, split the label into a
@@ -1931,6 +2051,41 @@ const dateGroupPlugin = {
       }
     }
     ctx.restore();
+  }
+};
+
+// Arsir vertikal transparan: untuk setiap titik yang memenuhi syarat, isi area
+// dari batas bawah sampai atas grafik (tidak bergantung rentang sumbu Y).
+const shadePlugin = {
+  id: 'csShadePlugin',
+  beforeDatasetsDraw(chart){
+    const cfg = chart.__csCfg, data = chart.__csSeriesData;
+    if(!cfg || !data || !(cfg.shades||[]).length) return;
+    const xs = chart.scales.x; if(!xs) return;
+    const area = chart.chartArea, ctx = chart.ctx;
+    cfg.shades.forEach(rule=>{
+      if(rule.col==='' || rule.col===undefined) return;
+      const vals = data[rule.col];
+      if(!vals || !vals.length) return;
+      const n = vals.length;
+      const px = [];
+      for(let i=0;i<n;i++) px.push(xs.getPixelForValue(i));
+      const edgeL = i => i>0 ? (px[i-1]+px[i])/2 : (n>1 ? px[0]-(px[1]-px[0])/2 : area.left);
+      const edgeR = i => i<n-1 ? (px[i]+px[i+1])/2 : (n>1 ? px[n-1]+(px[n-1]-px[n-2])/2 : area.right);
+      ctx.save();
+      ctx.beginPath(); ctx.rect(area.left, area.top, area.right-area.left, area.bottom-area.top); ctx.clip();
+      ctx.fillStyle = hexAlpha(rule.color, (rule.alpha||20)/100);
+      let i = 0;
+      while(i<n){
+        if(!shadePass(rule, vals[i])){ i++; continue; }
+        let j = i;
+        while(j+1<n && shadePass(rule, vals[j+1])) j++;
+        const l = edgeL(i), r = edgeR(j);
+        ctx.fillRect(l, area.top, r-l, area.bottom-area.top);
+        i = j + 1;
+      }
+      ctx.restore();
+    });
   }
 };
 
@@ -2111,11 +2266,12 @@ function renderChart(cfg){
           scales: scatterScales,
           onClick: (evt, els) => handleChartClick(cfg, els, wrap),
         },
-        plugins: [dateGroupPlugin, targetPlugin],
+        plugins: [dateGroupPlugin, targetPlugin, shadePlugin],
       });
       cfg.chartObj.__csLabels = labels;
       cfg.chartObj.__csDateGroups = dateGroups;
       cfg.chartObj.__csCfg = cfg;
+      cfg.chartObj.__csSeriesData = seriesData;
       renderStatsPanel(chartCard, cfg, labels, seriesData);
       return;
     }
@@ -2178,10 +2334,11 @@ function renderChart(cfg){
         scales,
         onClick: (evt, els) => handleChartClick(cfg, els, wrap),
       },
-      plugins: [dateGroupPlugin, targetPlugin],
+      plugins: [dateGroupPlugin, targetPlugin, shadePlugin],
     });
     cfg.chartObj.__csDateGroups = dateGroups;
     cfg.chartObj.__csCfg = cfg;
+    cfg.chartObj.__csSeriesData = seriesData;
     renderStatsPanel(chartCard, cfg, labels, seriesData);
   }catch(err){
     console.error('Gagal membuat grafik', cfg.id, err);
@@ -2486,6 +2643,7 @@ function buildProject(){
       showAllCallouts: !!cfg.showAllCallouts,
       hiddenSeries: Array.from(cfg.hiddenSeries),
       filters: (cfg.filters || []).map(f => Object.assign({}, f)),
+      shades: (cfg.shades || []).map(s => Object.assign({}, s)),
       series: cfg.series.map(s => ({
         colIndex: s.colIndex, axis: s.axis, chartType: s.chartType,
         color: s.color, colorAuto: s.colorAuto !== false,
@@ -2529,6 +2687,7 @@ function loadProject(p){
     })),
     hiddenSeries: new Set(c.hiddenSeries || []),
     filters: (c.filters || []).map(f => Object.assign({ col:'', op:'gte', v1:'', v2:'' }, f)),
+    shades: (c.shades || []).map(s => Object.assign({ col:'', op:'gt', v1:'', v2:'', color:'#2F80ED', alpha:20 }, s)),
     chartObj: null,
   }));
   state.nextChartId = state.charts.length + 1;
