@@ -335,6 +335,118 @@ table.datatable thead tr.target-row td{
 ::-webkit-scrollbar-thumb{background:var(--border); border-radius:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
 
+
+/* ================= UI v2 : lebih rapi, interaktif & ramah pemula ================= */
+:root{ --radius:18px; }
+body{ line-height:1.45; }
+button{ -webkit-tap-highlight-color:transparent; }
+input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); outline-offset:1px; }
+.btn:focus-visible, .icon-btn:focus-visible, .tab-btn:focus-visible, .cfg-tab:focus-visible, .seg button:focus-visible{ outline:2px solid var(--accent1); outline-offset:2px; }
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+@keyframes fadeIn{ from{ opacity:0;} to{ opacity:1;} }
+@media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+
+/* top bar */
+.topbar{ padding:10px 22px; }
+.topbar .iconbtn, .topbar select{ border-radius:999px; padding:7px 14px; font-weight:600; transition:background .15s, transform .15s; }
+.topbar .iconbtn:hover{ transform:translateY(-1px); }
+.topbar .iconbtn:active{ transform:scale(.96); }
+
+/* langkah / tab */
+.tabs{ gap:8px; padding:10px 22px 8px 22px; background:var(--bg); }
+.tab-btn{ border:1px solid var(--border); background:var(--panel); border-radius:999px; padding:9px 18px; margin:0; font-weight:700; transition:all .15s; }
+.tab-btn:hover{ border-color:var(--accent1); color:var(--accent1); }
+.tab-btn.active{ background:var(--accent1); color:#fff; border-color:var(--accent1); box-shadow:0 4px 14px rgba(0,0,0,.18); }
+.tab-panel.active{ animation:fadeIn .25s ease; }
+
+/* kartu & tombol */
+.card{ border-radius:var(--radius); transition:box-shadow .2s; }
+.card h3{ font-size:16px; }
+.btn{ border-radius:11px; transition:transform .12s, border-color .15s, background .15s, color .15s; }
+.btn:hover{ transform:translateY(-1px); }
+.btn:active{ transform:scale(.97); }
+.btn-group{ display:inline-flex; gap:6px; flex-wrap:wrap; }
+.ctl-group{ display:flex; flex-direction:column; gap:5px; }
+.ctl-label{ font-size:11.5px; font-weight:700; color:var(--text-soft); text-transform:uppercase; letter-spacing:.4px; }
+
+/* pilihan sumber data berupa kartu besar */
+.subtabs{ gap:10px; }
+.subtab-btn{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; border-radius:16px; padding:12px 18px; min-width:190px; transition:all .15s; }
+.subtab-btn:hover{ border-color:var(--accent1); transform:translateY(-2px); box-shadow:var(--shadow); }
+.subtab-btn .st-title{ font-size:14px; font-weight:800; }
+.subtab-btn .st-desc{ font-size:11.5px; font-weight:500; opacity:.8; }
+.subtab-btn.active .st-desc{ opacity:.92; }
+.dropzone{ border-radius:16px; padding:34px; transition:all .15s; }
+.dropzone:hover{ transform:translateY(-1px); background:var(--panel); }
+
+/* kontrol segmen */
+.seg{ display:inline-flex; background:var(--panel-2); border:1px solid var(--border); border-radius:12px; padding:3px; gap:2px; }
+.seg button{ border:none; background:transparent; padding:7px 16px; border-radius:9px; font-weight:800; cursor:pointer; color:var(--text-soft); transition:all .15s; }
+.seg button:hover{ color:var(--accent1); }
+.seg button.active{ background:var(--accent1); color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+
+/* kartu "Buat Grafik" */
+.builder-hero{ padding:18px 20px; }
+.hero-row{ display:flex; justify-content:space-between; align-items:flex-end; gap:18px; flex-wrap:wrap; }
+.hero-title{ margin:0 0 4px 0; font-size:18px; }
+.hero-sub{ margin:0; color:var(--text-soft); font-size:13px; max-width:560px; }
+.hero-controls{ display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; }
+.tip-bar{ margin-top:14px; padding:9px 14px; border-radius:12px; background:var(--panel-2); border:1px dashed var(--border); font-size:12.5px; color:var(--text-soft); }
+
+/* kartu grafik */
+.chart-card{ border-radius:var(--radius); animation:fadeUp .35s ease; transition:box-shadow .2s, transform .2s; }
+.chart-card:hover{ box-shadow:0 10px 30px rgba(20,15,5,.12); }
+.chart-card-head{ padding:10px 14px; }
+.chart-card-head input.title-input{ font-size:15.5px; min-width:140px; flex:1; border:1px solid transparent; }
+.chart-card-head input.title-input:hover{ border-color:var(--border); }
+.head-actions{ display:flex; gap:6px; align-items:center; }
+.icon-btn{ height:34px; min-width:34px; padding:0 8px; border-radius:10px; border:1px solid var(--border); background:var(--panel); color:var(--text); cursor:pointer; font-size:14px; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:all .15s; }
+.icon-btn:hover{ border-color:var(--accent1); color:var(--accent1); transform:translateY(-1px); }
+.icon-btn.with-text{ padding:0 14px; font-size:13px; font-weight:700; }
+.icon-btn.accent{ background:var(--accent1); border-color:var(--accent1); color:#fff; }
+.icon-btn.accent:hover{ color:#fff; filter:brightness(1.1); }
+.icon-btn.accent.open{ box-shadow:0 0 0 3px rgba(0,0,0,.12) inset; }
+.icon-btn.danger:hover{ color:#d32f2f; border-color:#d32f2f; }
+
+/* panel pengaturan bertab */
+.chart-config{ padding:0; background:var(--panel); }
+.chart-config.open{ animation:fadeIn .2s ease; }
+.cfg-tabs{ display:flex; gap:4px; padding:10px 14px 0 14px; border-bottom:1px solid var(--border); background:var(--panel-2); flex-wrap:wrap; }
+.cfg-tab{ border:none; background:transparent; padding:9px 16px; font-weight:700; font-size:13px; color:var(--text-soft); cursor:pointer; border-radius:10px 10px 0 0; border-bottom:3px solid transparent; transition:all .15s; }
+.cfg-tab:hover{ color:var(--accent1); }
+.cfg-tab.active{ color:var(--accent1); border-bottom-color:var(--accent1); background:var(--panel); }
+.cfg-pane{ display:none; padding:14px; }
+.cfg-pane.active{ display:block; animation:fadeIn .2s ease; }
+.sec-title{ font-size:13px; font-weight:800; margin:16px 0 8px 0; display:flex; align-items:center; gap:8px; }
+.sec-title:first-child{ margin-top:0; }
+.sec-title::before{ content:''; width:4px; height:14px; border-radius:2px; background:var(--accent1); }
+.limit-row{ gap:8px; font-size:13px; }
+.limit-row input, .limit-row select{ padding:7px 9px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:13px; }
+.axis-box{ border:1px solid var(--border); border-radius:12px; padding:10px 12px; background:var(--panel-2); }
+
+/* toolbar callout di bawah grafik */
+.chart-toolbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 14px; border-top:1px solid var(--border); border-bottom:1px solid var(--border); background:var(--panel-2); }
+.chart-toolbar .tb-label{ font-size:11.5px; font-weight:800; color:var(--text-soft); text-transform:uppercase; letter-spacing:.4px; margin-right:2px; }
+.chart-toolbar select{ padding:5px 8px; border-radius:9px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:12px; font-weight:600; }
+.chart-legend-filter{ padding-top:10px; }
+.chart-stats{ padding-top:2px; }
+
+/* keadaan kosong (belum ada data / belum diatur) */
+.chart-empty{ flex-direction:column; gap:6px; border-style:solid; border-color:var(--border); color:var(--text); font-weight:500; }
+.chart-empty .ce-icon{ font-size:40px; line-height:1; }
+.chart-empty .ce-title{ font-size:17px; font-weight:800; }
+.chart-empty .ce-text{ font-size:13px; color:var(--text-soft); max-width:420px; }
+.chart-empty .ce-actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; justify-content:center; }
+
+/* panduan */
+.help-modal{ width:560px; }
+.help-steps{ margin:10px 0 14px 0; padding-left:20px; display:flex; flex-direction:column; gap:9px; font-size:13.5px; }
+.help-steps li::marker{ font-weight:800; color:var(--accent1); }
+.toast{ border-radius:14px; font-weight:600; max-width:90vw; text-align:center; }
+
+/* korelasi */
+#panel-korelasi .card{ padding:20px; }
+
 </style>
 </head>
 <body>
@@ -348,8 +460,9 @@ table.datatable thead tr.target-row td{
     </div>
   </div>
   <div class="controls">
-    <button class="iconbtn" id="btnSaveProject" title="Simpan data + semua pengaturan grafik ke file .json">💾 Simpan Proyek</button>
-    <button class="iconbtn" id="btnOpenProject" title="Buka file proyek .json yang pernah disimpan">📂 Buka Proyek</button>
+    <button class="iconbtn" id="btnSaveProject" title="Simpan data + semua pengaturan grafik ke file .json">💾 Simpan</button>
+    <button class="iconbtn" id="btnOpenProject" title="Buka file proyek .json yang pernah disimpan">📂 Buka</button>
+    <button class="iconbtn" id="btnHelp" title="Panduan singkat penggunaan">❓ Panduan</button>
     <input type="file" id="projectInput" accept=".json,application/json" style="display:none">
     <select id="themeSelect" title="Tema warna">
       <option value="ceria">Tema Ceria</option>
@@ -363,9 +476,9 @@ table.datatable thead tr.target-row td{
 </div>
 
 <div class="tabs">
-  <button class="tab-btn active" data-tab="input">1. Input Data</button>
-  <button class="tab-btn" data-tab="builder">2. Chart Builder</button>
-  <button class="tab-btn" data-tab="korelasi">3. Korelasi Data</button>
+  <button class="tab-btn active" data-tab="input">① Masukkan Data</button>
+  <button class="tab-btn" data-tab="builder">② Buat Grafik</button>
+  <button class="tab-btn" data-tab="korelasi">③ Korelasi</button>
 </div>
 
 <!-- ============ TAB: INPUT DATA ============ -->
@@ -374,9 +487,9 @@ table.datatable thead tr.target-row td{
     <h3><span class="dot"></span> Sumber Data</h3>
     <p class="hint">Pilih salah satu cara untuk memuat data: unggah file Excel, unggah/olah CSV, atau ketik &amp; tempel (paste) data secara manual.</p>
     <div class="subtabs">
-      <button class="subtab-btn active" data-group="input" data-sub="excel">📊 Excel</button>
-      <button class="subtab-btn" data-group="input" data-sub="csv">📄 CSV</button>
-      <button class="subtab-btn" data-group="input" data-sub="manual">✍️ Copy‑Paste Manual</button>
+      <button class="subtab-btn active" data-group="input" data-sub="excel"><span class="st-title">📊 File Excel</span><span class="st-desc">Unggah file .xlsx / .xls</span></button>
+      <button class="subtab-btn" data-group="input" data-sub="csv"><span class="st-title">📄 File CSV</span><span class="st-desc">Termasuk hasil unduhan Grafana</span></button>
+      <button class="subtab-btn" data-group="input" data-sub="manual"><span class="st-title">✍️ Tempel (Copy-Paste)</span><span class="st-desc">Dari Excel, termasuk header 2 baris</span></button>
     </div>
 
     <div class="subtab-content active" data-group="input" data-sub="excel">
@@ -430,27 +543,36 @@ table.datatable thead tr.target-row td{
 
 <!-- ============ TAB: CHART BUILDER ============ -->
 <div class="tab-panel" id="panel-builder">
-  <div class="card">
-    <h3><span class="dot"></span> Pengaturan Grafik</h3>
-    <div class="row between">
-      <div class="row">
-        <div class="field" style="margin-bottom:0;">
-          <label>Jumlah Grafik</label>
-          <select id="chartCountSelect">
+  <div class="card builder-hero">
+    <div class="hero-row">
+      <div>
+        <h3 class="hero-title">Buat Grafik</h3>
+        <p class="hero-sub">Klik <b>⚙️ Atur Grafik</b> pada tiap grafik, pilih Sumbu X dan data yang ingin digambar — atau klik <b>✨ Atur otomatis</b>. Klik titik pada grafik untuk melihat nilainya.</p>
+      </div>
+      <div class="hero-controls">
+        <div class="ctl-group">
+          <span class="ctl-label">Jumlah grafik</span>
+          <div class="seg" id="chartCountSeg">
+            <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button>
+          </div>
+          <select id="chartCountSelect" style="display:none;">
             <option value="1">1 Grafik</option>
             <option value="2" selected>2 Grafik</option>
             <option value="3">3 Grafik</option>
             <option value="4">4 Grafik</option>
           </select>
         </div>
-      </div>
-      <div class="row">
-        <button class="btn" id="btnExportExcel">⬇️ Export Excel</button>
-        <button class="btn" id="btnExportAllPDF">⬇️ Export PDF (Semua)</button>
-        <button class="btn" id="btnExportAllPPT">⬇️ Export PPT (Semua)</button>
+        <div class="ctl-group">
+          <span class="ctl-label">Ekspor semua</span>
+          <div class="btn-group">
+            <button class="btn small" id="btnExportExcel" title="Unduh data sebagai Excel">📗 Excel</button>
+            <button class="btn small" id="btnExportAllPDF" title="Unduh semua grafik sebagai PDF">📄 PDF</button>
+            <button class="btn small" id="btnExportAllPPT" title="Unduh semua grafik sebagai PowerPoint">📽️ PPT</button>
+          </div>
+        </div>
       </div>
     </div>
-    <p class="hint">Klik "⚙️ Konfigurasi" pada tiap grafik untuk memilih sumbu, series, jenis grafik, rentang tanggal, dan sumbu Y. Klik titik data pada grafik untuk melihat callout (pilih gaya "Lengkap" atau "Angka saja"); klik titik yang sama lagi untuk menghapusnya. Tombol "🔢 Angka Semua" menampilkan angka di semua titik. Data &amp; susunan grafik tersimpan otomatis di browser ini; gunakan "💾 Simpan Proyek" di atas untuk membuat file cadangan .json.</p>
+    <div class="tip-bar">💾 Data &amp; susunan grafik tersimpan otomatis di browser ini. Gunakan <b>Simpan</b> di bagian atas untuk membuat file cadangan (.json) agar tidak perlu menyusun ulang.</div>
   </div>
 
   <div id="chartsContainer" class="chartgrid cols-2"></div>
@@ -528,6 +650,23 @@ table.datatable thead tr.target-row td{
       <button class="btn ghost" id="ttcCancel">Batal</button>
       <button class="btn primary" id="ttcApply">Terapkan</button>
     </div>
+  </div>
+</div>
+
+<!-- Panduan singkat -->
+<div class="modal-overlay" id="helpOverlay">
+  <div class="modal help-modal">
+    <h4>📘 Panduan Singkat</h4>
+    <ol class="help-steps">
+      <li><b>Masukkan data</b> — tab ①: unggah Excel/CSV atau tempel (copy-paste) langsung dari Excel. Tabel dengan 2 baris header dan baris Target juga bisa.</li>
+      <li><b>Buat grafik</b> — tab ②: klik <b>⚙️ Atur Grafik</b>, pilih Sumbu X (mis. tanggal) dan data yang digambar. Atau klik <b>✨ Atur otomatis</b>.</li>
+      <li><b>Saring data</b> — di tab <b>🔍 Filter</b>: rentang tanggal, nilai ≥ / ≤, atau hanya N data terakhir.</li>
+      <li><b>Percantik</b> — di tab <b>🎨 Tampilan</b>: arsir warna, batas sumbu Y. Target/standar diatur di tiap data (🎯).</li>
+      <li><b>Lihat angka</b> — klik titik untuk callout, atau <b>🔢 Angka Semua</b>.</li>
+      <li><b>Bandingkan</b> — tab ③ Korelasi, termasuk pilihan geser hari (efek tertunda).</li>
+      <li><b>Simpan</b> — <b>💾 Simpan</b> agar tidak perlu menyusun ulang; 📄 / 📽️ untuk PDF / PowerPoint.</li>
+    </ol>
+    <div class="row" style="justify-content:flex-end;"><button class="btn primary" id="helpClose">Mengerti</button></div>
   </div>
 </div>
 
@@ -746,6 +885,7 @@ function renderDataPreview(){
   let html = '<div class="table-toolbar">';
   html += '<button class="btn small" id="btnDeleteSelectedRows">🗑 Hapus Baris Terpilih</button>';
   html += '<button class="btn small ghost" id="btnClearAllData">✖ Hapus Semua Data</button>';
+  html += '<button class="btn small primary" id="btnGoBuilder" style="margin-left:auto;">Lanjut: Buat Grafik →</button>';
   html += '</div>';
   const headInfo = buildPreviewHead();
   html += '<div class="table-scroll"><table class="datatable' + (headInfo.multi ? ' multi-head' : '') + '">' + headInfo.html + '<tbody>';
@@ -773,6 +913,7 @@ function renderDataPreview(){
       state.targetRow[ci] = td.textContent.trim();
     });
   });
+  $('#btnGoBuilder').addEventListener('click', ()=> switchTab('builder'));
   $('#previewSelectAll').addEventListener('change', e=>{
     $all('.preview-row-check', wrap).forEach(cb=> cb.checked = e.target.checked);
   });
@@ -1272,7 +1413,7 @@ function newChartConfig(){
   return {
     id, title: 'Grafik ' + id, mode: 'linebar',
     xCol: '', xCol2: '', granularity: 'raw', dateFrom: '', dateTo: '',
-    series: [], hiddenSeries: new Set(), filters: [], shades: [], calloutStyle: 'full',
+    series: [], hiddenSeries: new Set(), filters: [], shades: [], calloutStyle: 'full', limitN: '', limitMode: 'last',
     yMin: '', yMax: '', y1Min: '', y1Max: '',
     showAllCallouts: false, chartObj: null,
   };
@@ -1299,6 +1440,10 @@ function renderChartCards(){
     if(card) syncChartCardControls(card, cfg);
   });
   state.charts.forEach(renderChart);
+  syncCountSeg();
+}
+function syncCountSeg(){
+  $all('#chartCountSeg button').forEach(b=> b.classList.toggle('active', parseInt(b.dataset.n) === state.charts.length));
 }
 
 // Ensures the visible form controls reflect the stored config (used after
@@ -1306,6 +1451,8 @@ function renderChartCards(){
 function syncChartCardControls(card, cfg){
   const setVal = (roleSel, val)=>{ const el = card.querySelector(roleSel); if(el) el.value = val; };
   setVal('[data-role=mode]', cfg.mode);
+  setVal('[data-role=limitn]', cfg.limitN || '');
+  setVal('[data-role=limitmode]', cfg.limitMode || 'last');
   setVal('[data-role=calloutstyle]', cfg.calloutStyle || 'full');
   const allBtn = card.querySelector('[data-role=toggle-callouts]');
   if(allBtn) allBtn.classList.toggle('primary', !!cfg.showAllCallouts);
@@ -1328,95 +1475,126 @@ function buildChartCardDom(cfg){
   card.id = 'chartcard-' + cfg.id;
   card.innerHTML = `
     <div class="chart-card-head">
-      <input class="title-input" value="${escapeHtml(cfg.title)}" data-role="title">
-      <div class="row">
-        <button class="btn small" data-role="toggle-config">\u2699\ufe0f Konfigurasi</button>
-        <select data-role="calloutstyle" title="Gaya callout saat titik grafik diklik">
-          <option value="full">Klik: Lengkap (tanggal + semua series)</option>
-          <option value="number">Klik: Angka saja</option>
-        </select>
-        <button class="btn small" data-role="toggle-callouts" title="Tampilkan angka di semua titik">\ud83d\udd22 Angka Semua</button>
-        <button class="btn small ghost" data-role="clear-callouts">\u2716 Hapus Callout</button>
+      <input class="title-input" value="${escapeHtml(cfg.title)}" data-role="title" title="Klik untuk mengganti judul grafik">
+      <div class="head-actions">
+        <button class="icon-btn with-text accent" data-role="toggle-config" title="Buka / tutup pengaturan grafik">⚙️ <span>Atur Grafik</span></button>
+        <button class="icon-btn" data-role="exportpdf" title="Unduh grafik ini sebagai PDF">📄</button>
+        <button class="icon-btn" data-role="exportppt" title="Unduh grafik ini sebagai PowerPoint">📽️</button>
+        <button class="icon-btn danger" data-role="removechart" title="Hapus grafik ini">🗑️</button>
       </div>
     </div>
     <div class="chart-config" data-role="config">
-      <div class="grid-auto">
-        <div class="field">
-          <label>Tipe Grafik</label>
-          <select data-role="mode">
-            <option value="linebar">Garis / Batang (campur)</option>
-            <option value="scatter">Scatter (cek distribusi data)</option>
-            <option value="pie">Pie</option>
-            <option value="donut">Donut</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Sumbu X (kategori / tanggal)</label>
-          <select class="col-select" data-kind="all" data-role="xcol"></select>
-        </div>
-        <div class="field">
-          <label>+ Kolom ke-2 Sumbu X (opsional)</label>
-          <select class="col-select" data-kind="all" data-role="xcol2"></select>
-        </div>
-        <div class="field" data-role="granwrap">
-          <label>Range Sumbu X</label>
-          <select data-role="granularity">
-            <option value="raw">Data Asli (per baris/jam)</option>
-            <option value="hour">Per Jam</option>
-            <option value="day">Per Hari</option>
-            <option value="week">Per Minggu</option>
-            <option value="month">Per Bulan</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Timeline Dari</label>
-          <input type="date" data-role="datefrom">
-        </div>
-        <div class="field">
-          <label>Timeline Sampai</label>
-          <input type="date" data-role="dateto">
-        </div>
+      <div class="cfg-tabs">
+        <button class="cfg-tab active" data-cfgtab="basic">📊 Data &amp; Sumbu</button>
+        <button class="cfg-tab" data-cfgtab="filter">🔍 Filter</button>
+        <button class="cfg-tab" data-cfgtab="look">🎨 Tampilan</button>
       </div>
-      <p class="hint" style="margin-top:-4px;">Kolom ke-2 Sumbu X: jika berisi <b>jam</b> (mis. 08:00) digabung dengan tanggal. Jika berisi <b>No/angka/teks lain</b>, nilainya tampil sebagai label di sumbu X dan kolom utama (mis. Date) tampil sekali per kelompok di bawahnya (hanya untuk Range "Data Asli").</p>
-      <div style="margin:10px 0 6px 0;"><b style="font-size:13px;">Filter Data</b> <span class="hint" style="margin:0;">— hanya baris yang memenuhi semua filter yang tampil di grafik ini</span></div>
-      <div data-role="filterlist"></div>
-      <button class="btn small" data-role="addfilter">+ Tambah Filter</button>
-      <div style="margin:14px 0 6px 0;"><b style="font-size:13px;">Arsir Data</b> <span class="hint" style="margin:0;">— area vertikal transparan dari bawah sampai atas grafik pada titik yang memenuhi syarat (tidak terbatas rentang sumbu Y)</span></div>
-      <div data-role="shadelist"></div>
-      <button class="btn small" data-role="addshade">+ Tambah Arsir</button>
-      <div style="margin:14px 0 6px 0;"><b style="font-size:13px;">Data Series</b></div>
-      <div data-role="serieslist"></div>
-      <button class="btn small" data-role="addseries">+ Tambah Series</button>
-      <div class="grid2" style="margin-top:12px;">
-        <div class="card" style="margin:0; padding:10px;">
-          <div class="hint" style="margin:0 0 6px 0;"><b>Sumbu Y Kiri (Primary)</b></div>
-          <div class="row">
-            <div class="field"><label>Min</label><input type="text" placeholder="auto" data-role="ymin" style="width:80px;"></div>
-            <div class="field"><label>Max</label><input type="text" placeholder="auto" data-role="ymax" style="width:80px;"></div>
-            <button class="btn small ghost" data-role="yreset">Reset</button>
+
+      <div class="cfg-pane active" data-pane="basic">
+        <div class="grid-auto">
+          <div class="field">
+            <label>Tipe Grafik</label>
+            <select data-role="mode">
+              <option value="linebar">Garis / Batang (campur)</option>
+              <option value="scatter">Scatter (cek distribusi data)</option>
+              <option value="pie">Pie</option>
+              <option value="donut">Donut</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Sumbu X (kategori / tanggal)</label>
+            <select class="col-select" data-kind="all" data-role="xcol"></select>
+          </div>
+          <div class="field">
+            <label>+ Kolom ke-2 Sumbu X (opsional)</label>
+            <select class="col-select" data-kind="all" data-role="xcol2"></select>
+          </div>
+          <div class="field" data-role="granwrap">
+            <label>Range Sumbu X</label>
+            <select data-role="granularity">
+              <option value="raw">Data Asli (per baris/jam)</option>
+              <option value="hour">Per Jam</option>
+              <option value="day">Per Hari</option>
+              <option value="week">Per Minggu</option>
+              <option value="month">Per Bulan</option>
+            </select>
           </div>
         </div>
-        <div class="card" style="margin:0; padding:10px;">
-          <div class="hint" style="margin:0 0 6px 0;"><b>Sumbu Y Kanan (Secondary)</b></div>
-          <div class="row">
-            <div class="field"><label>Min</label><input type="text" placeholder="auto" data-role="y1min" style="width:80px;"></div>
-            <div class="field"><label>Max</label><input type="text" placeholder="auto" data-role="y1max" style="width:80px;"></div>
-            <button class="btn small ghost" data-role="y1reset">Reset</button>
+        <p class="hint">Kolom ke-2 Sumbu X: jika berisi <b>jam</b> (mis. 08:00) digabung dengan tanggal. Jika berisi <b>No/angka/teks lain</b>, nilainya tampil sebagai label di sumbu X dan kolom utama (mis. Date) tampil sekali per kelompok di bawahnya (hanya untuk Range "Data Asli").</p>
+        <div class="sec-title">Data yang digambar (Series)</div>
+        <div data-role="serieslist"></div>
+        <button class="btn small" data-role="addseries">+ Tambah Series</button>
+      </div>
+
+      <div class="cfg-pane" data-pane="filter">
+        <div class="sec-title">Rentang tanggal (Timeline)</div>
+        <div class="grid-auto">
+          <div class="field">
+            <label>Dari tanggal</label>
+            <input type="date" data-role="datefrom">
+          </div>
+          <div class="field">
+            <label>Sampai tanggal</label>
+            <input type="date" data-role="dateto">
+          </div>
+        </div>
+        <div class="sec-title">Batasi jumlah data</div>
+        <div class="row limit-row">
+          <span>Tampilkan hanya</span>
+          <input type="text" inputmode="numeric" data-role="limitn" placeholder="semua" style="width:90px;" title="Ketik angka, mis. 20. Kosongkan untuk menampilkan semua">
+          <span>data</span>
+          <select data-role="limitmode">
+            <option value="last">terakhir</option>
+            <option value="first">pertama</option>
+          </select>
+        </div>
+        <p class="hint">Dihitung setelah semua filter yang aktif (tanggal &amp; nilai kolom). "Terakhir" berarti tanggal terbaru. Kosongkan untuk menampilkan semua data.</p>
+        <div class="sec-title">Filter nilai kolom <span class="hint" style="margin:0;font-weight:400;">— hanya baris yang memenuhi semua filter yang tampil</span></div>
+        <div data-role="filterlist"></div>
+        <button class="btn small" data-role="addfilter">+ Tambah Filter</button>
+      </div>
+
+      <div class="cfg-pane" data-pane="look">
+        <div class="sec-title">Arsir area <span class="hint" style="margin:0;font-weight:400;">— pita vertikal transparan pada titik yang memenuhi syarat</span></div>
+        <div data-role="shadelist"></div>
+        <button class="btn small" data-role="addshade">+ Tambah Arsir</button>
+        <div class="sec-title">Batas sumbu Y</div>
+        <div class="grid2">
+          <div class="axis-box">
+            <div class="hint" style="margin:0 0 6px 0;"><b>Sumbu Y Kiri (Primary)</b></div>
+            <div class="row">
+              <div class="field"><label>Min</label><input type="text" placeholder="auto" data-role="ymin" style="width:80px;"></div>
+              <div class="field"><label>Max</label><input type="text" placeholder="auto" data-role="ymax" style="width:80px;"></div>
+              <button class="btn small ghost" data-role="yreset">Reset</button>
+            </div>
+          </div>
+          <div class="axis-box">
+            <div class="hint" style="margin:0 0 6px 0;"><b>Sumbu Y Kanan (Secondary)</b></div>
+            <div class="row">
+              <div class="field"><label>Min</label><input type="text" placeholder="auto" data-role="y1min" style="width:80px;"></div>
+              <div class="field"><label>Max</label><input type="text" placeholder="auto" data-role="y1max" style="width:80px;"></div>
+              <button class="btn small ghost" data-role="y1reset">Reset</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
     <div class="canvas-wrap">
       <canvas id="canvas-${cfg.id}"></canvas>
       <div class="callout-panel" data-role="calloutpanel"></div>
     </div>
+    <div class="chart-toolbar">
+      <span class="tb-label">Angka &amp; callout</span>
+      <button class="btn small" data-role="toggle-callouts" title="Tampilkan angka di semua titik">🔢 Angka Semua</button>
+      <select data-role="calloutstyle" title="Gaya callout saat titik grafik diklik">
+        <option value="full">Klik titik: Lengkap (tanggal + semua series)</option>
+        <option value="number">Klik titik: Angka saja</option>
+      </select>
+      <button class="btn small ghost" data-role="clear-callouts" title="Hapus semua callout yang sedang tampil">✖ Hapus Callout</button>
+    </div>
     <div class="chart-legend-filter" data-role="legendfilter"></div>
     <div class="chart-stats" data-role="statspanel"></div>
-    <div class="chart-actions">
-      <button class="btn small" data-role="exportpdf">Export PDF</button>
-      <button class="btn small" data-role="exportppt">Export PPT</button>
-      <button class="btn small" data-role="removechart">Hapus Grafik</button>
-    </div>
   `;
   wireChartCard(card, cfg);
   return card;
@@ -1433,9 +1611,18 @@ function clearCallouts(card, cfg){
 
 function wireChartCard(card, cfg){
   card.querySelector('[data-role=title]').addEventListener('input', e=>{ cfg.title = e.target.value; scheduleAutosave(); });
-  card.querySelector('[data-role=toggle-config]').addEventListener('click', ()=>{
-    card.querySelector('[data-role=config]').classList.toggle('open');
+  card.querySelector('[data-role=toggle-config]').addEventListener('click', e=>{
+    const open = card.querySelector('[data-role=config]').classList.toggle('open');
+    e.currentTarget.classList.toggle('open', open);
   });
+  card.querySelectorAll('.cfg-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      card.querySelectorAll('.cfg-tab').forEach(t=> t.classList.toggle('active', t===tab));
+      card.querySelectorAll('.cfg-pane').forEach(p=> p.classList.toggle('active', p.dataset.pane===tab.dataset.cfgtab));
+    });
+  });
+  card.querySelector('[data-role=limitn]').addEventListener('input', e=>{ cfg.limitN = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=limitmode]').addEventListener('change', e=>{ cfg.limitMode = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=toggle-callouts]').addEventListener('click', e=>{
     cfg.showAllCallouts = !cfg.showAllCallouts;
     e.currentTarget.classList.toggle('primary', cfg.showAllCallouts);
@@ -1845,6 +2032,8 @@ function renderStatsPanel(card, cfg, labels, seriesData){
     ? `Rentang waktu: ${cfg.dateFrom || 'awal data'} s/d ${cfg.dateTo || 'akhir data'}`
     : 'Rentang waktu: seluruh data';
   const fdesc = describeFilters(cfg);
+  const lim = limitInfo(cfg);
+  if(lim.on) fdesc.push('hanya ' + lim.n + ' data ' + (lim.mode==='first' ? 'pertama' : 'terakhir'));
   let html = `<div class="chart-stats-summary">${escapeHtml(rangeText)}${fdesc.length ? ' · Filter: <b>' + escapeHtml(fdesc.join('; ')) + '</b>' : ''} · Total titik data pada grafik ini: <b>${labels.length}</b></div>`;
   const shadeRules = (cfg.shades||[]).filter(sh=> sh.col!=='' && sh.col!==undefined);
   if(shadeRules.length){
@@ -1933,6 +2122,17 @@ function getEffectiveDateValue(row, xColIdx, xCol2Idx){
   return base;
 }
 
+// Batasi jumlah data (mis. 20 data terakhir). Angka diketik manual oleh user.
+function limitInfo(cfg){
+  const n = parseInt(cfg.limitN);
+  return { on: !isNaN(n) && n>0, n: n, mode: cfg.limitMode==='first' ? 'first' : 'last' };
+}
+function limitList(arr, cfg){
+  const L = limitInfo(cfg);
+  if(!L.on) return arr;
+  return L.mode==='first' ? arr.slice(0, L.n) : arr.slice(-L.n);
+}
+
 // Apakah kolom berisi jam seperti "08:00"? (jika ya, digabung ke tanggal)
 function isTimeLikeColumn(ci){
   const vals = state.rows.map(r=>r[ci]).filter(v=> v!=='' && v!==undefined && v!==null).slice(0,40).map(v=> String(v).trim());
@@ -1986,6 +2186,11 @@ function getAggregatedData(cfg){
     // Raw / per-row display. When it's date-based, split the label into a
     // short time-only tick plus a parallel "date group" array so the chart
     // can show the date once per day instead of repeating it on every tick.
+    // urutkan menurut waktu hanya jika data dibatasi, agar "terakhir" = tanggal terbaru
+    if(limitInfo(cfg).on && isDateMode){
+      items = items.map((it,i)=>({it, i})).filter(o=>o.it.date).sort((a,b)=> (a.it.date-b.it.date) || (a.i-b.i)).map(o=>o.it);
+    }
+    items = limitList(items, cfg);
     let labels, dateGroups = null, titles = null;
     if(labelMode){
       const tickName = state.headers[tickIdx] || '';
@@ -2026,7 +2231,7 @@ function getAggregatedData(cfg){
       b.counts[s.colIndex] = (b.counts[s.colIndex]||0) + 1;
     });
   });
-  const keys = Array.from(buckets.keys()).sort();
+  const keys = limitList(Array.from(buckets.keys()).sort(), cfg);
   let labels, dateGroups = null;
   if(cfg.granularity==='hour'){
     // Same decluttering trick for hourly aggregated buckets spanning many days.
@@ -2284,6 +2489,59 @@ function showChartError(wrap, msg){
   wrap.appendChild(div);
 }
 
+// Kolom yang isinya hanya nomor urut (1,2,3,...) tidak cocok digambar sebagai data.
+function isIndexLikeColumn(ci){
+  const v = state.rows.map(r=> toNumberSafe(r[ci])).filter(x=> x!==null);
+  if(v.length < 3) return false;
+  for(let i=1;i<v.length;i++) if(v[i]-v[i-1] !== 1) return false;
+  return true;
+}
+// Atur otomatis: Sumbu X = kolom tanggal pertama (atau kolom pertama), series = 2 kolom angka pertama.
+function autoSetupChart(cfg, card){
+  if(!state.headers.length){ showToast('Masukkan data dulu di langkah ①'); return; }
+  const dateIdx = state.colTypes.indexOf('date');
+  const xi = dateIdx >= 0 ? dateIdx : 0;
+  const cols = [];
+  state.colTypes.forEach((t,i)=>{ if(t==='number' && i!==xi && !isIndexLikeColumn(i)) cols.push(i); });
+  const pick = cols.slice(0,2);
+  if(!pick.length){ showToast('Tidak ditemukan kolom angka untuk digambar'); return; }
+  cfg.xCol = String(xi);
+  cfg.series = pick.map((ci,k)=>({ colIndex:String(ci), axis:'y', chartType:'line', color:palette(k), colorAuto:true,
+    target:{ type:'none', value:'', min:'', max:'', direction:'above' } }));
+  syncChartCardControls(card, cfg);
+  renderSeriesList(card, cfg);
+  renderChart(cfg);
+  showToast('Grafik diatur otomatis. Ubah lewat ⚙️ Atur Grafik bila perlu.');
+}
+function showChartEmpty(wrap, cfg){
+  clearChartError(wrap);
+  const card = wrap.closest('.chart-card');
+  const div = document.createElement('div');
+  div.className = 'chart-error chart-empty';
+  if(!state.headers.length){
+    div.innerHTML = '<div class="ce-icon">📥</div><div class="ce-title">Belum ada data</div>' +
+      '<div class="ce-text">Mulai dari langkah ①: masukkan data lewat Excel, CSV, atau tempel (copy-paste) dari Excel.</div>' +
+      '<div class="ce-actions"><button class="btn primary" data-act="input">Ke langkah ① Masukkan Data</button></div>';
+  } else {
+    div.innerHTML = '<div class="ce-icon">📈</div><div class="ce-title">Grafik ini belum diatur</div>' +
+      '<div class="ce-text">Pilih Sumbu X dan minimal 1 data yang digambar, atau biarkan aplikasi menebaknya dulu.</div>' +
+      '<div class="ce-actions"><button class="btn primary" data-act="auto">✨ Atur otomatis</button><button class="btn" data-act="manual">⚙️ Atur sendiri</button></div>';
+  }
+  wrap.appendChild(div);
+  div.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const act = btn.dataset.act;
+      if(act==='input') switchTab('input');
+      else if(act==='auto') autoSetupChart(cfg, card);
+      else if(act==='manual'){
+        card.querySelector('[data-role=config]').classList.add('open');
+        const tgl = card.querySelector('[data-role=toggle-config]'); if(tgl) tgl.classList.add('open');
+        card.querySelector('[data-role=config]').scrollIntoView({behavior:'smooth', block:'nearest'});
+      }
+    });
+  });
+}
+
 function renderChart(cfg){
   scheduleAutosave();
   const canvas = document.getElementById('canvas-' + cfg.id);
@@ -2301,7 +2559,7 @@ function renderChart(cfg){
 
   const validSeries = cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined);
   if(cfg.xCol===''|| validSeries.length===0){
-    showChartError(wrap, 'Pilih Sumbu X dan minimal 1 Data Series pada bagian Konfigurasi untuk menampilkan grafik.');
+    showChartEmpty(wrap, cfg);
     return;
   }
 
@@ -2795,6 +3053,7 @@ function buildProject(){
       dateFrom: cfg.dateFrom, dateTo: cfg.dateTo,
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
       showAllCallouts: !!cfg.showAllCallouts, calloutStyle: cfg.calloutStyle || 'full',
+      limitN: cfg.limitN || '', limitMode: cfg.limitMode || 'last',
       hiddenSeries: Array.from(cfg.hiddenSeries),
       filters: (cfg.filters || []).map(f => Object.assign({}, f)),
       shades: (cfg.shades || []).map(s => Object.assign({}, s)),
@@ -2829,7 +3088,7 @@ function loadProject(p){
   document.documentElement.setAttribute('data-mode', mode);
 
   const base = { mode:'linebar', xCol:'', xCol2:'', granularity:'raw', dateFrom:'', dateTo:'',
-                 yMin:'', yMax:'', y1Min:'', y1Max:'', showAllCallouts:false, calloutStyle:'full' };
+                 yMin:'', yMax:'', y1Min:'', y1Max:'', showAllCallouts:false, calloutStyle:'full', limitN:'', limitMode:'last' };
   const saved = Array.isArray(p.charts) ? p.charts.slice(0,4) : [];
   state.charts = saved.map((c, i) => Object.assign({}, base, c, {
     id: i + 1,
@@ -2964,6 +3223,16 @@ function init(){
   $('#btnUseManual').addEventListener('click', useManualData);
 
   $('#chartCountSelect').addEventListener('change', e=> setChartCount(parseInt(e.target.value)));
+  $all('#chartCountSeg button').forEach(b=> b.addEventListener('click', ()=> setChartCount(parseInt(b.dataset.n))));
+
+  const closeHelp = ()=>{
+    $('#helpOverlay').classList.remove('active');
+    try{ localStorage.setItem('chartStudioHelpSeen','1'); }catch(e){}
+  };
+  $('#btnHelp').addEventListener('click', ()=> $('#helpOverlay').classList.add('active'));
+  $('#helpClose').addEventListener('click', closeHelp);
+  $('#helpOverlay').addEventListener('click', e=>{ if(e.target.id==='helpOverlay') closeHelp(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeHelp(); closeTtcModal(); } });
   $('#btnExportAllPDF').addEventListener('click', exportAllPDF);
   $('#btnExportAllPPT').addEventListener('click', exportAllPPT);
   $('#btnExportExcel').addEventListener('click', exportExcel);
@@ -2992,6 +3261,8 @@ function init(){
   renderDataPreview();
   setChartCount(2);
   checkSavedProject();
+  // pertama kali dibuka: tampilkan panduan singkat
+  try{ if(!localStorage.getItem('chartStudioHelpSeen')) $('#helpOverlay').classList.add('active'); }catch(e){}
 }
 
 function showLibWarningBanner(missing){
