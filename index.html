@@ -447,6 +447,91 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
 /* korelasi */
 #panel-korelasi .card{ padding:20px; }
 
+
+/* ================= FISHBONE ================= */
+.modebar{ display:flex; align-items:center; gap:14px; padding:12px 22px 4px 22px; flex-wrap:wrap; }
+.modebar-label{ font-size:12px; font-weight:800; color:var(--text-soft); text-transform:uppercase; letter-spacing:.5px; }
+.modeseg button{ padding:9px 20px; font-size:14px; }
+.fb-tab-btn{ border:1px solid var(--border); background:var(--panel); border-radius:999px; padding:9px 16px; margin:0; font-weight:700; font-size:13px; color:var(--text-soft); cursor:pointer; transition:all .15s; }
+.fb-tab-btn:hover{ border-color:var(--accent1); color:var(--accent1); }
+.fb-tab-btn.active{ background:var(--accent1); color:#fff; border-color:var(--accent1); box-shadow:0 4px 14px rgba(0,0,0,.18); }
+.fb-panel{ display:none; padding:18px 22px 40px 22px; }
+.fb-panel.active{ display:block; animation:fadeIn .25s ease; }
+.fb-intro{ display:flex; gap:14px; align-items:flex-start; }
+.fb-intro .ce-icon{ font-size:34px; line-height:1; }
+.fb-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px; }
+.fb-cat{ background:var(--panel); border:1px solid var(--border); border-top:5px solid var(--c); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; display:flex; flex-direction:column; gap:10px; animation:fadeUp .3s ease; }
+.fb-cat-head{ display:flex; gap:10px; align-items:flex-start; }
+.fb-dot{ width:14px; height:14px; border-radius:50%; background:var(--c); margin-top:3px; flex:none; }
+.fb-cat-title{ font-size:15px; font-weight:800; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.fb-cat-hint{ font-size:12px; color:var(--text-soft); margin-top:1px; }
+.fb-opt{ font-size:11px; font-weight:600; color:var(--text-soft); }
+.fb-count{ background:var(--c); color:#fff; border-radius:10px; padding:0 8px; font-size:11px; font-weight:700; }
+.fb-cat-name{ padding:8px 10px; border-radius:9px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:13px; font-weight:700; }
+.fb-cause-list{ display:flex; flex-direction:column; gap:7px; }
+.fb-cause{ display:flex; gap:6px; align-items:center; }
+.fb-cause-input{ flex:1; min-width:0; padding:8px 10px; border-radius:9px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:13px; }
+.fb-cat .btn{ align-self:flex-start; }
+.icon-btn.sm{ height:30px; min-width:30px; font-size:12px; }
+.fb-chip{ display:inline-block; color:#fff; border-radius:8px; padding:2px 10px; font-size:11.5px; font-weight:700; white-space:nowrap; }
+.fb-chip.sm{ padding:1px 7px; font-size:10.5px; }
+.fb-item{ background:var(--panel); border:1px solid var(--border); border-left:5px solid var(--c); border-radius:14px; padding:12px 14px; margin-bottom:10px; box-shadow:var(--shadow); }
+.fb-item-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; font-size:14px; }
+.fb-item-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
+.fb-item-grid .fb-span2{ grid-column:span 2; }
+@media (max-width:700px){ .fb-item-grid .fb-span2{ grid-column:span 1; } }
+.fb-item textarea, .fb-item input[type=text], .fb-item input[type=date], .fb-item select, .fb-panel .field textarea{ padding:8px 10px; border-radius:9px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:13px; font-family:inherit; width:100%; resize:vertical; }
+.fb-panel .field textarea, .fb-panel .field input[type=text], .fb-panel .field input[type=date]{ width:100%; }
+.fb-check{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; padding:8px 12px; border:1px dashed var(--border); border-radius:10px; align-self:end; flex-wrap:wrap; cursor:pointer; }
+.fb-check.disabled{ opacity:.55; cursor:not-allowed; }
+.fb-sub{ font-size:11px; font-weight:500; color:var(--text-soft); }
+.fb-badge{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:11.5px; font-weight:700; background:var(--panel-2); border:1px solid var(--border); }
+.fb-badge.root{ background:#C62828; color:#fff; border-color:#C62828; }
+.fb-badge.st-done{ background:#27AE60; color:#fff; border-color:#27AE60; }
+.fb-badge.st-progress{ background:#F2994A; color:#fff; border-color:#F2994A; }
+.fb-badge.st-noteff{ background:#EB5757; color:#fff; border-color:#EB5757; }
+.fb-root-ul{ margin:6px 0 0 0; padding-left:20px; display:flex; flex-direction:column; gap:6px; }
+.fb-empty{ text-align:center; padding:34px 16px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.fb-empty .ce-icon{ font-size:40px; line-height:1; }
+.fb-empty .ce-title{ font-size:17px; font-weight:800; }
+.fb-empty .ce-text{ font-size:13px; color:var(--text-soft); max-width:440px; margin-bottom:8px; }
+.fb-diagram-wrap{ overflow:auto; border:1px solid var(--border); border-radius:14px; background:#fff; padding:6px; }
+.fb-toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+.fb-legend{ display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text-soft); margin-top:10px; }
+.fb-prog-row{ display:flex; align-items:center; gap:12px; }
+.fb-prog-bar{ flex:1; height:12px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); overflow:hidden; }
+.fb-prog-bar span{ display:block; height:100%; background:linear-gradient(90deg,#27AE60,#6FCF97); transition:width .3s; }
+.fb-prog-chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.fb-table-wrap{ overflow:auto; border:1px solid var(--border); border-radius:12px; }
+.fb-table th, .fb-table td{ white-space:normal; min-width:60px; vertical-align:middle; }
+.fb-table td.fb-wrap{ min-width:220px; }
+.fb-table select{ padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:12.5px; }
+.fb-score{ font-weight:800; text-align:center; }
+.fb-results{ display:grid; grid-template-columns:minmax(300px,1fr) minmax(300px,1fr); gap:16px; align-items:start; }
+@media (max-width:1000px){ .fb-results{ grid-template-columns:1fr; } }
+.fb-scale{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:8px; margin-top:10px; font-size:12px; }
+.fb-scale div{ border:1px solid var(--border); border-radius:10px; padding:8px 10px; background:var(--panel-2); }
+.fb-report{ background:#fff; color:#222; border:1px solid var(--border); border-radius:14px; padding:26px 30px; font-size:13px; line-height:1.5; }
+.fb-report h2{ margin:0; font-size:20px; color:#C62828; }
+.fb-report h3{ margin:20px 0 8px 0; font-size:14.5px; border-bottom:2px solid #eee; padding-bottom:4px; }
+.fb-rep-title{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:3px solid #C62828; padding-bottom:8px; }
+.fb-report table{ border-collapse:collapse; width:100%; margin-bottom:6px; }
+.fb-report td, .fb-report th{ border:1px solid #d9d9d9; padding:6px 8px; text-align:left; vertical-align:top; }
+.fb-report th{ background:#f4f4f4; font-size:12px; }
+.fb-kv td:nth-child(odd){ background:#f7f7f7; font-weight:700; width:18%; }
+.fb-rep-cat{ margin-bottom:6px; }
+.fb-rep-cat ul, .fb-report ul{ margin:3px 0 4px 0; padding-left:20px; }
+.fb-rep-diagram{ overflow:auto; border:1px solid #eee; border-radius:10px; padding:4px; margin:6px 0; }
+.fb-dash{ color:#999; }
+@media print{
+  body.print-fb .topbar, body.print-fb .modebar, body.print-fb .tabs, body.print-fb .toast,
+  body.print-fb #chartApp, body.print-fb .fb-toolbar, body.print-fb .restore-banner, body.print-fb .lib-warning-banner{ display:none !important; }
+  body.print-fb .fb-panel{ display:none !important; padding:0; }
+  body.print-fb #fbp-report{ display:block !important; padding:0; }
+  body.print-fb .fb-report{ border:none; padding:0; }
+  body.print-fb .fb-report h3, body.print-fb .fb-rep-diagram, body.print-fb .fb-report tr{ break-inside:avoid; }
+}
+
 </style>
 </head>
 <body>
@@ -475,6 +560,15 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
   </div>
 </div>
 
+<div class="modebar">
+  <span class="modebar-label">Pilih jenis analisis</span>
+  <div class="seg modeseg" id="modeSeg">
+    <button data-mode="chart" class="active">📊 Grafik Data</button>
+    <button data-mode="fishbone">🐟 Fishbone Diagram (8M)</button>
+  </div>
+</div>
+
+<div id="chartApp">
 <div class="tabs">
   <button class="tab-btn active" data-tab="input">① Masukkan Data</button>
   <button class="tab-btn" data-tab="builder">② Buat Grafik</button>
@@ -632,6 +726,142 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
   </div>
 </div>
 
+</div><!-- /chartApp -->
+
+<!-- ============ FISHBONE (8M) ============ -->
+<div id="fishApp" style="display:none;">
+  <div class="tabs fb-tabs">
+    <button class="fb-tab-btn active" data-fbtab="identity">① Identitas &amp; Masalah</button>
+    <button class="fb-tab-btn" data-fbtab="causes">② Faktor Penyebab (8M)</button>
+    <button class="fb-tab-btn" data-fbtab="diagram">③ Diagram Fishbone</button>
+    <button class="fb-tab-btn" data-fbtab="validate">④ Validasi &amp; Akar Penyebab</button>
+    <button class="fb-tab-btn" data-fbtab="actions">⑤ Tindakan &amp; Evaluasi</button>
+    <button class="fb-tab-btn" data-fbtab="priority">⑥ Prioritas</button>
+    <button class="fb-tab-btn" data-fbtab="report">⑦ Laporan</button>
+  </div>
+
+  <!-- ① -->
+  <div class="fb-panel active" id="fbp-identity">
+    <div class="card">
+      <h3><span class="dot"></span> 1. Identitas Analisis</h3>
+      <div class="grid-auto">
+        <div class="field"><label>Nomor dokumen</label><input type="text" data-fb="meta.docNo" placeholder="mis. FB-2026-014"></div>
+        <div class="field"><label>Departemen</label><input type="text" data-fb="meta.dept" placeholder="mis. Produksi"></div>
+        <div class="field"><label>Lokasi</label><input type="text" data-fb="meta.location" placeholder="mis. Area Furnace"></div>
+        <div class="field"><label>Tanggal</label><input type="date" data-fb="meta.date"></div>
+      </div>
+      <div class="field"><label>Nama tim</label><input type="text" data-fb="meta.team" placeholder="Pisahkan dengan koma, mis. Budi, Sari, Andi"></div>
+    </div>
+    <div class="card">
+      <h3><span class="dot"></span> 2. Effect / Masalah Utama</h3>
+      <div class="field"><label>Pernyataan masalah</label><textarea rows="2" data-fb="problem.statement" placeholder="Tulis masalah secara spesifik: apa, di mana, kapan, seberapa besar"></textarea></div>
+      <div class="grid-auto">
+        <div class="field"><label>Kondisi aktual</label><input type="text" data-fb="problem.actual" placeholder="mis. 150 ton/hari"></div>
+        <div class="field"><label>Target</label><input type="text" data-fb="problem.target" placeholder="mis. 167,5 ton/hari"></div>
+        <div class="field"><label>Kesenjangan (gap)</label><input type="text" data-fb="problem.gap" placeholder="mis. -17,5 ton/hari"></div>
+      </div>
+      <div class="hint" id="fbGapHint" style="margin:0 0 10px 0;"></div>
+      <button class="btn primary" data-act="gotab" data-tab="causes">Lanjut: isi Faktor Penyebab →</button>
+    </div>
+  </div>
+
+  <!-- ② -->
+  <div class="fb-panel" id="fbp-causes">
+    <div class="card">
+      <div class="fb-intro">
+        <div class="ce-icon">🧠</div>
+        <div>
+          <h3 style="margin:0 0 4px 0;">3–11. Faktor Penyebab: metode 8M + 1 faktor lain</h3>
+          <div class="hint" style="margin:0;">Tulis kemungkinan penyebab pada tiap kategori. Tekan <b>Enter</b> untuk menambah faktor berikutnya. Baris kosong diabaikan. Kategori <b>Faktor Lain</b> boleh dikosongkan atau diberi nama sendiri.</div>
+        </div>
+      </div>
+    </div>
+    <div class="fb-grid" id="fbCatsGrid"></div>
+    <div style="margin-top:14px;"><button class="btn primary" data-act="gotab" data-tab="diagram">Lihat Diagram →</button></div>
+  </div>
+
+  <!-- ③ -->
+  <div class="fb-panel" id="fbp-diagram">
+    <div class="card">
+      <div class="fb-toolbar">
+        <label class="fb-check" style="border-style:solid;"><input type="checkbox" data-fb="showMarks"> Tampilkan tanda status (★ akar, ✓ terbukti, ✗ tidak terbukti)</label>
+        <button class="btn small" data-act="png">🖼️ Unduh PNG</button>
+        <button class="btn small" data-act="svg">📐 Unduh SVG</button>
+      </div>
+      <div class="fb-diagram-wrap" id="fbDiagram"></div>
+      <div class="fb-legend"><span>★ akar penyebab terverifikasi</span><span>✓ terbukti</span><span>✗ tidak terbukti (dicoret)</span><span>Diagram tersusun otomatis dari isian langkah ① dan ②.</span></div>
+    </div>
+  </div>
+
+  <!-- ④ -->
+  <div class="fb-panel" id="fbp-validate">
+    <div class="card">
+      <h3><span class="dot"></span> 13. Akar Penyebab (terverifikasi)</h3>
+      <div id="fbRootList"></div>
+      <div class="field" style="margin-top:12px;"><label>Rumusan akar penyebab — penyebab mendasar yang sudah terverifikasi</label><textarea rows="2" data-fb="rootSummary" placeholder="Ringkas dalam 1–2 kalimat"></textarea></div>
+    </div>
+    <div class="card" style="padding-bottom:6px;">
+      <h3><span class="dot"></span> 12. Validasi Penyebab</h3>
+      <div class="hint">Buktikan tiap faktor dengan observasi, data, atau pemeriksaan. Faktor yang <b>Terbukti</b> bisa ditandai sebagai <b>akar penyebab</b>.</div>
+      <div id="fbValidateList"></div>
+    </div>
+  </div>
+
+  <!-- ⑤ -->
+  <div class="fb-panel" id="fbp-actions">
+    <div class="card">
+      <h3><span class="dot"></span> 14–15. Tindakan Perbaikan &amp; Evaluasi</h3>
+      <div id="fbProgress"></div>
+      <label class="fb-check" style="margin-top:12px;"><input type="checkbox" data-fb="showAllActions"> Tampilkan semua penyebab (bukan hanya akar penyebab)</label>
+    </div>
+    <div id="fbActionList"></div>
+  </div>
+
+  <!-- ⑥ -->
+  <div class="fb-panel" id="fbp-priority">
+    <div class="card">
+      <h3><span class="dot"></span> Skala Prioritas: mana yang paling berdampak dan mana yang mudah diselesaikan</h3>
+      <div class="hint">Beri nilai 1–5 untuk setiap penyebab. Hasilnya otomatis menjadi peringkat dan matriks prioritas.</div>
+      <div class="fb-scale">
+        <div><b>Dampak</b> (pengaruh ke masalah utama)<br>1 = sangat kecil … 5 = sangat besar</div>
+        <div><b>Kemudahan</b> (penyelesaiannya)<br>1 = sangat sulit … 5 = sangat mudah</div>
+        <div><b>Dampak ≥ 4 &amp; Mudah ≥ 4</b><br>⚡ Quick Win → kerjakan lebih dulu</div>
+        <div><b>Dampak ≥ 4 tetapi sulit</b><br>🏗️ Proyek Besar → rencanakan</div>
+      </div>
+    </div>
+    <div class="card"><div id="fbRateTable"></div></div>
+    <div class="card">
+      <div class="fb-toolbar">
+        <h3 style="margin:0;"><span class="dot"></span> Peringkat &amp; Matriks</h3>
+        <div class="field" style="margin:0 0 0 auto;"><label>Urutkan peringkat</label>
+          <select data-fb="sort">
+            <option value="priority">Prioritas utama (dampak tinggi &amp; mudah dulu)</option>
+            <option value="impact">Dampak tertinggi</option>
+            <option value="ease">Paling mudah diselesaikan</option>
+          </select>
+        </div>
+      </div>
+      <div class="fb-results"><div id="fbRankTable"></div><div id="fbMatrix"></div></div>
+    </div>
+  </div>
+
+  <!-- ⑦ -->
+  <div class="fb-panel" id="fbp-report">
+    <div class="card">
+      <div class="fb-toolbar">
+        <b>Laporan lengkap (butir 1–15 + prioritas)</b>
+        <span style="flex:1"></span>
+        <button class="btn small" data-act="print">🖨️ Cetak</button>
+        <button class="btn small" data-act="pdf">📄 PDF</button>
+        <button class="btn small" data-act="xlsx">📗 Excel</button>
+        <button class="btn small" data-act="ppt">📽️ PPT</button>
+        <button class="btn small" data-act="png">🖼️ PNG Diagram</button>
+      </div>
+      <div class="fb-report" id="fbReport"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Text to Columns Modal -->
 <div class="modal-overlay" id="ttcOverlay">
   <div class="modal">
@@ -664,6 +894,7 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
       <li><b>Percantik</b> — di tab <b>🎨 Tampilan</b>: arsir warna, batas sumbu Y. Target/standar diatur di tiap data (🎯).</li>
       <li><b>Lihat angka</b> — klik titik untuk callout, atau <b>🔢 Angka Semua</b>.</li>
       <li><b>Bandingkan</b> — tab ③ Korelasi, termasuk pilihan geser hari (efek tertunda).</li>
+      <li><b>Fishbone</b> — pilih <b>🐟 Fishbone Diagram (8M)</b> di bagian atas untuk analisis akar masalah: isi identitas &amp; masalah, faktor 8M, validasi, tindakan, dan prioritas.</li>
       <li><b>Simpan</b> — <b>💾 Simpan</b> agar tidak perlu menyusun ulang; 📄 / 📽️ untuk PDF / PowerPoint.</li>
     </ol>
     <div class="row" style="justify-content:flex-end;"><button class="btn primary" id="helpClose">Mengerti</button></div>
@@ -3044,6 +3275,8 @@ function buildProject(){
     savedAt: new Date().toISOString(),
     theme: $('#themeSelect').value,
     mode: $('#modeToggle').dataset.mode,
+    appMode: (typeof __appMode!=='undefined' ? __appMode : 'chart'),
+    fishbone: fbState,
     headers: state.headers,
     h1: state.h1, h2: state.h2, targetRow: state.targetRow,
     rows: state.rows.map(r => r.map(c => c instanceof Date ? c.toISOString() : c)),
@@ -3079,6 +3312,7 @@ function loadProject(p){
   state.h2 = (Array.isArray(p.h2) && p.h2.length===nCols) ? p.h2.map(String) : state.headers.map(()=> '');
   state.targetRow = (Array.isArray(p.targetRow) && p.targetRow.length===nCols) ? p.targetRow.map(String) : null;
 
+  fbState = fbNormalize(p.fishbone);
   if(p.theme && THEMES.indexOf(p.theme) >= 0) $('#themeSelect').value = p.theme;
   const mode = p.mode === 'dark' ? 'dark' : 'light';
   const btn = $('#modeToggle');
@@ -3113,13 +3347,14 @@ function loadProject(p){
     $('#chartCountSelect').value = String(state.charts.length);
     renderChartCards();
   }
+  setAppMode(p.appMode === 'fishbone' ? 'fishbone' : 'chart');
   __autosaveBlocked = false;
   scheduleAutosave();
 }
 
 function saveProjectFile(){
   const hasChart = state.charts.some(c => c.series.length > 0);
-  if(state.headers.length === 0 && !hasChart){ showToast('Belum ada data/grafik untuk disimpan'); return; }
+  if(state.headers.length === 0 && !hasChart && !fbHasContent(fbState)){ showToast('Belum ada data/grafik/fishbone untuk disimpan'); return; }
   const d = new Date();
   const pad = n => String(n).padStart(2,'0');
   const stamp = d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes());
@@ -3153,7 +3388,7 @@ function scheduleAutosave(){
   __autosaveTimer = setTimeout(doAutosave, 800);
 }
 function doAutosave(){
-  if(__autosaveBlocked || state.headers.length === 0) return;
+  if(__autosaveBlocked || (state.headers.length === 0 && !fbHasContent(fbState))) return;
   try{
     localStorage.setItem(PROJECT_KEY, JSON.stringify(buildProject()));
   }catch(e){
@@ -3170,13 +3405,14 @@ function checkSavedProject(){
   if(!raw) return;
   let p;
   try{ p = JSON.parse(raw); }catch(e){ return; }
-  if(!p || !Array.isArray(p.headers) || p.headers.length === 0) return;
+  const hasFb = !!(p && p.fishbone && fbHasContent(fbNormalize(p.fishbone)));
+  if(!p || !Array.isArray(p.headers) || (p.headers.length === 0 && !hasFb)) return;
   __autosaveBlocked = true; // jangan timpa proyek tersimpan sebelum user memilih
   const when = p.savedAt ? new Date(p.savedAt).toLocaleString('id-ID') : '';
   const banner = document.createElement('div');
   banner.className = 'restore-banner';
   banner.innerHTML = '📂 Proyek terakhir ditemukan' + (when ? ' (disimpan ' + escapeHtml(when) + ')' : '') +
-    ': ' + p.rows.length + ' baris data, ' + (p.charts ? p.charts.length : 0) + ' grafik. ' +
+    ': ' + p.rows.length + ' baris data, ' + (p.charts ? p.charts.length : 0) + ' grafik' + (hasFb ? ', analisis fishbone' : '') + '. ' +
     '<button class="primary" id="btnRestoreYes">Pulihkan</button>' +
     '<button id="btnRestoreNo">Mulai Baru</button>';
   document.body.insertBefore(banner, document.body.firstChild);
@@ -3260,6 +3496,7 @@ function init(){
   applyTheme();
   renderDataPreview();
   setChartCount(2);
+  fbInit();
   checkSavedProject();
   // pertama kali dibuka: tampilkan panduan singkat
   try{ if(!localStorage.getItem('chartStudioHelpSeen')) $('#helpOverlay').classList.add('active'); }catch(e){}
@@ -3289,6 +3526,738 @@ document.addEventListener('DOMContentLoaded', ()=>{ __domReady = true; __tryStar
 document.addEventListener('cs-libs-ready', ()=>{ __libsReady = true; __tryStartApp(); });
 // Safety net: don't wait forever if the loader script itself never runs/finishes.
 setTimeout(()=>{ if(!__libsReady){ __libsReady = true; __tryStartApp(); } }, 8000);
+
+/* ================= FISHBONE (8M) ================= */
+const FB_CATS = [
+  { id:'man', name:'Man', color:'#2F80ED', hint:'Faktor manusia yang mungkin berkontribusi', ex:'mis. operator belum terlatih / kelelahan kerja' },
+  { id:'machine', name:'Machine', color:'#EB5757', hint:'Faktor mesin, peralatan, atau fasilitas', ex:'mis. peralatan aus / setting tidak stabil' },
+  { id:'method', name:'Method', color:'#27AE60', hint:'Faktor metode, SOP, instruksi, dan proses kerja', ex:'mis. SOP tidak jelas / urutan kerja berbeda-beda' },
+  { id:'material', name:'Material', color:'#F2994A', hint:'Faktor bahan baku, bahan pendukung, atau komponen', ex:'mis. kualitas bahan baku bervariasi' },
+  { id:'measurement', name:'Measurement', color:'#9B51E0', hint:'Faktor pengukuran, instrumen, data, dan sistem monitoring', ex:'mis. alat ukur belum dikalibrasi / data terlambat' },
+  { id:'environment', name:'Environment', color:'#00A6A6', hint:'Faktor lingkungan kerja dan kondisi eksternal', ex:'mis. suhu ruang tinggi / hujan deras' },
+  { id:'management', name:'Management', color:'#C2185B', hint:'Faktor perencanaan, kebijakan, pengawasan, dan sumber daya', ex:'mis. pengawasan kurang / sumber daya terbatas' },
+  { id:'maintenance', name:'Maintenance', color:'#6D4C41', hint:'Faktor pemeliharaan dan keandalan peralatan', ex:'mis. jadwal perawatan terlewat' },
+  { id:'other', name:'', custom:true, color:'#546E7A', hint:'Faktor tambahan di luar 8M (opsional) — isi nama faktornya', ex:'mis. Money, Moment, Safety' },
+];
+const FB_QUAD = {
+  quick:   { label:'Quick Win',        icon:'⚡', desc:'Dampak tinggi & mudah — kerjakan lebih dulu', order:0, color:'#27AE60' },
+  major:   { label:'Proyek Besar',     icon:'🏗️', desc:'Dampak tinggi tetapi sulit — rencanakan matang', order:1, color:'#F2994A' },
+  fill:    { label:'Pelengkap',        icon:'🧩', desc:'Dampak rendah tetapi mudah — kerjakan bila ada waktu', order:2, color:'#2F80ED' },
+  low:     { label:'Prioritas Rendah', icon:'💤', desc:'Dampak rendah & sulit — tunda', order:3, color:'#8E8E8E' },
+  unrated: { label:'Belum dinilai',    icon:'❔', desc:'Isi nilai dampak & kemudahan', order:4, color:'#BDBDBD' },
+};
+const FB_IMPACT = ['—','1 · Sangat kecil','2 · Kecil','3 · Sedang','4 · Besar','5 · Sangat besar'];
+const FB_EASE   = ['—','1 · Sangat sulit','2 · Sulit','3 · Sedang','4 · Mudah','5 · Sangat mudah'];
+const FB_VSTATUS = { none:'Belum divalidasi', valid:'Terbukti (valid)', invalid:'Tidak terbukti' };
+const FB_STATUS  = { none:'Belum mulai', progress:'Dalam proses', done:'Selesai – efektif', noteff:'Selesai – belum efektif' };
+
+let __fbUid = 0;
+function fbUid(){ __fbUid++; return 'c' + Date.now().toString(36) + __fbUid; }
+function fbNewCause(text){
+  return { id: fbUid(), text: text || '', impact:0, ease:0, vstatus:'none', evidence:'', root:false,
+           corrective:'', preventive:'', pic:'', due:'', evalResult:'', status:'none' };
+}
+function fbDefault(){
+  return {
+    meta: { docNo:'', dept:'', location:'', date:'', team:'' },
+    problem: { statement:'', actual:'', target:'', gap:'' },
+    rootSummary: '', showMarks: true, showAllActions: false, sort: 'priority',
+    cats: FB_CATS.map(c=>({ id:c.id, name:'', causes:[ fbNewCause('') ] })),
+  };
+}
+function fbCleanCause(c){
+  const o = fbNewCause('');
+  if(!c || typeof c!=='object') return o;
+  if(typeof c.id==='string' && c.id) o.id = c.id;
+  ['text','evidence','corrective','preventive','pic','due','evalResult'].forEach(k=>{ if(typeof c[k]==='string') o[k] = c[k]; });
+  const n5 = v => { const n = parseInt(v); return (n>=1 && n<=5) ? n : 0; };
+  o.impact = n5(c.impact); o.ease = n5(c.ease);
+  if(FB_VSTATUS[c.vstatus]) o.vstatus = c.vstatus;
+  if(FB_STATUS[c.status]) o.status = c.status;
+  o.root = !!c.root && o.vstatus==='valid';
+  return o;
+}
+function fbNormalize(src){
+  const d = fbDefault();
+  if(!src || typeof src!=='object') return d;
+  ['docNo','dept','location','date','team'].forEach(k=>{ if(src.meta && typeof src.meta[k]==='string') d.meta[k] = src.meta[k]; });
+  ['statement','actual','target','gap'].forEach(k=>{ if(src.problem && typeof src.problem[k]==='string') d.problem[k] = src.problem[k]; });
+  if(typeof src.rootSummary==='string') d.rootSummary = src.rootSummary;
+  d.showMarks = src.showMarks !== false;
+  d.showAllActions = !!src.showAllActions;
+  if(['priority','impact','ease'].indexOf(src.sort) >= 0) d.sort = src.sort;
+  d.cats.forEach(cat=>{
+    const sc = (Array.isArray(src.cats) ? src.cats : []).find(c=> c && c.id===cat.id);
+    if(!sc) return;
+    if(typeof sc.name==='string') cat.name = sc.name;
+    const arr = Array.isArray(sc.causes) ? sc.causes : [];
+    cat.causes = arr.map(fbCleanCause);
+    if(!cat.causes.length) cat.causes = [ fbNewCause('') ];
+  });
+  return d;
+}
+let fbState = fbDefault();
+
+function fbCatDef(id){ return FB_CATS.find(c=> c.id===id); }
+function fbCatTitle(cat){
+  const def = fbCatDef(cat.id);
+  return def.custom ? ((cat.name||'').trim() || 'Faktor Lain') : def.name;
+}
+// Daftar penyebab yang sudah ditulis (teks tidak kosong), beserta kategorinya.
+function fbCauses(fb){
+  const out = [];
+  fb.cats.forEach(cat=>{
+    cat.causes.forEach(cause=>{
+      if((cause.text||'').trim()) out.push({ cat, def: fbCatDef(cat.id), title: fbCatTitle(cat), cause });
+    });
+  });
+  return out;
+}
+function fbHasContent(fb){
+  if(!fb) return false;
+  const vals = [].concat(Object.values(fb.meta||{}), Object.values(fb.problem||{}), [fb.rootSummary||'']);
+  if(vals.some(v=> String(v||'').trim())) return true;
+  return (fb.cats||[]).some(c=> (c.causes||[]).some(x=> (x.text||'').trim()));
+}
+
+/* ----- prioritas: dampak x kemudahan ----- */
+function fbQuadrant(c){
+  if(!c.impact || !c.ease) return 'unrated';
+  const hi = c.impact >= 4, ez = c.ease >= 4;
+  if(hi && ez) return 'quick';
+  if(hi) return 'major';
+  if(ez) return 'fill';
+  return 'low';
+}
+function fbScore(c){ return (c.impact||0) * (c.ease||0); }
+function fbRank(list, mode){
+  const arr = list.slice();
+  const rated = x => !!(x.cause.impact && x.cause.ease);
+  arr.sort((a,b)=>{
+    const ra = rated(a), rb = rated(b);
+    if(ra !== rb) return ra ? -1 : 1;
+    const ca = a.cause, cb = b.cause;
+    if(mode==='impact') return (cb.impact-ca.impact) || (cb.ease-ca.ease);
+    if(mode==='ease') return (cb.ease-ca.ease) || (cb.impact-ca.impact);
+    const qa = FB_QUAD[fbQuadrant(ca)].order, qb = FB_QUAD[fbQuadrant(cb)].order;
+    return (qa-qb) || (fbScore(cb)-fbScore(ca)) || (cb.impact-ca.impact);
+  });
+  return arr;
+}
+
+/* ----- util teks ----- */
+function fbWrap(text, maxChars, maxLines){
+  const words = String(text||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
+  const lines = []; let cur = '';
+  words.forEach(w0=>{
+    let w = w0;
+    while(w.length > maxChars){
+      if(cur){ lines.push(cur); cur = ''; }
+      lines.push(w.slice(0, maxChars)); w = w.slice(maxChars);
+    }
+    if(!cur) cur = w;
+    else if((cur + ' ' + w).length <= maxChars) cur += ' ' + w;
+    else { lines.push(cur); cur = w; }
+  });
+  if(cur) lines.push(cur);
+  if(maxLines && lines.length > maxLines){
+    const cut = lines.slice(0, maxLines);
+    let last = cut[maxLines-1];
+    if(last.length > maxChars - 1) last = last.slice(0, maxChars - 1);
+    cut[maxLines-1] = last + '…';
+    return cut;
+  }
+  return lines;
+}
+function fbFmtDate(s){
+  const m = String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return String(s||'');
+  return parseInt(m[3]) + ' ' + MONTHS_ID[parseInt(m[2])-1] + ' ' + m[1];
+}
+function fbXml(s){ return escapeHtml(s); }
+
+/* ----- diagram tulang ikan (SVG) ----- */
+function fbBuildSvg(fb){
+  const showMarks = fb.showMarks !== false;
+  const cats = fb.cats.filter(c=> c.id!=='other' || (c.name||'').trim() || c.causes.some(x=> (x.text||'').trim()));
+  const nTop = Math.ceil(cats.length / 2);
+  const top = cats.slice(0, nTop), bot = cats.slice(nTop);
+  const CW = 215, LEFT = 20, SLANT = 70, TXT_W = 150, LH = 14, LABEL_H = 30, MAXC = 22;
+
+  function blocks(cat){
+    return cat.causes.filter(x=> (x.text||'').trim()).map(x=>{
+      let t = x.text;
+      if(showMarks){ t = (x.root ? '★ ' : (x.vstatus==='valid' ? '✓ ' : (x.vstatus==='invalid' ? '✗ ' : ''))) + t; }
+      return { c:x, lines: fbWrap(t, MAXC, 4) };
+    });
+  }
+  const topB = top.map(blocks), botB = bot.map(blocks);
+  const contentH = bl => bl.reduce((s,b)=> s + b.lines.length*LH + 10, 14);
+  const maxContent = Math.max(0, ...topB.concat(botB).map(contentH));
+  const boneH = Math.max(130, maxContent + 20);
+  const spineY = 10 + LABEL_H + boneH;
+  const H = spineY + boneH + LABEL_H + 10;
+  const cols = Math.max(top.length, 1);
+  const xs = i => LEFT + TXT_W + SLANT + i*CW;
+  const lastX = xs(cols-1);
+
+  // kotak masalah (kepala ikan)
+  const p = fb.problem || {};
+  const headLines = [];
+  headLines.push({ t:'MASALAH UTAMA', s:10, b:true, fill:'#888' });
+  fbWrap(p.statement || '(isi pernyataan masalah)', 20, 6).forEach(l=> headLines.push({ t:l, s:13, b:true, fill:'#222' }));
+  if((p.actual||'').trim()) fbWrap('Aktual: ' + p.actual, 26, 2).forEach(l=> headLines.push({ t:l, s:11, b:false, fill:'#444' }));
+  if((p.target||'').trim()) fbWrap('Target: ' + p.target, 26, 2).forEach(l=> headLines.push({ t:l, s:11, b:false, fill:'#444' }));
+  if((p.gap||'').trim()) fbWrap('Gap: ' + p.gap, 26, 2).forEach(l=> headLines.push({ t:l, s:11, b:true, fill:'#C62828' }));
+  const headH = headLines.reduce((s,l)=> s + l.s + 5, 24);
+  const headW = 210;
+  const headX = lastX + 70;
+  const W = headX + headW + 20;
+
+  const out = [];
+  out.push('<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#ffffff"/>');
+  // tulang punggung + kepala
+  out.push('<line x1="' + LEFT + '" y1="' + spineY + '" x2="' + headX + '" y2="' + spineY + '" stroke="#333" stroke-width="4" stroke-linecap="round"/>');
+  out.push('<polygon points="' + (headX-12) + ',' + (spineY-8) + ' ' + headX + ',' + spineY + ' ' + (headX-12) + ',' + (spineY+8) + '" fill="#333"/>');
+  const hy = spineY - headH/2;
+  out.push('<rect x="' + headX + '" y="' + hy + '" width="' + headW + '" height="' + headH + '" rx="12" fill="#FFF8E1" stroke="#C62828" stroke-width="2.5"/>');
+  let ty = hy + 16;
+  headLines.forEach(l=>{
+    out.push('<text x="' + (headX + headW/2) + '" y="' + ty + '" text-anchor="middle" font-size="' + l.s + '" font-weight="' + (l.b ? 700 : 400) + '" fill="' + l.fill + '" font-family="Segoe UI, Arial, sans-serif">' + fbXml(l.t) + '</text>');
+    ty += l.s + 5;
+  });
+
+  function drawSide(list, blkList, isTop){
+    list.forEach((cat, i)=>{
+      const def = fbCatDef(cat.id), color = def.color, xSpine = xs(i), xOuter = xSpine - SLANT;
+      const yOuter = isTop ? (10 + LABEL_H) : (spineY + boneH);
+      // label kategori
+      const ly = isTop ? 10 : (spineY + boneH);
+      out.push('<rect x="' + (xOuter-62) + '" y="' + ly + '" width="124" height="' + LABEL_H + '" rx="8" fill="' + color + '"/>');
+      out.push('<text x="' + xOuter + '" y="' + (ly + 20) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="Segoe UI, Arial, sans-serif">' + fbXml(fbCatTitle(cat)) + '</text>');
+      // tulang utama kategori
+      out.push('<line x1="' + xOuter + '" y1="' + yOuter + '" x2="' + xSpine + '" y2="' + spineY + '" stroke="' + color + '" stroke-width="3" stroke-linecap="round"/>');
+      const xAt = y => xOuter + SLANT * (Math.abs(y - yOuter) / boneH);
+      let cursor = isTop ? (yOuter + 14) : (yOuter - 14);
+      blkList[i].forEach(b=>{
+        const h = b.lines.length * LH;
+        let yLine, firstBase;
+        if(isTop){ yLine = cursor + h + 2; firstBase = cursor + LH - 3; cursor += h + 10; }
+        else { yLine = cursor; firstBase = cursor - 4 - (b.lines.length-1)*LH; cursor -= h + 10; }
+        const xb = xAt(yLine);
+        out.push('<line x1="' + (xb - TXT_W) + '" y1="' + yLine + '" x2="' + xb + '" y2="' + yLine + '" stroke="' + color + '" stroke-width="1.4"/>');
+        const c = b.c;
+        const fill = c.root ? '#C62828' : (c.vstatus==='invalid' && showMarks ? '#9E9E9E' : '#222');
+        b.lines.forEach((ln, k)=>{
+          out.push('<text x="' + (xb - TXT_W + 2) + '" y="' + (firstBase + k*LH) + '" font-size="12" fill="' + fill + '"' +
+            (c.root ? ' font-weight="700"' : '') +
+            (c.vstatus==='invalid' && showMarks ? ' text-decoration="line-through"' : '') +
+            ' font-family="Segoe UI, Arial, sans-serif">' + fbXml(ln) + '</text>');
+        });
+      });
+    });
+  }
+  drawSide(top, topB, true);
+  drawSide(bot, botB, false);
+
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + out.join('') + '</svg>';
+  return { svg: svg, w: W, h: H };
+}
+
+/* ----- matriks prioritas (dampak vs kemudahan) ----- */
+function fbBuildMatrixSvg(ranked){
+  const W = 560, H = 430, PL = 70, PT = 20, PW = 470, PH = 340;
+  const cw = PW/5, ch = PH/5;
+  const xOf = e => PL + (e-1)*cw + cw/2;   // kemudahan -> x
+  const yOf = d => PT + PH - ((d-1)*ch + ch/2); // dampak -> y (atas = besar)
+  const o = [];
+  o.push('<rect width="' + W + '" height="' + H + '" fill="#fff"/>');
+  // latar kuadran (batas antara 3 dan 4)
+  const bx = PL + 3*cw, by = PT + PH - 3*ch;
+  o.push('<rect x="' + PL + '" y="' + PT + '" width="' + (bx-PL) + '" height="' + (by-PT) + '" fill="#F2994A" opacity="0.13"/>');
+  o.push('<rect x="' + bx + '" y="' + PT + '" width="' + (PL+PW-bx) + '" height="' + (by-PT) + '" fill="#27AE60" opacity="0.15"/>');
+  o.push('<rect x="' + PL + '" y="' + by + '" width="' + (bx-PL) + '" height="' + (PT+PH-by) + '" fill="#8E8E8E" opacity="0.10"/>');
+  o.push('<rect x="' + bx + '" y="' + by + '" width="' + (PL+PW-bx) + '" height="' + (PT+PH-by) + '" fill="#2F80ED" opacity="0.12"/>');
+  o.push('<rect x="' + PL + '" y="' + PT + '" width="' + PW + '" height="' + PH + '" fill="none" stroke="#999"/>');
+  for(let i=1;i<=5;i++){
+    o.push('<text x="' + xOf(i) + '" y="' + (PT+PH+16) + '" text-anchor="middle" font-size="11" fill="#555" font-family="Segoe UI, Arial, sans-serif">' + i + '</text>');
+    o.push('<text x="' + (PL-8) + '" y="' + (yOf(i)+4) + '" text-anchor="end" font-size="11" fill="#555" font-family="Segoe UI, Arial, sans-serif">' + i + '</text>');
+  }
+  o.push('<text x="' + (PL+PW/2) + '" y="' + (H-10) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#333" font-family="Segoe UI, Arial, sans-serif">Kemudahan penyelesaian  (1 = sulit … 5 = mudah)</text>');
+  o.push('<text transform="translate(16,' + (PT+PH/2) + ') rotate(-90)" text-anchor="middle" font-size="12" font-weight="700" fill="#333" font-family="Segoe UI, Arial, sans-serif">Dampak  (1 = kecil … 5 = besar)</text>');
+  const ql = (x,y,t,c,anchor)=> o.push('<text x="' + x + '" y="' + y + '" text-anchor="' + anchor + '" font-size="12" font-weight="700" fill="' + c + '" font-family="Segoe UI, Arial, sans-serif">' + t + '</text>');
+  ql(PL+8, PT+16, '🏗️ Proyek Besar', '#B8690F', 'start');
+  ql(PL+PW-8, PT+16, '⚡ Quick Win', '#1E8449', 'end');
+  ql(PL+8, PT+PH-8, '💤 Prioritas Rendah', '#666', 'start');
+  ql(PL+PW-8, PT+PH-8, '🧩 Pelengkap', '#1F5FB5', 'end');
+  // titik bernomor (disusun rapi bila ada banyak di sel yang sama)
+  const cells = {};
+  ranked.forEach((x,i)=>{
+    if(!(x.cause.impact && x.cause.ease)) return;
+    const key = x.cause.impact + ':' + x.cause.ease;
+    (cells[key] = cells[key] || []).push({ n:i+1, x:x });
+  });
+  Object.keys(cells).forEach(key=>{
+    const arr = cells[key], parts = key.split(':'), d = parseInt(parts[0]), e = parseInt(parts[1]);
+    const cx = xOf(e), cy = yOf(d), perRow = 3, gap = 24;
+    arr.forEach((it, k)=>{
+      const rows = Math.ceil(arr.length / perRow), r = Math.floor(k / perRow), c = k % perRow;
+      const inRow = Math.min(perRow, arr.length - r*perRow);
+      const px = cx + (c - (inRow-1)/2) * gap, py = cy + (r - (rows-1)/2) * gap;
+      const col = FB_QUAD[fbQuadrant(it.x.cause)].color;
+      o.push('<circle cx="' + px + '" cy="' + py + '" r="11" fill="' + col + '" stroke="#fff" stroke-width="1.5"/>');
+      o.push('<text x="' + px + '" y="' + (py+4) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Segoe UI, Arial, sans-serif">' + it.n + '</text>');
+    });
+  });
+  return { svg:'<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + o.join('') + '</svg>', w:W, h:H };
+}
+
+/* ================= TAMPILAN FISHBONE (DOM) ================= */
+let __fbTab = 'identity', __fbDiagTimer = null;
+function fbRoot(){ return document.getElementById('fishApp'); }
+
+function fbSetPath(path, value){
+  const parts = path.split('.'); let o = fbState;
+  for(let i=0;i<parts.length-1;i++) o = o[parts[i]];
+  o[parts[parts.length-1]] = value;
+}
+function fbGetPath(path){
+  const parts = path.split('.'); let o = fbState;
+  for(let i=0;i<parts.length;i++){ if(o===undefined || o===null) return ''; o = o[parts[i]]; }
+  return o;
+}
+function fbSyncInputs(){
+  const root = fbRoot(); if(!root) return;
+  root.querySelectorAll('[data-fb]').forEach(el=>{
+    const v = fbGetPath(el.dataset.fb);
+    if(el.type==='checkbox') el.checked = !!v; else el.value = (v===undefined || v===null) ? '' : v;
+  });
+  fbUpdateGapHint();
+}
+function fbFindCause(id){
+  for(let i=0;i<fbState.cats.length;i++){
+    const c = fbState.cats[i].causes.find(x=> x.id===id);
+    if(c) return c;
+  }
+  return null;
+}
+function fbUpdateGapHint(){
+  const el = document.getElementById('fbGapHint'); if(!el) return;
+  const a = parseNumberString(fbState.problem.actual), t = parseNumberString(fbState.problem.target);
+  if(a!==null && t!==null){
+    const diff = Math.round((a - t) * 1e6) / 1e6;
+    el.dataset.val = String(diff);
+    el.innerHTML = 'Selisih otomatis (aktual − target): <b>' + fmtNum(diff) + '</b> <button class="btn small" data-act="gapuse">Pakai sebagai kesenjangan</button>';
+  } else { el.dataset.val = ''; el.innerHTML = 'Jika aktual &amp; target berupa angka, selisihnya dihitung otomatis di sini.'; }
+}
+
+function fbSwitchTab(name){
+  __fbTab = name;
+  document.querySelectorAll('.fb-tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.fbtab===name));
+  document.querySelectorAll('.fb-panel').forEach(p=> p.classList.toggle('active', p.id==='fbp-' + name));
+  fbRenderTab(name);
+}
+function fbRenderTab(name){
+  if(name==='causes') fbRenderCauses();
+  else if(name==='diagram') fbRenderDiagram();
+  else if(name==='validate') { fbRenderRootBox(); fbRenderValidation(); }
+  else if(name==='actions') { fbRenderProgress(); fbRenderActions(); }
+  else if(name==='priority') { fbRenderRateTable(); fbRenderResults(); }
+  else if(name==='report') fbRenderReport();
+}
+function fbRenderAll(){ fbSyncInputs(); fbRenderTab(__fbTab); }
+
+function fbRenderCauses(){
+  const grid = document.getElementById('fbCatsGrid'); if(!grid) return;
+  grid.innerHTML = fbState.cats.map(cat=>{
+    const def = fbCatDef(cat.id);
+    const filled = cat.causes.filter(x=> (x.text||'').trim()).length;
+    return '<div class="fb-cat" style="--c:' + def.color + '">' +
+      '<div class="fb-cat-head"><span class="fb-dot"></span><div style="flex:1;min-width:0;">' +
+        '<div class="fb-cat-title">' + (def.custom ? 'Faktor Lain <span class="fb-opt">(opsional, di luar 8M)</span>' : escapeHtml(def.name)) + ' <span class="fb-count">' + filled + '</span></div>' +
+        '<div class="fb-cat-hint">' + escapeHtml(def.hint) + '</div></div></div>' +
+      (def.custom ? '<input type="text" class="fb-cat-name" data-catname="' + cat.id + '" placeholder="Nama faktor, mis. Money / Moment / Safety" value="' + escapeHtml(cat.name||'') + '">' : '') +
+      '<div class="fb-cause-list">' +
+        cat.causes.map(c=>
+          '<div class="fb-cause"><input type="text" class="fb-cause-input" data-cid="' + c.id + '" data-cf="text" placeholder="' + escapeHtml(def.ex) + '" value="' + escapeHtml(c.text||'') + '">' +
+          '<button class="icon-btn danger sm" data-act="delcause" data-cid="' + c.id + '" title="Hapus faktor ini">✖</button></div>'
+        ).join('') +
+      '</div>' +
+      '<button class="btn small" data-act="addcause" data-cat="' + cat.id + '">+ Tambah faktor penyebab</button>' +
+    '</div>';
+  }).join('');
+}
+function fbAddCause(catId, afterId){
+  const cat = fbState.cats.find(c=> c.id===catId); if(!cat) return null;
+  const nc = fbNewCause('');
+  const idx = afterId ? cat.causes.findIndex(x=> x.id===afterId) : -1;
+  if(idx >= 0) cat.causes.splice(idx+1, 0, nc); else cat.causes.push(nc);
+  fbRenderCauses();
+  const inp = fbRoot().querySelector('.fb-cause-input[data-cid="' + nc.id + '"]');
+  if(inp) inp.focus();
+  return nc;
+}
+function fbDelCause(cid){
+  fbState.cats.forEach(cat=>{
+    const i = cat.causes.findIndex(x=> x.id===cid);
+    if(i >= 0){ cat.causes.splice(i,1); if(!cat.causes.length) cat.causes.push(fbNewCause('')); }
+  });
+  fbRenderCauses(); fbTouch('struct');
+}
+
+function fbRenderDiagram(){
+  const box = document.getElementById('fbDiagram'); if(!box) return;
+  if(!fbHasContent(fbState)){
+    box.innerHTML = '<div class="fb-empty"><div class="ce-icon">🐟</div><div class="ce-title">Diagram masih kosong</div><div class="ce-text">Isi masalah utama di langkah ① dan faktor penyebab di langkah ②. Diagram tersusun otomatis.</div></div>';
+    return;
+  }
+  const r = fbBuildSvg(fbState);
+  box.innerHTML = r.svg.replace('<svg ', '<svg style="max-width:100%;height:auto;" ');
+}
+
+function fbRenderRootBox(){
+  const el = document.getElementById('fbRootList'); if(!el) return;
+  const roots = fbCauses(fbState).filter(x=> x.cause.root);
+  el.innerHTML = roots.length
+    ? '<ul class="fb-root-ul">' + roots.map(x=> '<li><span class="fb-chip" style="background:' + x.def.color + '">' + escapeHtml(x.title) + '</span> ' + escapeHtml(x.cause.text) + '</li>').join('') + '</ul>'
+    : '<div class="hint" style="margin:0;">Belum ada akar penyebab terverifikasi. Ubah status validasi menjadi “Terbukti”, lalu centang “Akar penyebab terverifikasi”.</div>';
+}
+function fbRenderValidation(){
+  const box = document.getElementById('fbValidateList'); if(!box) return;
+  const list = fbCauses(fbState);
+  if(!list.length){ box.innerHTML = '<div class="fb-empty"><div class="ce-icon">🔎</div><div class="ce-title">Belum ada faktor penyebab</div><div class="ce-text">Tulis faktor penyebab di langkah ② terlebih dahulu.</div><button class="btn primary" data-act="gotab" data-tab="causes">Ke langkah ② Faktor Penyebab</button></div>'; return; }
+  box.innerHTML = list.map(x=>{
+    const c = x.cause;
+    return '<div class="fb-item" style="--c:' + x.def.color + '">' +
+      '<div class="fb-item-head"><span class="fb-chip" style="background:' + x.def.color + '">' + escapeHtml(x.title) + '</span><b>' + escapeHtml(c.text) + '</b>' + (c.root ? '<span class="fb-badge root">★ Akar penyebab</span>' : '') + '</div>' +
+      '<div class="fb-item-grid">' +
+        '<div class="field"><label>Status validasi</label><select data-cid="' + c.id + '" data-cf="vstatus">' +
+          Object.keys(FB_VSTATUS).map(k=> '<option value="' + k + '"' + (c.vstatus===k ? ' selected' : '') + '>' + FB_VSTATUS[k] + '</option>').join('') + '</select></div>' +
+        '<div class="field fb-span2"><label>Bukti, hasil observasi, data, dan hasil pemeriksaan</label><textarea rows="2" data-cid="' + c.id + '" data-cf="evidence" placeholder="mis. hasil pengamatan lapangan tgl …, data pengukuran …, foto/dokumen …">' + escapeHtml(c.evidence||'') + '</textarea></div>' +
+        '<label class="fb-check ' + (c.vstatus==='valid' ? '' : 'disabled') + '"><input type="checkbox" data-cid="' + c.id + '" data-cf="root"' + (c.root ? ' checked' : '') + (c.vstatus==='valid' ? '' : ' disabled') + '> ✔ Akar penyebab terverifikasi' +
+          (c.vstatus==='valid' ? '' : '<span class="fb-sub">(aktif jika status “Terbukti”)</span>') + '</label>' +
+      '</div></div>';
+  }).join('');
+}
+
+function fbRenderProgress(){
+  const el = document.getElementById('fbProgress'); if(!el) return;
+  const list = fbCauses(fbState).filter(x=> fbState.showAllActions || x.cause.root);
+  const total = list.length;
+  const cnt = { none:0, progress:0, done:0, noteff:0 };
+  list.forEach(x=> cnt[x.cause.status]++);
+  const pct = total ? Math.round(cnt.done / total * 100) : 0;
+  el.innerHTML = '<div class="fb-prog-row"><div class="fb-prog-bar"><span style="width:' + pct + '%"></span></div><b>' + pct + '% selesai &amp; efektif</b></div>' +
+    '<div class="fb-prog-chips">' + Object.keys(FB_STATUS).map(k=> '<span class="fb-badge st-' + k + '">' + FB_STATUS[k] + ': ' + cnt[k] + '</span>').join('') + '<span class="fb-badge">Total: ' + total + '</span></div>';
+}
+function fbRenderActions(){
+  const box = document.getElementById('fbActionList'); if(!box) return;
+  const all = fbCauses(fbState);
+  const list = all.filter(x=> fbState.showAllActions || x.cause.root);
+  if(!list.length){
+    box.innerHTML = '<div class="fb-empty"><div class="ce-icon">🛠️</div><div class="ce-title">' + (all.length ? 'Belum ada akar penyebab terverifikasi' : 'Belum ada faktor penyebab') + '</div><div class="ce-text">' +
+      (all.length ? 'Tindakan perbaikan disusun untuk akar penyebab. Tandai akar penyebab di langkah ④, atau centang “Tampilkan semua penyebab” di atas.' : 'Tulis faktor penyebab di langkah ② terlebih dahulu.') +
+      '</div><button class="btn primary" data-act="gotab" data-tab="' + (all.length ? 'validate' : 'causes') + '">' + (all.length ? 'Ke langkah ④ Validasi' : 'Ke langkah ②') + '</button></div>';
+    return;
+  }
+  box.innerHTML = list.map(x=>{
+    const c = x.cause;
+    return '<div class="fb-item" style="--c:' + x.def.color + '">' +
+      '<div class="fb-item-head"><span class="fb-chip" style="background:' + x.def.color + '">' + escapeHtml(x.title) + '</span><b>' + escapeHtml(c.text) + '</b>' + (c.root ? '<span class="fb-badge root">★ Akar penyebab</span>' : '') + '</div>' +
+      '<div class="fb-item-grid">' +
+        '<div class="field fb-span2"><label>Tindakan perbaikan (Corrective action)</label><textarea rows="2" data-cid="' + c.id + '" data-cf="corrective" placeholder="Apa yang dilakukan untuk menghilangkan penyebab ini?">' + escapeHtml(c.corrective||'') + '</textarea></div>' +
+        '<div class="field fb-span2"><label>Tindakan pencegahan (Preventive action)</label><textarea rows="2" data-cid="' + c.id + '" data-cf="preventive" placeholder="Apa yang dilakukan agar tidak terulang?">' + escapeHtml(c.preventive||'') + '</textarea></div>' +
+        '<div class="field"><label>PIC (penanggung jawab)</label><input type="text" data-cid="' + c.id + '" data-cf="pic" value="' + escapeHtml(c.pic||'') + '" placeholder="Nama / jabatan"></div>' +
+        '<div class="field"><label>Target waktu</label><input type="date" data-cid="' + c.id + '" data-cf="due" value="' + escapeHtml(c.due||'') + '"></div>' +
+        '<div class="field fb-span2"><label>Evaluasi: hasil verifikasi efektivitas</label><textarea rows="2" data-cid="' + c.id + '" data-cf="evalResult" placeholder="Hasil pengecekan setelah tindakan dilakukan">' + escapeHtml(c.evalResult||'') + '</textarea></div>' +
+        '<div class="field"><label>Status penyelesaian</label><select data-cid="' + c.id + '" data-cf="status">' +
+          Object.keys(FB_STATUS).map(k=> '<option value="' + k + '"' + (c.status===k ? ' selected' : '') + '>' + FB_STATUS[k] + '</option>').join('') + '</select></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function fbRenderRateTable(){
+  const box = document.getElementById('fbRateTable'); if(!box) return;
+  const list = fbCauses(fbState);
+  if(!list.length){ box.innerHTML = '<div class="fb-empty"><div class="ce-icon">⚖️</div><div class="ce-title">Belum ada faktor penyebab</div><div class="ce-text">Tulis faktor penyebab di langkah ② terlebih dahulu.</div><button class="btn primary" data-act="gotab" data-tab="causes">Ke langkah ②</button></div>'; return; }
+  const opt = (arr, v) => arr.map((t,i)=> '<option value="' + i + '"' + (v===i ? ' selected' : '') + '>' + t + '</option>').join('');
+  box.innerHTML = '<div class="fb-table-wrap"><table class="datatable fb-table"><thead><tr><th>Kategori</th><th>Faktor penyebab</th><th>Dampak</th><th>Kemudahan</th><th>Skor</th></tr></thead><tbody>' +
+    list.map(x=>{
+      const c = x.cause;
+      return '<tr data-row="' + c.id + '"><td><span class="fb-chip" style="background:' + x.def.color + '">' + escapeHtml(x.title) + '</span></td>' +
+        '<td class="fb-wrap">' + (c.root ? '★ ' : '') + escapeHtml(c.text) + '</td>' +
+        '<td><select data-cid="' + c.id + '" data-cf="impact">' + opt(FB_IMPACT, c.impact) + '</select></td>' +
+        '<td><select data-cid="' + c.id + '" data-cf="ease">' + opt(FB_EASE, c.ease) + '</select></td>' +
+        '<td class="fb-score" data-score="' + c.id + '">' + (c.impact && c.ease ? fbScore(c) : '–') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+function fbRenderResults(){
+  const tb = document.getElementById('fbRankTable'), mx = document.getElementById('fbMatrix'); if(!tb || !mx) return;
+  const list = fbCauses(fbState);
+  // perbarui skor di tabel penilaian tanpa menggambar ulang pilihan
+  list.forEach(x=>{ const cell = fbRoot().querySelector('[data-score="' + x.cause.id + '"]'); if(cell) cell.textContent = (x.cause.impact && x.cause.ease) ? fbScore(x.cause) : '–'; });
+  const ranked = fbRank(list, fbState.sort);
+  const rated = ranked.filter(x=> x.cause.impact && x.cause.ease);
+  if(!rated.length){
+    tb.innerHTML = '<div class="hint" style="margin:0;">Isi nilai <b>Dampak</b> dan <b>Kemudahan</b> pada tabel di atas, maka peringkat dan matriks prioritas muncul di sini.</div>';
+    mx.innerHTML = fbBuildMatrixSvg([]).svg.replace('<svg ', '<svg style="max-width:100%;height:auto;" ');
+    return;
+  }
+  tb.innerHTML = '<div class="fb-table-wrap"><table class="datatable fb-table"><thead><tr><th>#</th><th>Faktor penyebab</th><th>Dampak</th><th>Mudah</th><th>Skor</th><th>Kategori prioritas</th></tr></thead><tbody>' +
+    ranked.map((x,i)=>{
+      const c = x.cause, q = FB_QUAD[fbQuadrant(c)], isR = !!(c.impact && c.ease);
+      return '<tr><td><b>' + (isR ? (i+1) : '–') + '</b></td><td class="fb-wrap"><span class="fb-chip sm" style="background:' + x.def.color + '">' + escapeHtml(x.title) + '</span> ' + (c.root ? '★ ' : '') + escapeHtml(c.text) + '</td>' +
+        '<td>' + (c.impact || '–') + '</td><td>' + (c.ease || '–') + '</td><td>' + (isR ? fbScore(c) : '–') + '</td>' +
+        '<td><span class="fb-badge" style="background:' + q.color + ';color:#fff;" title="' + escapeHtml(q.desc) + '">' + q.icon + ' ' + q.label + '</span></td></tr>';
+    }).join('') + '</tbody></table></div>';
+  mx.innerHTML = fbBuildMatrixSvg(ranked).svg.replace('<svg ', '<svg style="max-width:100%;height:auto;" ');
+}
+
+/* ----- laporan ----- */
+function fbBuildReportHtml(fb, withDiagram){
+  const m = fb.meta, p = fb.problem, E = escapeHtml;
+  const nz = s => (String(s||'').trim() ? E(s) : '<span class="fb-dash">—</span>');
+  const all = fbCauses(fb);
+  let h = '<div class="fb-rep-title"><h2>Analisis Fishbone (Ishikawa) — 8M</h2><div>' + nz(m.docNo) + '</div></div>';
+  h += '<h3>1. Identitas Analisis</h3><table class="fb-kv"><tr><td>Nomor dokumen</td><td>' + nz(m.docNo) + '</td><td>Departemen</td><td>' + nz(m.dept) + '</td></tr>' +
+       '<tr><td>Lokasi</td><td>' + nz(m.location) + '</td><td>Tanggal</td><td>' + nz(fbFmtDate(m.date)) + '</td></tr>' +
+       '<tr><td>Nama tim</td><td colspan="3">' + nz(m.team) + '</td></tr></table>';
+  h += '<h3>2. Effect / Masalah Utama</h3><table class="fb-kv"><tr><td>Pernyataan masalah</td><td colspan="3">' + nz(p.statement) + '</td></tr>' +
+       '<tr><td>Kondisi aktual</td><td>' + nz(p.actual) + '</td><td>Target</td><td>' + nz(p.target) + '</td></tr>' +
+       '<tr><td>Kesenjangan</td><td colspan="3">' + nz(p.gap) + '</td></tr></table>';
+  if(withDiagram && fbHasContent(fb)){ h += '<h3>Diagram Fishbone</h3><div class="fb-rep-diagram">' + fbBuildSvg(fb).svg.replace('<svg ', '<svg style="max-width:100%;height:auto;" ') + '</div>'; }
+  h += '<h3>3–11. Faktor Penyebab (8M + Faktor Lain)</h3>';
+  fb.cats.forEach((cat, i)=>{
+    const items = cat.causes.filter(x=> (x.text||'').trim());
+    if(cat.id==='other' && !items.length && !(cat.name||'').trim()) return;
+    h += '<div class="fb-rep-cat"><b>' + (3+i) + '. ' + E(fbCatTitle(cat)) + '</b>' +
+      (items.length ? '<ul>' + items.map(x=> '<li>' + E(x.text) + '</li>').join('') + '</ul>' : '<div class="fb-dash">Belum ada faktor</div>') + '</div>';
+  });
+  h += '<h3>12. Validasi Penyebab</h3>';
+  h += all.length ? '<table class="fb-rt"><thead><tr><th>Kategori</th><th>Penyebab</th><th>Status</th><th>Bukti / hasil observasi / data / pemeriksaan</th></tr></thead><tbody>' +
+    all.map(x=> '<tr><td>' + E(x.title) + '</td><td>' + E(x.cause.text) + '</td><td>' + FB_VSTATUS[x.cause.vstatus] + '</td><td>' + nz(x.cause.evidence) + '</td></tr>').join('') + '</tbody></table>' : '<div class="fb-dash">Belum ada data</div>';
+  const roots = all.filter(x=> x.cause.root);
+  h += '<h3>13. Akar Penyebab</h3>' + (roots.length ? '<ul>' + roots.map(x=> '<li><b>' + E(x.title) + ':</b> ' + E(x.cause.text) + '</li>').join('') + '</ul>' : '<div class="fb-dash">Belum ada akar penyebab terverifikasi</div>') +
+       (fb.rootSummary.trim() ? '<p><b>Rumusan:</b> ' + E(fb.rootSummary) + '</p>' : '');
+  const act = all.filter(x=> x.cause.root || x.cause.corrective.trim() || x.cause.preventive.trim());
+  h += '<h3>14. Tindakan Perbaikan</h3>' + (act.length ? '<table class="fb-rt"><thead><tr><th>Akar penyebab</th><th>Corrective action</th><th>Preventive action</th><th>PIC</th><th>Target waktu</th></tr></thead><tbody>' +
+    act.map(x=> '<tr><td>' + E(x.cause.text) + '</td><td>' + nz(x.cause.corrective) + '</td><td>' + nz(x.cause.preventive) + '</td><td>' + nz(x.cause.pic) + '</td><td>' + nz(fbFmtDate(x.cause.due)) + '</td></tr>').join('') + '</tbody></table>' : '<div class="fb-dash">Belum ada tindakan</div>');
+  h += '<h3>15. Evaluasi</h3>' + (act.length ? '<table class="fb-rt"><thead><tr><th>Akar penyebab</th><th>Hasil verifikasi efektivitas</th><th>Status penyelesaian</th></tr></thead><tbody>' +
+    act.map(x=> '<tr><td>' + E(x.cause.text) + '</td><td>' + nz(x.cause.evalResult) + '</td><td>' + FB_STATUS[x.cause.status] + '</td></tr>').join('') + '</tbody></table>' : '<div class="fb-dash">Belum ada evaluasi</div>');
+  const ranked = fbRank(all, fb.sort), rated = ranked.filter(x=> x.cause.impact && x.cause.ease);
+  h += '<h3>Prioritas Penyelesaian</h3>';
+  if(rated.length){
+    h += '<table class="fb-rt"><thead><tr><th>#</th><th>Penyebab</th><th>Dampak</th><th>Kemudahan</th><th>Skor</th><th>Kategori</th></tr></thead><tbody>' +
+      rated.map((x,i)=> '<tr><td>' + (i+1) + '</td><td>' + E(x.cause.text) + '</td><td>' + x.cause.impact + '</td><td>' + x.cause.ease + '</td><td>' + fbScore(x.cause) + '</td><td>' + FB_QUAD[fbQuadrant(x.cause)].icon + ' ' + FB_QUAD[fbQuadrant(x.cause)].label + '</td></tr>').join('') + '</tbody></table>';
+    if(withDiagram) h += '<div class="fb-rep-diagram">' + fbBuildMatrixSvg(ranked).svg.replace('<svg ', '<svg style="max-width:100%;height:auto;" ') + '</div>';
+  } else h += '<div class="fb-dash">Belum ada penilaian prioritas</div>';
+  return h;
+}
+function fbRenderReport(){
+  const el = document.getElementById('fbReport'); if(el) el.innerHTML = fbBuildReportHtml(fbState, true);
+}
+
+/* ----- ekspor ----- */
+function fbDownload(href, name){
+  const a = document.createElement('a'); a.href = href; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function fbSvgToPng(svg, w, h, scale){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(new Blob([svg], { type:'image/svg+xml;charset=utf-8' }));
+    img.onload = ()=>{
+      const c = document.createElement('canvas'); c.width = w*scale; c.height = h*scale;
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height);
+      x.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); resolve(c.toDataURL('image/png'));
+    };
+    img.onerror = e=>{ URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
+function fbFileStem(){
+  const s = (fbState.meta.docNo || 'fishbone').replace(/[^\w\-]+/g,'_');
+  return 'fishbone-' + s;
+}
+async function fbExportPng(){
+  try{
+    if(!fbHasContent(fbState)){ showToast('Diagram masih kosong'); return; }
+    const r = fbBuildSvg(fbState);
+    fbDownload(await fbSvgToPng(r.svg, r.w, r.h, 2), fbFileStem() + '.png');
+  }catch(e){ console.error(e); showToast('Gagal membuat PNG'); }
+}
+function fbExportSvg(){
+  if(!fbHasContent(fbState)){ showToast('Diagram masih kosong'); return; }
+  const r = fbBuildSvg(fbState);
+  const url = URL.createObjectURL(new Blob([r.svg], { type:'image/svg+xml' }));
+  fbDownload(url, fbFileStem() + '.svg'); setTimeout(()=> URL.revokeObjectURL(url), 1500);
+}
+function fbExportXlsx(){
+  try{
+    const m = fbState.meta, p = fbState.problem;
+    const info = [
+      ['Analisis Fishbone (8M)'], [],
+      ['Nomor dokumen', m.docNo], ['Departemen', m.dept], ['Lokasi', m.location], ['Tanggal', fbFmtDate(m.date)], ['Nama tim', m.team], [],
+      ['Pernyataan masalah', p.statement], ['Kondisi aktual', p.actual], ['Target', p.target], ['Kesenjangan', p.gap], [],
+      ['Rumusan akar penyebab', fbState.rootSummary],
+    ];
+    const head = ['Kategori','Faktor penyebab','Status validasi','Bukti / observasi','Akar penyebab','Dampak (1-5)','Kemudahan (1-5)','Skor','Kategori prioritas','Corrective action','Preventive action','PIC','Target waktu','Hasil verifikasi efektivitas','Status penyelesaian'];
+    const rows = fbCauses(fbState).map(x=>{
+      const c = x.cause;
+      return [x.title, c.text, FB_VSTATUS[c.vstatus], c.evidence, c.root ? 'Ya' : '', c.impact || '', c.ease || '', (c.impact && c.ease) ? fbScore(c) : '',
+        FB_QUAD[fbQuadrant(c)].label, c.corrective, c.preventive, c.pic, fbFmtDate(c.due), c.evalResult, FB_STATUS[c.status]];
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(info), 'Identitas & Masalah');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([head].concat(rows)), 'Faktor & Tindakan');
+    XLSX.writeFile(wb, fbFileStem() + '.xlsx');
+  }catch(e){ console.error(e); showToast('Gagal membuat Excel'); }
+}
+async function fbExportPpt(){
+  try{
+    showToast('Membuat PowerPoint...');
+    const pptx = new PptxGenJS(); pptx.layout = 'LAYOUT_WIDE';
+    const m = fbState.meta, p = fbState.problem;
+    const s1 = pptx.addSlide();
+    s1.addText('Analisis Fishbone (8M)', { x:0.5, y:0.3, w:12, fontSize:26, bold:true, color:'C62828' });
+    s1.addTable([
+      [{text:'Nomor dokumen',options:{bold:true}}, m.docNo||'-', {text:'Departemen',options:{bold:true}}, m.dept||'-'],
+      [{text:'Lokasi',options:{bold:true}}, m.location||'-', {text:'Tanggal',options:{bold:true}}, fbFmtDate(m.date)||'-'],
+      [{text:'Nama tim',options:{bold:true}}, {text:m.team||'-',options:{colspan:3}}],
+      [{text:'Masalah utama',options:{bold:true}}, {text:p.statement||'-',options:{colspan:3}}],
+      [{text:'Kondisi aktual',options:{bold:true}}, p.actual||'-', {text:'Target',options:{bold:true}}, p.target||'-'],
+      [{text:'Kesenjangan',options:{bold:true}}, {text:p.gap||'-',options:{colspan:3}}],
+    ], { x:0.5, y:1.3, w:12.3, fontSize:14, border:{type:'solid',color:'CCCCCC',pt:1}, colW:[2.3,4,2.3,3.7] });
+    if(fbHasContent(fbState)){
+      const r = fbBuildSvg(fbState), png = await fbSvgToPng(r.svg, r.w, r.h, 2);
+      const s2 = pptx.addSlide(); s2.addText('Diagram Fishbone', { x:0.5, y:0.2, w:12, fontSize:22, bold:true, color:'C62828' });
+      const maxW = 12.3, maxH = 6.0, k = Math.min(maxW/r.w, maxH/r.h);
+      s2.addImage({ data:png, x:0.5, y:1.0, w:r.w*k, h:r.h*k });
+    }
+    const all = fbCauses(fbState), rated = fbRank(all, fbState.sort).filter(x=> x.cause.impact && x.cause.ease);
+    if(rated.length){
+      const s3 = pptx.addSlide(); s3.addText('Prioritas Penyelesaian', { x:0.5, y:0.2, w:12, fontSize:22, bold:true, color:'C62828' });
+      const rows = [['#','Penyebab','Dampak','Mudah','Skor','Kategori'].map(t=>({text:t,options:{bold:true,fill:{color:'EEEEEE'}}}))]
+        .concat(rated.slice(0,12).map((x,i)=> [String(i+1), x.cause.text, String(x.cause.impact), String(x.cause.ease), String(fbScore(x.cause)), FB_QUAD[fbQuadrant(x.cause)].label]));
+      s3.addTable(rows, { x:0.5, y:1.0, w:12.3, fontSize:12, colW:[0.5,6.3,1.1,1.1,1.0,2.3], border:{type:'solid',color:'CCCCCC',pt:1} });
+    }
+    const act = all.filter(x=> x.cause.root || x.cause.corrective.trim() || x.cause.preventive.trim());
+    if(act.length){
+      const s4 = pptx.addSlide(); s4.addText('Tindakan Perbaikan & Evaluasi', { x:0.5, y:0.2, w:12, fontSize:22, bold:true, color:'C62828' });
+      const rows = [['Akar penyebab','Corrective','Preventive','PIC','Target','Status'].map(t=>({text:t,options:{bold:true,fill:{color:'EEEEEE'}}}))]
+        .concat(act.slice(0,10).map(x=> [x.cause.text, x.cause.corrective||'-', x.cause.preventive||'-', x.cause.pic||'-', fbFmtDate(x.cause.due)||'-', FB_STATUS[x.cause.status]]));
+      s4.addTable(rows, { x:0.5, y:1.0, w:12.3, fontSize:11, colW:[3,2.8,2.8,1.3,1.1,1.3], border:{type:'solid',color:'CCCCCC',pt:1} });
+    }
+    await pptx.writeFile({ fileName: fbFileStem() + '.pptx' });
+  }catch(e){ console.error(e); showToast('Gagal membuat PowerPoint'); }
+}
+async function fbExportPdf(){
+  try{
+    showToast('Membuat PDF...');
+    fbSwitchTab('report');
+    const el = document.getElementById('fbReport');
+    const canvas = await html2canvas(el, { scale:1.6, backgroundColor:'#ffffff' });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'pt', format:'a4' });
+    const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
+    const ratio = pw / canvas.width, pageHpx = Math.floor(ph / ratio);
+    let y = 0, first = true;
+    while(y < canvas.height){
+      const sh = Math.min(pageHpx, canvas.height - y);
+      const part = document.createElement('canvas'); part.width = canvas.width; part.height = sh;
+      part.getContext('2d').drawImage(canvas, 0, y, canvas.width, sh, 0, 0, canvas.width, sh);
+      if(!first) pdf.addPage();
+      pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pw, sh * ratio);
+      y += sh; first = false;
+    }
+    pdf.save(fbFileStem() + '.pdf');
+  }catch(e){ console.error(e); showToast('Gagal membuat PDF'); }
+}
+function fbPrint(){
+  fbSwitchTab('report');
+  document.body.classList.add('print-fb');
+  setTimeout(()=>{ window.print(); setTimeout(()=> document.body.classList.remove('print-fb'), 400); }, 80);
+}
+
+/* ----- event & mode ----- */
+function fbTouch(field){
+  scheduleAutosave();
+  clearTimeout(__fbDiagTimer);
+  __fbDiagTimer = setTimeout(()=>{ if(__fbTab==='diagram') fbRenderDiagram(); if(__fbTab==='report') fbRenderReport(); }, 200);
+  if(field==='vstatus') fbRenderValidation();
+  if(field==='root'){ fbRenderRootBox(); }
+  if(field==='impact' || field==='ease') fbRenderResults();
+  if(field==='status') fbRenderProgress();
+}
+function fbSetCauseField(cid, field, el){
+  const c = fbFindCause(cid); if(!c) return;
+  if(field==='impact' || field==='ease') c[field] = parseInt(el.value) || 0;
+  else if(field==='root') c.root = !!el.checked;
+  else c[field] = el.value;
+  if(field==='vstatus' && c.vstatus!=='valid') c.root = false;
+  fbTouch(field);
+}
+function fbAfterPath(path){
+  fbTouch('path');
+  if(path==='problem.actual' || path==='problem.target') fbUpdateGapHint();
+  if(path==='sort') fbRenderResults();
+  if(path==='showAllActions'){ fbRenderProgress(); fbRenderActions(); }
+  if(path==='showMarks') fbRenderDiagram();
+}
+function fbAct(btn){
+  const a = btn.dataset.act;
+  if(a==='addcause'){ fbAddCause(btn.dataset.cat); fbTouch('struct'); }
+  else if(a==='delcause') fbDelCause(btn.dataset.cid);
+  else if(a==='gapuse'){
+    const el = document.getElementById('fbGapHint');
+    if(el && el.dataset.val!==''){ fbState.problem.gap = fmtNum(parseFloat(el.dataset.val)); fbSyncInputs(); fbTouch('path'); }
+  }
+  else if(a==='gotab') fbSwitchTab(btn.dataset.tab);
+  else if(a==='png') fbExportPng();
+  else if(a==='svg') fbExportSvg();
+  else if(a==='xlsx') fbExportXlsx();
+  else if(a==='ppt') fbExportPpt();
+  else if(a==='pdf') fbExportPdf();
+  else if(a==='print') fbPrint();
+}
+function fbBind(){
+  const root = fbRoot(); if(!root) return;
+  const onField = t=>{
+    if(t.dataset.fb){ fbSetPath(t.dataset.fb, t.type==='checkbox' ? t.checked : t.value); fbAfterPath(t.dataset.fb); return; }
+    if(t.dataset.cid && t.dataset.cf){ fbSetCauseField(t.dataset.cid, t.dataset.cf, t); return; }
+    if(t.dataset.catname){ const cat = fbState.cats.find(c=> c.id===t.dataset.catname); if(cat){ cat.name = t.value; fbTouch('catname'); } }
+  };
+  root.addEventListener('input', e=>{ const t = e.target; if(t.tagName==='SELECT' || t.type==='checkbox') return; onField(t); });
+  root.addEventListener('change', e=>{ const t = e.target; if(t.tagName==='SELECT' || t.type==='checkbox') onField(t); });
+  root.addEventListener('click', e=>{ const b = e.target.closest('[data-act]'); if(b) fbAct(b); });
+  root.addEventListener('keydown', e=>{
+    if(e.key==='Enter' && e.target.classList && e.target.classList.contains('fb-cause-input')){
+      e.preventDefault();
+      const cat = fbState.cats.find(c=> c.causes.some(x=> x.id===e.target.dataset.cid));
+      if(cat){ fbAddCause(cat.id, e.target.dataset.cid); fbTouch('struct'); }
+    }
+  });
+  document.querySelectorAll('.fb-tab-btn').forEach(b=> b.addEventListener('click', ()=> fbSwitchTab(b.dataset.fbtab)));
+}
+
+let __appMode = 'chart';
+function setAppMode(mode){
+  __appMode = mode === 'fishbone' ? 'fishbone' : 'chart';
+  document.body.dataset.appMode = __appMode;
+  document.querySelectorAll('#modeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.mode===__appMode));
+  const ca = document.getElementById('chartApp'), fa = document.getElementById('fishApp');
+  if(ca) ca.style.display = __appMode==='chart' ? '' : 'none';
+  if(fa) fa.style.display = __appMode==='fishbone' ? '' : 'none';
+  if(__appMode==='fishbone') fbRenderAll();
+  else setTimeout(()=> state.charts.forEach(renderChart), 30);
+  scheduleAutosave();
+}
+function fbInit(){
+  fbBind();
+  document.querySelectorAll('#modeSeg button').forEach(b=> b.addEventListener('click', ()=> setAppMode(b.dataset.mode)));
+  fbSyncInputs();
+}
 
 </script>
 </body>
