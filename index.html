@@ -523,6 +523,21 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
 .fb-rep-cat ul, .fb-report ul{ margin:3px 0 4px 0; padding-left:20px; }
 .fb-rep-diagram{ overflow:auto; border:1px solid #eee; border-radius:10px; padding:4px; margin:6px 0; }
 .fb-dash{ color:#999; }
+.fb-cat-hidden{ opacity:.7; border-style:dashed; border-top-style:solid; box-shadow:none; padding:10px 14px; }
+.fb-cat-hidden .fb-cat-head{ align-items:center; }
+.fb-photos{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); }
+.fb-photo-list{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+.fb-photo{ position:relative; width:110px; height:82px; border-radius:10px; overflow:hidden; border:1px solid var(--border); background:var(--panel-2); }
+.fb-photo img{ width:100%; height:100%; object-fit:cover; cursor:zoom-in; display:block; transition:transform .15s; }
+.fb-photo img:hover{ transform:scale(1.06); }
+.fb-photo-x{ position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%; border:none; background:rgba(0,0,0,.6); color:#fff; cursor:pointer; font-size:11px; line-height:1; }
+.fb-photo-x:hover{ background:#d32f2f; }
+.fb-photo-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.fb-photo-add{ position:relative; overflow:hidden; cursor:pointer; }
+.fb-file-input{ position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+.photo-modal{ position:relative; background:var(--panel); border-radius:14px; padding:14px; box-shadow:var(--shadow); max-width:94vw; max-height:92vh; }
+.photo-modal img{ max-width:88vw; max-height:84vh; display:block; border-radius:8px; margin-top:26px; }
+.fb-rep-photo{ height:72px; border:1px solid #ddd; border-radius:4px; margin:4px 4px 0 0; }
 @media print{
   body.print-fb .topbar, body.print-fb .modebar, body.print-fb .tabs, body.print-fb .toast,
   body.print-fb #chartApp, body.print-fb .fb-toolbar, body.print-fb .restore-banner, body.print-fb .lib-warning-banner{ display:none !important; }
@@ -784,12 +799,13 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
   <div class="fb-panel" id="fbp-diagram">
     <div class="card">
       <div class="fb-toolbar">
-        <label class="fb-check" style="border-style:solid;"><input type="checkbox" data-fb="showMarks"> Tampilkan tanda status (★ akar, ✓ terbukti, ✗ tidak terbukti)</label>
+        <label class="fb-check" style="border-style:solid;"><input type="checkbox" data-fb="showMarks"> Tampilkan tanda status &amp; keterangannya (★ ✓ ✗)</label>
+        <label class="fb-check" style="border-style:solid;"><input type="checkbox" data-fb="hideEmpty"> Sembunyikan kategori yang kosong</label>
         <button class="btn small" data-act="png">🖼️ Unduh PNG</button>
         <button class="btn small" data-act="svg">📐 Unduh SVG</button>
       </div>
       <div class="fb-diagram-wrap" id="fbDiagram"></div>
-      <div class="fb-legend"><span>★ akar penyebab terverifikasi</span><span>✓ terbukti</span><span>✗ tidak terbukti (dicoret)</span><span>Diagram tersusun otomatis dari isian langkah ① dan ②.</span></div>
+      <div class="fb-legend"><span>Diagram tersusun otomatis dari isian langkah ① dan ②. Keterangan simbol (★ ✓ ✗) tercantum di dalam gambar sehingga ikut tercetak. Kategori yang tidak dipakai dapat dihapus di langkah ② (tombol 🗑️).</span></div>
     </div>
   </div>
 
@@ -880,6 +896,14 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
       <button class="btn ghost" id="ttcCancel">Batal</button>
       <button class="btn primary" id="ttcApply">Terapkan</button>
     </div>
+  </div>
+</div>
+
+<!-- Pratinjau foto bukti -->
+<div class="modal-overlay" id="photoOverlay">
+  <div class="photo-modal">
+    <button class="btn small" id="photoClose" style="position:absolute;top:10px;right:10px;">✕ Tutup</button>
+    <img id="photoImg" alt="Foto bukti">
   </div>
 </div>
 
@@ -3392,9 +3416,15 @@ function doAutosave(){
   try{
     localStorage.setItem(PROJECT_KEY, JSON.stringify(buildProject()));
   }catch(e){
-    if(!__autosaveWarned){
-      __autosaveWarned = true;
-      showToast('Simpan otomatis di browser gagal (data terlalu besar / diblokir). Gunakan tombol "Simpan Proyek".');
+    // kemungkinan kuota penuh karena foto: coba lagi tanpa foto
+    try{
+      localStorage.setItem(PROJECT_KEY, JSON.stringify(buildProject(), (k,v)=> k==='photos' ? [] : v));
+      if(!__autosaveWarned){ __autosaveWarned = true; showToast('Foto tidak ikut tersimpan otomatis (terlalu besar). Gunakan tombol "Simpan" untuk menyimpan foto ke file.'); }
+    }catch(e2){
+      if(!__autosaveWarned){
+        __autosaveWarned = true;
+        showToast('Simpan otomatis di browser gagal (data terlalu besar / diblokir). Gunakan tombol "Simpan".');
+      }
     }
   }
 }
@@ -3468,7 +3498,9 @@ function init(){
   $('#btnHelp').addEventListener('click', ()=> $('#helpOverlay').classList.add('active'));
   $('#helpClose').addEventListener('click', closeHelp);
   $('#helpOverlay').addEventListener('click', e=>{ if(e.target.id==='helpOverlay') closeHelp(); });
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeHelp(); closeTtcModal(); } });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeHelp(); closeTtcModal(); closePhoto(); } });
+  $('#photoClose').addEventListener('click', closePhoto);
+  $('#photoOverlay').addEventListener('click', e=>{ if(e.target.id==='photoOverlay') closePhoto(); });
   $('#btnExportAllPDF').addEventListener('click', exportAllPDF);
   $('#btnExportAllPPT').addEventListener('click', exportAllPPT);
   $('#btnExportExcel').addEventListener('click', exportExcel);
@@ -3555,14 +3587,15 @@ let __fbUid = 0;
 function fbUid(){ __fbUid++; return 'c' + Date.now().toString(36) + __fbUid; }
 function fbNewCause(text){
   return { id: fbUid(), text: text || '', impact:0, ease:0, vstatus:'none', evidence:'', root:false,
-           corrective:'', preventive:'', pic:'', due:'', evalResult:'', status:'none' };
+           corrective:'', preventive:'', pic:'', due:'', evalResult:'', status:'none', photos:[] };
 }
+const FB_MAX_PHOTOS = 8;
 function fbDefault(){
   return {
     meta: { docNo:'', dept:'', location:'', date:'', team:'' },
     problem: { statement:'', actual:'', target:'', gap:'' },
-    rootSummary: '', showMarks: true, showAllActions: false, sort: 'priority',
-    cats: FB_CATS.map(c=>({ id:c.id, name:'', causes:[ fbNewCause('') ] })),
+    rootSummary: '', showMarks: true, hideEmpty: false, showAllActions: false, sort: 'priority',
+    cats: FB_CATS.map(c=>({ id:c.id, name:'', hidden:false, causes:[ fbNewCause('') ] })),
   };
 }
 function fbCleanCause(c){
@@ -3575,6 +3608,10 @@ function fbCleanCause(c){
   if(FB_VSTATUS[c.vstatus]) o.vstatus = c.vstatus;
   if(FB_STATUS[c.status]) o.status = c.status;
   o.root = !!c.root && o.vstatus==='valid';
+  if(Array.isArray(c.photos)){
+    o.photos = c.photos.filter(p=> p && typeof p.data==='string' && /^data:image\//.test(p.data))
+      .slice(0, FB_MAX_PHOTOS).map(p=>({ id: (typeof p.id==='string' && p.id) ? p.id : fbUid(), name: typeof p.name==='string' ? p.name : 'foto', data: p.data }));
+  }
   return o;
 }
 function fbNormalize(src){
@@ -3584,12 +3621,14 @@ function fbNormalize(src){
   ['statement','actual','target','gap'].forEach(k=>{ if(src.problem && typeof src.problem[k]==='string') d.problem[k] = src.problem[k]; });
   if(typeof src.rootSummary==='string') d.rootSummary = src.rootSummary;
   d.showMarks = src.showMarks !== false;
+  d.hideEmpty = !!src.hideEmpty;
   d.showAllActions = !!src.showAllActions;
   if(['priority','impact','ease'].indexOf(src.sort) >= 0) d.sort = src.sort;
   d.cats.forEach(cat=>{
     const sc = (Array.isArray(src.cats) ? src.cats : []).find(c=> c && c.id===cat.id);
     if(!sc) return;
     if(typeof sc.name==='string') cat.name = sc.name;
+    cat.hidden = !!sc.hidden;
     const arr = Array.isArray(sc.causes) ? sc.causes : [];
     cat.causes = arr.map(fbCleanCause);
     if(!cat.causes.length) cat.causes = [ fbNewCause('') ];
@@ -3607,6 +3646,7 @@ function fbCatTitle(cat){
 function fbCauses(fb){
   const out = [];
   fb.cats.forEach(cat=>{
+    if(cat.hidden) return;
     cat.causes.forEach(cause=>{
       if((cause.text||'').trim()) out.push({ cat, def: fbCatDef(cat.id), title: fbCatTitle(cat), cause });
     });
@@ -3617,7 +3657,7 @@ function fbHasContent(fb){
   if(!fb) return false;
   const vals = [].concat(Object.values(fb.meta||{}), Object.values(fb.problem||{}), [fb.rootSummary||'']);
   if(vals.some(v=> String(v||'').trim())) return true;
-  return (fb.cats||[]).some(c=> (c.causes||[]).some(x=> (x.text||'').trim()));
+  return (fb.cats||[]).some(c=> !c.hidden && (c.causes||[]).some(x=> (x.text||'').trim()));
 }
 
 /* ----- prioritas: dampak x kemudahan ----- */
@@ -3679,7 +3719,10 @@ function fbXml(s){ return escapeHtml(s); }
 /* ----- diagram tulang ikan (SVG) ----- */
 function fbBuildSvg(fb){
   const showMarks = fb.showMarks !== false;
-  const cats = fb.cats.filter(c=> c.id!=='other' || (c.name||'').trim() || c.causes.some(x=> (x.text||'').trim()));
+  const hasText = c => c.causes.some(x=> (x.text||'').trim());
+  const cats = fb.cats.filter(c=> !c.hidden
+    && (c.id!=='other' || (c.name||'').trim() || hasText(c))
+    && (!fb.hideEmpty || hasText(c)));
   const nTop = Math.ceil(cats.length / 2);
   const top = cats.slice(0, nTop), bot = cats.slice(nTop);
   const CW = 215, LEFT = 20, SLANT = 70, TXT_W = 150, LH = 14, LABEL_H = 30, MAXC = 22;
@@ -3696,7 +3739,20 @@ function fbBuildSvg(fb){
   const maxContent = Math.max(0, ...topB.concat(botB).map(contentH));
   const boneH = Math.max(130, maxContent + 20);
   const spineY = 10 + LABEL_H + boneH;
-  const H = spineY + boneH + LABEL_H + 10;
+  // keterangan simbol (ikut tercetak / diekspor karena digambar di dalam diagram)
+  const used = { root:false, valid:false, invalid:false };
+  if(showMarks){
+    top.concat(bot).forEach(cat=> cat.causes.forEach(x=>{
+      if(!(x.text||'').trim()) return;
+      if(x.root) used.root = true; else if(x.vstatus==='valid') used.valid = true; else if(x.vstatus==='invalid') used.invalid = true;
+    }));
+  }
+  const legend = [];
+  if(used.root) legend.push({ sym:'★', text:'Akar penyebab terverifikasi', color:'#C62828' });
+  if(used.valid) legend.push({ sym:'✓', text:'Penyebab terbukti (valid)', color:'#1E8449' });
+  if(used.invalid) legend.push({ sym:'✗', text:'Penyebab tidak terbukti (dicoret)', color:'#757575' });
+  const LEG_H = legend.length ? 34 : 0;
+  const H = spineY + boneH + LABEL_H + 10 + LEG_H;
   const cols = Math.max(top.length, 1);
   const xs = i => LEFT + TXT_W + SLANT + i*CW;
   const lastX = xs(cols-1);
@@ -3759,6 +3815,17 @@ function fbBuildSvg(fb){
   }
   drawSide(top, topB, true);
   drawSide(bot, botB, false);
+  if(legend.length){
+    const ly = H - 12;
+    out.push('<line x1="' + LEFT + '" y1="' + (H - LEG_H) + '" x2="' + (W - 20) + '" y2="' + (H - LEG_H) + '" stroke="#e3e3e3"/>');
+    out.push('<text x="' + LEFT + '" y="' + ly + '" font-size="11" font-weight="700" fill="#777" font-family="Segoe UI, Arial, sans-serif">Keterangan:</text>');
+    let lx = LEFT + 78;
+    legend.forEach(it=>{
+      out.push('<text x="' + lx + '" y="' + ly + '" font-size="13" font-weight="700" fill="' + it.color + '" font-family="Segoe UI, Arial, sans-serif">' + it.sym + '</text>');
+      out.push('<text x="' + (lx + 16) + '" y="' + ly + '" font-size="11.5" fill="#444" font-family="Segoe UI, Arial, sans-serif">' + fbXml(it.text) + '</text>');
+      lx += 16 + it.text.length * 6.2 + 26;
+    });
+  }
 
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + out.join('') + '</svg>';
   return { svg: svg, w: W, h: H };
@@ -3872,10 +3939,16 @@ function fbRenderCauses(){
   grid.innerHTML = fbState.cats.map(cat=>{
     const def = fbCatDef(cat.id);
     const filled = cat.causes.filter(x=> (x.text||'').trim()).length;
+    if(cat.hidden){
+      return '<div class="fb-cat fb-cat-hidden" style="--c:' + def.color + '"><div class="fb-cat-head"><span class="fb-dot"></span><div style="flex:1;min-width:0;">' +
+        '<div class="fb-cat-title">' + escapeHtml(fbCatTitle(cat)) + ' <span class="fb-opt">(dihapus dari analisis' + (filled ? ', ' + filled + ' faktor tersimpan' : '') + ')</span></div></div>' +
+        '<button class="btn small" data-act="restorecat" data-cat="' + cat.id + '">↺ Pulihkan</button></div></div>';
+    }
     return '<div class="fb-cat" style="--c:' + def.color + '">' +
       '<div class="fb-cat-head"><span class="fb-dot"></span><div style="flex:1;min-width:0;">' +
         '<div class="fb-cat-title">' + (def.custom ? 'Faktor Lain <span class="fb-opt">(opsional, di luar 8M)</span>' : escapeHtml(def.name)) + ' <span class="fb-count">' + filled + '</span></div>' +
-        '<div class="fb-cat-hint">' + escapeHtml(def.hint) + '</div></div></div>' +
+        '<div class="fb-cat-hint">' + escapeHtml(def.hint) + '</div></div>' +
+        '<button class="icon-btn danger sm" data-act="delcat" data-cat="' + cat.id + '" title="Tidak ada faktor di kategori ini? Hapus kategori dari analisis (bisa dipulihkan)">🗑️</button></div>' +
       (def.custom ? '<input type="text" class="fb-cat-name" data-catname="' + cat.id + '" placeholder="Nama faktor, mis. Money / Moment / Safety" value="' + escapeHtml(cat.name||'') + '">' : '') +
       '<div class="fb-cause-list">' +
         cat.causes.map(c=>
@@ -3928,16 +4001,70 @@ function fbRenderValidation(){
   if(!list.length){ box.innerHTML = '<div class="fb-empty"><div class="ce-icon">🔎</div><div class="ce-title">Belum ada faktor penyebab</div><div class="ce-text">Tulis faktor penyebab di langkah ② terlebih dahulu.</div><button class="btn primary" data-act="gotab" data-tab="causes">Ke langkah ② Faktor Penyebab</button></div>'; return; }
   box.innerHTML = list.map(x=>{
     const c = x.cause;
-    return '<div class="fb-item" style="--c:' + x.def.color + '">' +
+    return '<div class="fb-item" data-item="' + c.id + '" style="--c:' + x.def.color + '">' +
       '<div class="fb-item-head"><span class="fb-chip" style="background:' + x.def.color + '">' + escapeHtml(x.title) + '</span><b>' + escapeHtml(c.text) + '</b>' + (c.root ? '<span class="fb-badge root">★ Akar penyebab</span>' : '') + '</div>' +
       '<div class="fb-item-grid">' +
         '<div class="field"><label>Status validasi</label><select data-cid="' + c.id + '" data-cf="vstatus">' +
           Object.keys(FB_VSTATUS).map(k=> '<option value="' + k + '"' + (c.vstatus===k ? ' selected' : '') + '>' + FB_VSTATUS[k] + '</option>').join('') + '</select></div>' +
-        '<div class="field fb-span2"><label>Bukti, hasil observasi, data, dan hasil pemeriksaan</label><textarea rows="2" data-cid="' + c.id + '" data-cf="evidence" placeholder="mis. hasil pengamatan lapangan tgl …, data pengukuran …, foto/dokumen …">' + escapeHtml(c.evidence||'') + '</textarea></div>' +
+        '<div class="field fb-span2"><label>Bukti, hasil observasi, data, dan hasil pemeriksaan</label><textarea rows="2" data-cid="' + c.id + '" data-cf="evidence" placeholder="mis. hasil pengamatan lapangan tgl …, data pengukuran …  (untuk foto: pakai tombol 📷 di bawah, atau tempel Ctrl+V)">' + escapeHtml(c.evidence||'') + '</textarea></div>' +
         '<label class="fb-check ' + (c.vstatus==='valid' ? '' : 'disabled') + '"><input type="checkbox" data-cid="' + c.id + '" data-cf="root"' + (c.root ? ' checked' : '') + (c.vstatus==='valid' ? '' : ' disabled') + '> ✔ Akar penyebab terverifikasi' +
           (c.vstatus==='valid' ? '' : '<span class="fb-sub">(aktif jika status “Terbukti”)</span>') + '</label>' +
-      '</div></div>';
+      '</div>' + fbPhotoBlock(c) + '</div>';
   }).join('');
+}
+
+function fbPhotoBlock(c){
+  const ph = c.photos || [];
+  return '<div class="fb-photos"><div class="fb-photo-list">' +
+    ph.map(p=> '<div class="fb-photo"><img src="' + p.data + '" alt="' + escapeHtml(p.name||'foto bukti') + '" title="Klik untuk memperbesar" data-act="viewphoto" data-cid="' + c.id + '" data-pid="' + p.id + '">' +
+      '<button class="fb-photo-x" data-act="delphoto" data-cid="' + c.id + '" data-pid="' + p.id + '" title="Hapus foto ini">✕</button></div>').join('') +
+    '</div><div class="fb-photo-actions"><label class="btn small fb-photo-add">📷 Tambah foto<input type="file" accept="image/*" multiple class="fb-file-input" data-photo-input="' + c.id + '"></label>' +
+    '<span class="fb-sub">atau tempel (Ctrl+V) / seret foto ke kartu ini · ' + ph.length + '/' + FB_MAX_PHOTOS + ' foto</span></div></div>';
+}
+function fbResizeImage(file, maxSide){
+  return new Promise((resolve, reject)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const k = Math.min(1, maxSide / Math.max(w, h));
+      w = Math.max(1, Math.round(w*k)); h = Math.max(1, Math.round(h*k));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0,0,w,h); cx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(cv.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('Gambar tidak dapat dibaca')); };
+    img.src = url;
+  });
+}
+async function fbAddPhotos(cid, files){
+  const c = fbFindCause(cid); if(!c) return;
+  if(!c.photos) c.photos = [];
+  const imgs = Array.from(files || []).filter(f=> f && /^image\//.test(f.type));
+  if(!imgs.length){ showToast('File yang dipilih bukan gambar'); return; }
+  const room = FB_MAX_PHOTOS - c.photos.length;
+  if(room <= 0){ showToast('Maksimal ' + FB_MAX_PHOTOS + ' foto per faktor'); return; }
+  let added = 0;
+  for(const f of imgs.slice(0, room)){
+    try{ c.photos.push({ id: fbUid(), name: f.name || 'foto', data: await fbResizeImage(f, 1000) }); added++; }
+    catch(e){ console.error(e); }
+  }
+  if(imgs.length > room) showToast('Hanya ' + added + ' foto ditambahkan (maksimal ' + FB_MAX_PHOTOS + ' per faktor)');
+  else if(added) showToast(added + ' foto ditambahkan');
+  else showToast('Foto tidak dapat dibaca');
+  fbRenderValidation();
+  fbTouch('photo');
+}
+function fbViewPhoto(cid, pid){
+  const c = fbFindCause(cid); if(!c) return;
+  const p = (c.photos||[]).find(x=> x.id===pid); if(!p) return;
+  document.getElementById('photoImg').src = p.data;
+  document.getElementById('photoOverlay').classList.add('active');
+}
+function closePhoto(){
+  const o = document.getElementById('photoOverlay');
+  if(o) o.classList.remove('active');
 }
 
 function fbRenderProgress(){
@@ -4028,6 +4155,7 @@ function fbBuildReportHtml(fb, withDiagram){
   if(withDiagram && fbHasContent(fb)){ h += '<h3>Diagram Fishbone</h3><div class="fb-rep-diagram">' + fbBuildSvg(fb).svg.replace('<svg ', '<svg style="max-width:100%;height:auto;" ') + '</div>'; }
   h += '<h3>3–11. Faktor Penyebab (8M + Faktor Lain)</h3>';
   fb.cats.forEach((cat, i)=>{
+    if(cat.hidden) return;
     const items = cat.causes.filter(x=> (x.text||'').trim());
     if(cat.id==='other' && !items.length && !(cat.name||'').trim()) return;
     h += '<div class="fb-rep-cat"><b>' + (3+i) + '. ' + E(fbCatTitle(cat)) + '</b>' +
@@ -4035,7 +4163,7 @@ function fbBuildReportHtml(fb, withDiagram){
   });
   h += '<h3>12. Validasi Penyebab</h3>';
   h += all.length ? '<table class="fb-rt"><thead><tr><th>Kategori</th><th>Penyebab</th><th>Status</th><th>Bukti / hasil observasi / data / pemeriksaan</th></tr></thead><tbody>' +
-    all.map(x=> '<tr><td>' + E(x.title) + '</td><td>' + E(x.cause.text) + '</td><td>' + FB_VSTATUS[x.cause.vstatus] + '</td><td>' + nz(x.cause.evidence) + '</td></tr>').join('') + '</tbody></table>' : '<div class="fb-dash">Belum ada data</div>';
+    all.map(x=> '<tr><td>' + E(x.title) + '</td><td>' + E(x.cause.text) + '</td><td>' + FB_VSTATUS[x.cause.vstatus] + '</td><td>' + nz(x.cause.evidence) + ((x.cause.photos||[]).length ? '<div>' + x.cause.photos.map(p=> '<img class="fb-rep-photo" src="' + p.data + '" alt="foto bukti">').join('') + '</div>' : '') + '</td></tr>').join('') + '</tbody></table>' : '<div class="fb-dash">Belum ada data</div>';
   const roots = all.filter(x=> x.cause.root);
   h += '<h3>13. Akar Penyebab</h3>' + (roots.length ? '<ul>' + roots.map(x=> '<li><b>' + E(x.title) + ':</b> ' + E(x.cause.text) + '</li>').join('') + '</ul>' : '<div class="fb-dash">Belum ada akar penyebab terverifikasi</div>') +
        (fb.rootSummary.trim() ? '<p><b>Rumusan:</b> ' + E(fb.rootSummary) + '</p>' : '');
@@ -4102,10 +4230,10 @@ function fbExportXlsx(){
       ['Pernyataan masalah', p.statement], ['Kondisi aktual', p.actual], ['Target', p.target], ['Kesenjangan', p.gap], [],
       ['Rumusan akar penyebab', fbState.rootSummary],
     ];
-    const head = ['Kategori','Faktor penyebab','Status validasi','Bukti / observasi','Akar penyebab','Dampak (1-5)','Kemudahan (1-5)','Skor','Kategori prioritas','Corrective action','Preventive action','PIC','Target waktu','Hasil verifikasi efektivitas','Status penyelesaian'];
+    const head = ['Kategori','Faktor penyebab','Status validasi','Bukti / observasi','Jumlah foto bukti','Akar penyebab','Dampak (1-5)','Kemudahan (1-5)','Skor','Kategori prioritas','Corrective action','Preventive action','PIC','Target waktu','Hasil verifikasi efektivitas','Status penyelesaian'];
     const rows = fbCauses(fbState).map(x=>{
       const c = x.cause;
-      return [x.title, c.text, FB_VSTATUS[c.vstatus], c.evidence, c.root ? 'Ya' : '', c.impact || '', c.ease || '', (c.impact && c.ease) ? fbScore(c) : '',
+      return [x.title, c.text, FB_VSTATUS[c.vstatus], c.evidence, (c.photos||[]).length, c.root ? 'Ya' : '', c.impact || '', c.ease || '', (c.impact && c.ease) ? fbScore(c) : '',
         FB_QUAD[fbQuadrant(c)].label, c.corrective, c.preventive, c.pic, fbFmtDate(c.due), c.evalResult, FB_STATUS[c.status]];
     });
     const wb = XLSX.utils.book_new();
@@ -4203,12 +4331,28 @@ function fbAfterPath(path){
   if(path==='problem.actual' || path==='problem.target') fbUpdateGapHint();
   if(path==='sort') fbRenderResults();
   if(path==='showAllActions'){ fbRenderProgress(); fbRenderActions(); }
-  if(path==='showMarks') fbRenderDiagram();
+  if(path==='showMarks' || path==='hideEmpty') fbRenderDiagram();
 }
 function fbAct(btn){
   const a = btn.dataset.act;
   if(a==='addcause'){ fbAddCause(btn.dataset.cat); fbTouch('struct'); }
   else if(a==='delcause') fbDelCause(btn.dataset.cid);
+  else if(a==='delcat'){
+    const cat = fbState.cats.find(c=> c.id===btn.dataset.cat); if(!cat) return;
+    const n = cat.causes.filter(x=> (x.text||'').trim()).length;
+    if(!confirm('Hapus kategori "' + fbCatTitle(cat) + '" dari analisis' + (n ? ' beserta ' + n + ' faktor di dalamnya' : '') + '?\nAnda dapat memulihkannya lagi kapan saja.')) return;
+    cat.hidden = true; fbRenderCauses(); fbTouch('struct');
+  }
+  else if(a==='restorecat'){
+    const cat = fbState.cats.find(c=> c.id===btn.dataset.cat); if(!cat) return;
+    cat.hidden = false; fbRenderCauses(); fbTouch('struct');
+  }
+  else if(a==='viewphoto') fbViewPhoto(btn.dataset.cid, btn.dataset.pid);
+  else if(a==='delphoto'){
+    const c = fbFindCause(btn.dataset.cid); if(!c) return;
+    c.photos = (c.photos||[]).filter(p=> p.id!==btn.dataset.pid);
+    fbRenderValidation(); fbTouch('photo');
+  }
   else if(a==='gapuse'){
     const el = document.getElementById('fbGapHint');
     if(el && el.dataset.val!==''){ fbState.problem.gap = fmtNum(parseFloat(el.dataset.val)); fbSyncInputs(); fbTouch('path'); }
@@ -4229,7 +4373,28 @@ function fbBind(){
     if(t.dataset.catname){ const cat = fbState.cats.find(c=> c.id===t.dataset.catname); if(cat){ cat.name = t.value; fbTouch('catname'); } }
   };
   root.addEventListener('input', e=>{ const t = e.target; if(t.tagName==='SELECT' || t.type==='checkbox') return; onField(t); });
-  root.addEventListener('change', e=>{ const t = e.target; if(t.tagName==='SELECT' || t.type==='checkbox') onField(t); });
+  root.addEventListener('change', e=>{
+    const t = e.target;
+    if(t.type==='file' && t.dataset.photoInput){ fbAddPhotos(t.dataset.photoInput, t.files); t.value = ''; return; }
+    if(t.tagName==='SELECT' || t.type==='checkbox') onField(t);
+  });
+  // tempel foto (Ctrl+V) & seret-lepas foto ke kartu validasi
+  root.addEventListener('paste', e=>{
+    const item = e.target.closest && e.target.closest('.fb-item[data-item]'); if(!item) return;
+    const files = [];
+    Array.from((e.clipboardData && e.clipboardData.items) || []).forEach(it=>{
+      if(it.kind==='file' && /^image\//.test(it.type)){ const f = it.getAsFile(); if(f) files.push(f); }
+    });
+    if(files.length){ e.preventDefault(); fbAddPhotos(item.dataset.item, files); }
+  });
+  root.addEventListener('dragover', e=>{
+    const item = e.target.closest && e.target.closest('.fb-item[data-item]');
+    if(item && e.dataTransfer && Array.from(e.dataTransfer.types||[]).indexOf('Files') >= 0) e.preventDefault();
+  });
+  root.addEventListener('drop', e=>{
+    const item = e.target.closest && e.target.closest('.fb-item[data-item]');
+    if(item && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){ e.preventDefault(); fbAddPhotos(item.dataset.item, e.dataTransfer.files); }
+  });
   root.addEventListener('click', e=>{ const b = e.target.closest('[data-act]'); if(b) fbAct(b); });
   root.addEventListener('keydown', e=>{
     if(e.key==='Enter' && e.target.classList && e.target.classList.contains('fb-cause-input')){
