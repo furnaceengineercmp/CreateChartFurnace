@@ -1130,6 +1130,7 @@ function finalizeData(headers, rows, extra){
   state.rows = rows.map(r => headers.map((_,i)=> r[i]!==undefined ? r[i] : ''));
   detectColumnTypes();
   renderDataPreview();
+  if(!(extra && extra.fromManual)) loadStateIntoManualTable();
   populateAllColumnSelectors();
   showToast('Data berhasil dimuat: ' + state.rows.length + ' baris, ' + state.headers.length + ' kolom');
   if(state.charts.length===0){ setChartCount(2); }
@@ -1156,6 +1157,8 @@ function renderDataPreview(){
   if(state.headers.length===0){ wrap.innerHTML = '<p class="hint">Belum ada data dimuat.</p>'; return; }
   let html = '<div class="table-toolbar">';
   html += '<button class="btn small" id="btnDeleteSelectedRows">🗑 Hapus Baris Terpilih</button>';
+  html += '<button class="btn small" id="btnEditSource" title="Muat data ini ke tabel Sumber Data (tempel manual) agar bisa diedit atau ditempel ulang">✍️ Edit di Sumber Data</button>';
+  html += '<button class="btn small" id="btnCopyData" title="Salin seluruh data (header + target + isi) ke clipboard, siap ditempel di Excel">📋 Salin Data</button>';
   html += '<button class="btn small ghost" id="btnClearAllData">✖ Hapus Semua Data</button>';
   html += '<button class="btn small primary" id="btnGoBuilder" style="margin-left:auto;">Lanjut: Buat Grafik →</button>';
   html += '</div>';
@@ -1186,6 +1189,14 @@ function renderDataPreview(){
     });
   });
   $('#btnGoBuilder').addEventListener('click', ()=> switchTab('builder'));
+  $('#btnCopyData').addEventListener('click', copyDataToClipboard);
+  $('#btnEditSource').addEventListener('click', ()=>{
+    if(loadStateIntoManualTable(true)){
+      switchSubtab('input','manual');
+      const t = $('#manualTableWrap'); if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
+      showToast('Data dimuat ke tabel Sumber Data. Edit lalu klik "Gunakan Data Ini".');
+    }
+  });
   $('#previewSelectAll').addEventListener('change', e=>{
     $all('.preview-row-check', wrap).forEach(cb=> cb.checked = e.target.checked);
   });
@@ -1245,6 +1256,75 @@ function buildPreviewHead(){
   }
   html += '</thead>';
   return { html, multi: hasTwo || hasTarget };
+}
+// Teks sel untuk diedit/disalin: tanggal ditulis dd/mm/yyyy (format yang dibaca aplikasi).
+function fmtCellEdit(v){
+  if(v instanceof Date && !isNaN(v)){
+    const p = n=> String(n).padStart(2,'0');
+    let s = p(v.getDate()) + '/' + p(v.getMonth()+1) + '/' + v.getFullYear();
+    if(v.getHours() || v.getMinutes() || v.getSeconds()) s += ' ' + p(v.getHours()) + ':' + p(v.getMinutes());
+    return s;
+  }
+  return (v===undefined || v===null) ? '' : String(v);
+}
+// Data saat ini sebagai kisi teks: header baris 1, sub-header baris 2, target, dan isi.
+function dataToGrid(){
+  const n = state.headers.length;
+  const h1 = (state.h1 && state.h1.length===n) ? state.h1 : state.headers.slice();
+  const h2 = (state.h2 && state.h2.length===n) ? state.h2 : state.headers.map(()=> '');
+  const tg = (state.targetRow && state.targetRow.length===n) ? state.targetRow : null;
+  return {
+    h1: h1.map((x,i)=> x || (h2[i] ? '' : state.headers[i])),
+    h2: h2.slice(),
+    tg: (tg && tg.some(x=> x!=='')) ? tg.slice() : null,
+    rows: state.rows.map(r=> r.map(fmtCellEdit)),
+  };
+}
+// Muat data yang sedang aktif ke tabel "Sumber Data" (tempel manual) agar bisa diedit.
+function loadStateIntoManualTable(force){
+  if(!state.headers.length) return false;
+  const g = dataToGrid(), cols = g.h1.length, rows = g.rows.length;
+  if(!force && rows*cols > 60000) return false;   // data sangat besar: jangan otomatis
+  if(force && rows*cols > 150000 && !confirm('Data sangat besar (' + rows + ' baris). Memuat ke tabel bisa lambat. Lanjutkan?')) return false;
+  initManualTable(cols, 1);
+  const hc1 = $all('#manualHeaderRow th[data-col]'), hc2 = $all('#manualHeaderRow2 th[data-col]'), hct = $all('#manualTargetRow th[data-col]');
+  for(let c=0;c<cols;c++){
+    hc1[c].textContent = g.h1[c];
+    hc2[c].textContent = g.h2[c];
+    hct[c].textContent = g.tg ? g.tg[c] : '';
+  }
+  if(rows > 0){
+    let html = '';
+    for(let r=0;r<rows;r++){
+      html += '<tr><td style="width:30px;"><input type="checkbox" class="manual-row-check" data-row="' + r + '"></td>';
+      for(let c=0;c<cols;c++) html += '<td contenteditable="true" data-row="' + r + '" data-col="' + c + '">' + escapeHtml(g.rows[r][c]) + '</td>';
+      html += '</tr>';
+    }
+    $('#manualBody').innerHTML = html;
+  }
+  manualCols = cols; manualRows = Math.max(rows, 1);
+  return true;
+}
+// Salin seluruh data (tab-delimited) ke clipboard; bisa langsung ditempel di Excel atau di tabel Sumber Data.
+function copyDataToClipboard(){
+  if(!state.headers.length){ showToast('Belum ada data untuk disalin'); return; }
+  const g = dataToGrid(), clean = s=> String(s).replace(/[\t\r\n]+/g,' ');
+  const lines = [ g.h1.map(clean).join('\t') ];
+  if(g.h2.some(x=> x!=='')) lines.push(g.h2.map(clean).join('\t'));
+  if(g.tg){ const t = g.tg.slice(); if(!t[0]) t[0] = 'Target'; lines.push(t.map(clean).join('\t')); }
+  g.rows.forEach(r=> lines.push(r.map(clean).join('\t')));
+  const text = lines.join('\n');
+  const done = ()=> showToast('Data disalin: ' + g.rows.length + ' baris × ' + g.h1.length + ' kolom. Tempel (Ctrl+V) di Excel.');
+  const fallback = ()=>{
+    try{
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove();
+      if(ok) done(); else showToast('Gagal menyalin. Gunakan "Edit di Sumber Data" lalu salin dari tabel.');
+    }catch(e){ showToast('Gagal menyalin. Gunakan "Edit di Sumber Data" lalu salin dari tabel.'); }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+  else fallback();
 }
 function fmtCell(v){
   if(v instanceof Date && !isNaN(v)) return v.toLocaleString('id-ID');
@@ -1611,6 +1691,7 @@ function useManualData(){
     h1: h1.map((x,i)=> x || (h2[i] ? '' : headers[i])),
     h2: h2,
     targets: tg.some(x=>x!=='') ? tg : null,
+    fromManual: true,
   });
 }
 
@@ -3381,6 +3462,7 @@ function loadProject(p){
   state.nextChartId = state.charts.length + 1;
 
   renderDataPreview();
+  loadStateIntoManualTable();
   populateAllColumnSelectors();
   if(state.charts.length === 0){
     setChartCount(2);
