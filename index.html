@@ -321,6 +321,18 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 .shade-row input[type=color]{ width:30px; height:26px; border:none; padding:0; background:none; cursor:pointer; }
 .shade-row label.alpha{ font-size:11.5px; color:var(--text-soft); display:flex; align-items:center; gap:4px; }
 .chart-card-head select{ padding:5px 8px; border-radius:9px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:12px; font-weight:600; }
+.stat-menu{ position:relative; display:inline-block; }
+.stat-menu summary{ list-style:none; cursor:pointer; user-select:none; }
+.stat-menu summary::-webkit-details-marker{ display:none; }
+.stat-menu[open] summary{ border-color:var(--accent1); color:var(--accent1); }
+.stat-pop{ position:absolute; left:0; bottom:calc(100% + 6px); z-index:30; width:290px; background:var(--panel); border:1px solid var(--border); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.22); padding:12px 14px; display:flex; flex-direction:column; gap:8px; animation:fadeIn .15s ease; }
+.stat-pop-title{ font-size:11.5px; font-weight:800; color:var(--text-soft); text-transform:uppercase; letter-spacing:.4px; }
+.stat-pop label{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; padding:3px 0; }
+.stat-row{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:12.5px; padding:3px 0; border-top:1px dashed var(--border); }
+.stat-row:first-of-type{ margin-top:6px; }
+.stat-row span{ color:var(--text-soft); }
+.stat-row b{ font-size:14px; }
+.stat-row .stat-at{ display:block; font-size:10.5px; color:var(--text-soft); font-weight:500; text-align:right; max-width:150px; }
 /* tabel dengan 2 baris header + baris Target */
 table.datatable thead th, table.datatable thead td{ height:32px; box-sizing:border-box; }
 table.datatable thead th.grouphead{ text-align:center; }
@@ -1767,6 +1779,7 @@ function newChartConfig(){
     id, title: 'Grafik ' + id, mode: 'linebar',
     xCol: '', xCol2: '', granularity: 'raw', dateFrom: '', dateTo: '',
     series: [], hiddenSeries: new Set(), filters: [], shades: [], calloutStyle: 'full', limitN: '', limitMode: 'last',
+    statsShow: { avg:false, sum:false, median:false, max:false, min:false },
     yMin: '', yMax: '', y1Min: '', y1Max: '',
     showAllCallouts: false, chartObj: null,
   };
@@ -1804,6 +1817,7 @@ function syncCountSeg(){
 function syncChartCardControls(card, cfg){
   const setVal = (roleSel, val)=>{ const el = card.querySelector(roleSel); if(el) el.value = val; };
   setVal('[data-role=mode]', cfg.mode);
+  card.querySelectorAll('[data-stat]').forEach(cb=>{ cb.checked = !!(cfg.statsShow && cfg.statsShow[cb.dataset.stat]); });
   setVal('[data-role=limitn]', cfg.limitN || '');
   setVal('[data-role=limitmode]', cfg.limitMode || 'last');
   setVal('[data-role=calloutstyle]', cfg.calloutStyle || 'full');
@@ -1945,6 +1959,18 @@ function buildChartCardDom(cfg){
         <option value="number">Klik titik: Angka saja</option>
       </select>
       <button class="btn small ghost" data-role="clear-callouts" title="Hapus semua callout yang sedang tampil">✖ Hapus Callout</button>
+      <details class="stat-menu" data-role="statmenu">
+        <summary class="btn small" title="Pilih statistik yang ditampilkan di bawah grafik">📊 Statistik ▾</summary>
+        <div class="stat-pop">
+          <div class="stat-pop-title">Tampilkan di bawah grafik</div>
+          <label><input type="checkbox" data-stat="avg"> Rata-rata</label>
+          <label><input type="checkbox" data-stat="sum"> Total (jumlah nilai)</label>
+          <label><input type="checkbox" data-stat="median"> Median</label>
+          <label><input type="checkbox" data-stat="max"> Tertinggi</label>
+          <label><input type="checkbox" data-stat="min"> Terendah</label>
+          <div class="hint" style="margin:4px 0 0 0;">Dihitung dari data yang tampil di grafik (setelah filter, rentang tanggal, dan batas jumlah data), bukan seluruh tabel. Jumlah data selalu tampil.</div>
+        </div>
+      </details>
     </div>
     <div class="chart-legend-filter" data-role="legendfilter"></div>
     <div class="chart-stats" data-role="statspanel"></div>
@@ -1972,6 +1998,13 @@ function wireChartCard(card, cfg){
     tab.addEventListener('click', ()=>{
       card.querySelectorAll('.cfg-tab').forEach(t=> t.classList.toggle('active', t===tab));
       card.querySelectorAll('.cfg-pane').forEach(p=> p.classList.toggle('active', p.dataset.pane===tab.dataset.cfgtab));
+    });
+  });
+  card.querySelectorAll('[data-stat]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(!cfg.statsShow) cfg.statsShow = { avg:false, sum:false, median:false, max:false, min:false };
+      cfg.statsShow[cb.dataset.stat] = cb.checked;
+      renderChart(cfg);
     });
   });
   card.querySelector('[data-role=limitn]').addEventListener('input', e=>{ cfg.limitN = e.target.value; renderChart(cfg); });
@@ -2348,9 +2381,17 @@ function renderLegendFilter(card, cfg){
 // inside its target/standard: the min–max range for a "range" target, or on
 // the chosen side (above/below) of the line for a single-value target.
 // Series with no target still report their total count, just no percentage.
-function computeSeriesStats(cfg, seriesData){
-  return cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined).map(s=>{
-    const arr = (seriesData[s.colIndex]||[]).filter(v=>v!==null && v!==undefined && !isNaN(v));
+function fmtStat(v){
+  if(v===null || v===undefined || isNaN(v)) return '-';
+  const a = Math.abs(v);
+  const d = a>=1000 ? 1 : (a>=10 ? 2 : (a>=1 ? 3 : 4));
+  return Number(v).toLocaleString('id-ID', { maximumFractionDigits: d });
+}
+function computeSeriesStats(cfg, seriesData, pointLabels){
+  return cfg.series.filter(s=> s.colIndex!=='' && s.colIndex!==undefined && !cfg.hiddenSeries.has(s.colIndex)).map(s=>{
+    const pts = [];
+    (seriesData[s.colIndex]||[]).forEach((v,i)=>{ if(v!==null && v!==undefined && !isNaN(v)) pts.push({ v:v, i:i }); });
+    const arr = pts.map(p=> p.v);
     const total = arr.length;
     let inTarget = null, label = null;
     if(s.target && s.target.type==='range'){
@@ -2369,25 +2410,44 @@ function computeSeriesStats(cfg, seriesData){
       }
     }
     const pct = (inTarget!==null && total>0) ? (inTarget/total*100) : null;
+    let m = null;
+    if(total){
+      const sum = arr.reduce((a,b)=> a+b, 0);
+      const sorted = arr.slice().sort((a,b)=> a-b), mid = Math.floor(total/2);
+      const median = total % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+      let mx = pts[0], mn = pts[0];
+      pts.forEach(p=>{ if(p.v > mx.v) mx = p; if(p.v < mn.v) mn = p; });
+      m = { avg: sum/total, sum: sum, median: median,
+            max: mx.v, maxAt: pointLabels ? pointLabels[mx.i] : '',
+            min: mn.v, minAt: pointLabels ? pointLabels[mn.i] : '' };
+    }
     return {
       name: state.headers[parseInt(s.colIndex)] || ('Kolom ' + s.colIndex),
-      color: s.color, total, inTarget, pct, label,
+      color: s.color, total, inTarget, pct, label, m,
     };
   });
 }
 
-function renderStatsPanel(card, cfg, labels, seriesData){
+const STAT_DEFS = [
+  { k:'avg', t:'Rata-rata' }, { k:'sum', t:'Total (jumlah nilai)' }, { k:'median', t:'Median' },
+  { k:'max', t:'Tertinggi', at:'maxAt' }, { k:'min', t:'Terendah', at:'minAt' },
+];
+function renderStatsPanel(card, cfg, labels, seriesData, pointLabels){
   const panel = card.querySelector('[data-role=statspanel]');
   if(!panel) return;
   if(!labels || !labels.length){ panel.innerHTML=''; return; }
-  const stats = computeSeriesStats(cfg, seriesData);
+  const stats = computeSeriesStats(cfg, seriesData, pointLabels);
+  const show = cfg.statsShow || {};
+  const anyStat = STAT_DEFS.some(d=> show[d.k]);
   const rangeText = (cfg.dateFrom || cfg.dateTo)
     ? `Rentang waktu: ${cfg.dateFrom || 'awal data'} s/d ${cfg.dateTo || 'akhir data'}`
     : 'Rentang waktu: seluruh data';
   const fdesc = describeFilters(cfg);
   const lim = limitInfo(cfg);
   if(lim.on) fdesc.push('hanya ' + lim.n + ' data ' + (lim.mode==='first' ? 'pertama' : 'terakhir'));
-  let html = `<div class="chart-stats-summary">${escapeHtml(rangeText)}${fdesc.length ? ' · Filter: <b>' + escapeHtml(fdesc.join('; ')) + '</b>' : ''} · Total titik data pada grafik ini: <b>${labels.length}</b></div>`;
+  const aggNote = (anyStat && cfg.granularity!=='raw' && state.colTypes[parseInt(cfg.xCol)]==='date')
+    ? ' · <i>statistik dihitung dari rata-rata per periode</i>' : '';
+  let html = `<div class="chart-stats-summary">${escapeHtml(rangeText)}${fdesc.length ? ' · Filter: <b>' + escapeHtml(fdesc.join('; ')) + '</b>' : ''} · Jumlah titik data pada grafik ini: <b>${labels.length}</b>${aggNote}</div>`;
   const shadeRules = (cfg.shades||[]).filter(sh=> sh.col!=='' && sh.col!==undefined);
   if(shadeRules.length){
     html += '<div class="shade-legend">';
@@ -2402,7 +2462,15 @@ function renderStatsPanel(card, cfg, labels, seriesData){
   stats.forEach(st=>{
     html += `<div class="stat-card">
       <div class="stat-name"><span class="dot" style="background:${st.color}"></span>${escapeHtml(st.name)}</div>
-      <div class="stat-total">Total data: <b>${st.total}</b></div>`;
+      <div class="stat-total">Jumlah data: <b>${st.total}</b></div>`;
+    if(anyStat){
+      STAT_DEFS.forEach(d=>{
+        if(!show[d.k]) return;
+        const val = st.m ? st.m[d.k] : null;
+        const at = (d.at && st.m && st.m[d.at]) ? `<span class="stat-at">${escapeHtml(String(st.m[d.at]))}</span>` : '';
+        html += `<div class="stat-row"><span>${d.t}</span><div style="text-align:right;"><b>${fmtStat(val)}</b>${at}</div></div>`;
+      });
+    }
     if(st.pct!==null){
       html += `<div class="stat-pct" style="color:${st.color}">${st.pct.toFixed(1)}%</div>
         <div class="stat-pct-label">${escapeHtml(st.label)}: ${st.inTarget} dari ${st.total}</div>`;
@@ -2918,6 +2986,7 @@ function renderChart(cfg){
 
   try{
     const {labels, seriesData, dateGroups, titles} = getAggregatedData(cfg);
+    const pointLabels = labels.map((l,i)=> (titles && titles[i]) ? titles[i] : ((dateGroups && dateGroups[i]) ? dateGroups[i] + ' ' + l : l));
     if(labels.length===0){
       showChartError(wrap, 'Tidak ada data yang cocok (periksa filter data, Timeline, atau isi kolom yang dipilih).');
       return;
@@ -3018,7 +3087,7 @@ function renderChart(cfg){
       cfg.chartObj.__csCfg = cfg;
       cfg.chartObj.__csPinned = new Set();
       cfg.chartObj.__csSeriesData = seriesData;
-      renderStatsPanel(chartCard, cfg, labels, seriesData);
+      renderStatsPanel(chartCard, cfg, labels, seriesData, pointLabels);
       return;
     }
 
@@ -3088,7 +3157,7 @@ function renderChart(cfg){
     cfg.chartObj.__csCfg = cfg;
     cfg.chartObj.__csPinned = new Set();
     cfg.chartObj.__csSeriesData = seriesData;
-    renderStatsPanel(chartCard, cfg, labels, seriesData);
+    renderStatsPanel(chartCard, cfg, labels, seriesData, pointLabels);
   }catch(err){
     console.error('Gagal membuat grafik', cfg.id, err);
     showChartError(wrap, 'Gagal membuat grafik: ' + (err && err.message ? err.message : err));
@@ -3409,6 +3478,7 @@ function buildProject(){
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
       showAllCallouts: !!cfg.showAllCallouts, calloutStyle: cfg.calloutStyle || 'full',
       limitN: cfg.limitN || '', limitMode: cfg.limitMode || 'last',
+      statsShow: Object.assign({ avg:false, sum:false, median:false, max:false, min:false }, cfg.statsShow || {}),
       hiddenSeries: Array.from(cfg.hiddenSeries),
       filters: (cfg.filters || []).map(f => Object.assign({}, f)),
       shades: (cfg.shades || []).map(s => Object.assign({}, s)),
@@ -3455,6 +3525,7 @@ function loadProject(p){
       target: Object.assign({ type:'none', value:'', min:'', max:'', direction:'above' }, s.target || {}),
     })),
     hiddenSeries: new Set(c.hiddenSeries || []),
+    statsShow: Object.assign({ avg:false, sum:false, median:false, max:false, min:false }, c.statsShow || {}),
     filters: (c.filters || []).map(f => Object.assign({ col:'', op:'gte', v1:'', v2:'' }, f)),
     shades: (c.shades || []).map(s => Object.assign({ col:'', op:'gt', v1:'', v2:'', color:'#2F80ED', alpha:20 }, s)),
     chartObj: null,
@@ -3599,6 +3670,7 @@ function init(){
   $('#helpOverlay').addEventListener('click', e=>{ if(e.target.id==='helpOverlay') closeHelp(); });
   document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeHelp(); closeTtcModal(); closePhoto(); } });
   $('#photoClose').addEventListener('click', closePhoto);
+  document.addEventListener('click', e=>{ document.querySelectorAll('.stat-menu[open]').forEach(d=>{ if(!d.contains(e.target)) d.removeAttribute('open'); }); });
   $('#photoOverlay').addEventListener('click', e=>{ if(e.target.id==='photoOverlay') closePhoto(); });
   $('#btnExportAllPDF').addEventListener('click', exportAllPDF);
   $('#btnExportAllPPT').addEventListener('click', exportAllPPT);
