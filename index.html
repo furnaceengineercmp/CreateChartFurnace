@@ -469,6 +469,22 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
 #panel-korelasi .card{ padding:20px; }
 
 
+/* ================= CETAK / PDF (Ctrl+P) ================= */
+/* Animasi "muncul perlahan" diulang dari transparan saat mencetak -> hasil pucat.
+   Matikan animasi, paksa warna asli, sembunyikan tombol/menu, dan tata ulang kartu grafik. */
+@media print{
+  @page{ margin:10mm; }
+  *{ animation:none !important; transition:none !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  html, body{ background:#fff !important; }
+  .tab-panel, .fb-panel, .chart-card, .card, .fb-cat, .fb-item{ opacity:1 !important; transform:none !important; }
+  .topbar, .modebar, .tabs, .toast, .busy-overlay, .restore-banner, .lib-warning-banner, .modal-overlay,
+  .head-actions, .chart-config, .chart-toolbar, .builder-hero, .chart-busy, .stat-pop{ display:none !important; }
+  .chartgrid{ display:block !important; }
+  .chart-card{ break-inside:avoid; page-break-inside:avoid; box-shadow:none !important; border:1px solid #cfcfcf; margin:0 0 12px 0; background:#fff !important; }
+  .chart-card-head{ background:#fff !important; }
+  .chart-card-head input.title-input{ border:none !important; }
+}
+
 /* ================= FISHBONE ================= */
 .modebar{ display:flex; align-items:center; gap:14px; padding:12px 22px 4px 22px; flex-wrap:wrap; }
 .modebar-label{ font-size:12px; font-weight:800; color:var(--text-soft); text-transform:uppercase; letter-spacing:.5px; }
@@ -698,6 +714,8 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
             <button class="btn small" id="btnExportExcel" title="Unduh data sebagai Excel">📗 Excel</button>
             <button class="btn small" id="btnExportAllPDF" title="Unduh semua grafik sebagai PDF">📄 PDF</button>
             <button class="btn small" id="btnExportAllPPT" title="Unduh semua grafik sebagai PowerPoint">📽️ PPT</button>
+            <button class="btn small" id="btnExportAllJPG" title="Unduh semua grafik sebagai satu gambar JPG">🖼️ JPG</button>
+            <button class="btn small" id="btnPrintCharts" title="Cetak / simpan sebagai PDF lewat dialog cetak browser (kualitas tinggi)">🖨️ Cetak</button>
           </div>
         </div>
       </div>
@@ -823,6 +841,7 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
         <label class="fb-check" style="border-style:solid;"><input type="checkbox" data-fb="showMarks"> Tampilkan tanda status &amp; keterangannya (★ ✓ ✗)</label>
         <label class="fb-check" style="border-style:solid;"><input type="checkbox" data-fb="hideEmpty"> Sembunyikan kategori yang kosong</label>
         <button class="btn small" data-act="png">🖼️ Unduh PNG</button>
+        <button class="btn small" data-act="jpg">🖼️ Unduh JPG</button>
         <button class="btn small" data-act="svg">📐 Unduh SVG</button>
       </div>
       <div class="fb-diagram-wrap" id="fbDiagram"></div>
@@ -893,6 +912,7 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
         <button class="btn small" data-act="xlsx">📗 Excel</button>
         <button class="btn small" data-act="ppt">📽️ PPT</button>
         <button class="btn small" data-act="png">🖼️ PNG Diagram</button>
+        <button class="btn small" data-act="jpg">🖼️ JPG Diagram</button>
       </div>
       <div class="fb-report" id="fbReport"></div>
     </div>
@@ -1974,6 +1994,7 @@ function buildChartCardDom(cfg){
       <div class="head-actions">
         <button class="icon-btn with-text accent" data-role="toggle-config" title="Buka / tutup pengaturan grafik">⚙️ <span>Atur Grafik</span></button>
         <button class="icon-btn" data-role="exportpdf" title="Unduh grafik ini sebagai PDF">📄</button>
+        <button class="icon-btn" data-role="exportjpg" title="Unduh grafik ini sebagai gambar JPG">🖼️</button>
         <button class="icon-btn" data-role="exportppt" title="Unduh grafik ini sebagai PowerPoint">📽️</button>
         <button class="icon-btn danger" data-role="removechart" title="Hapus grafik ini">🗑️</button>
       </div>
@@ -2197,6 +2218,7 @@ function wireChartCard(card, cfg){
     renderChart(cfg);
   });
   card.querySelector('[data-role=exportpdf]').addEventListener('click', ()=> exportChartPDF(cfg, card));
+  card.querySelector('[data-role=exportjpg]').addEventListener('click', ()=> exportChartJPG(cfg, card));
   card.querySelector('[data-role=exportppt]').addEventListener('click', ()=> exportChartPPT(cfg));
   card.querySelector('[data-role=removechart]').addEventListener('click', ()=>{
     state.charts = state.charts.filter(c=>c.id!==cfg.id);
@@ -3501,10 +3523,40 @@ function handleChartClick(cfg, elements, wrap){
 }
 
 /* ================= EXPORTS ================= */
+// Tangkap elemen sebagai gambar tanpa tombol/menu/pengaturan (hanya judul, grafik, legend, statistik).
+function captureEl(el){
+  const bg = getComputedStyle(el).backgroundColor;
+  return html2canvas(el, {
+    scale: 2,
+    backgroundColor: (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') ? bg : '#ffffff',
+    ignoreElements: n=> !!(n.classList && (n.classList.contains('head-actions') || n.classList.contains('chart-config') ||
+      n.classList.contains('chart-toolbar') || n.classList.contains('chart-busy'))),
+  });
+}
+function fileSafe(s){ return String(s||'grafik').replace(/[\\\/:*?"<>|]+/g,'_').trim() || 'grafik'; }
+function downloadDataUrl(url, name){
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+async function exportChartJPG(cfg, card){
+  showToast('Membuat JPG...');
+  try{
+    const cv = await captureEl(card);
+    downloadDataUrl(cv.toDataURL('image/jpeg', 0.93), fileSafe(cfg.title) + '.jpg');
+  }catch(err){ console.error(err); showToast('Gagal export JPG'); }
+}
+async function exportAllJPG(){
+  if(!state.charts.length){ showToast('Belum ada grafik'); return; }
+  showToast('Membuat JPG semua grafik...');
+  try{
+    const cv = await captureEl($('#chartsContainer'));
+    downloadDataUrl(cv.toDataURL('image/jpeg', 0.93), 'semua-grafik.jpg');
+  }catch(err){ console.error(err); showToast('Gagal export JPG'); }
+}
 async function exportChartPDF(cfg, card){
   showToast('Membuat PDF...');
   try{
-    const canvasImg = await html2canvas(card, { scale:2, backgroundColor: getComputedStyle(document.body).backgroundColor });
+    const canvasImg = await captureEl(card);
     const imgData = canvasImg.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
@@ -3512,14 +3564,13 @@ async function exportChartPDF(cfg, card){
     const props = pdf.getImageProperties(imgData);
     const imgHeight = (props.height * pageWidth) / props.width;
     pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
-    pdf.save((cfg.title || 'grafik') + '.pdf');
+    pdf.save(fileSafe(cfg.title) + '.pdf');
   }catch(err){ console.error(err); showToast('Gagal export PDF'); }
 }
 async function exportAllPDF(){
   showToast('Membuat PDF semua grafik...');
   try{
-    const container = $('#chartsContainer');
-    const canvasImg = await html2canvas(container, { scale:2, backgroundColor: getComputedStyle(document.body).backgroundColor });
+    const canvasImg = await captureEl($('#chartsContainer'));
     const imgData = canvasImg.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
@@ -3530,6 +3581,33 @@ async function exportAllPDF(){
     pdf.save('semua-grafik.pdf');
   }catch(err){ console.error(err); showToast('Gagal export PDF'); }
 }
+
+/* ---- cetak (Ctrl+P / tombol Cetak): grafik dicetak tajam, selalu bertema terang ---- */
+let __printSwitchedTheme = false, __origDPR = null;
+function setChartsPrintMode(on){
+  if(typeof Chart === 'undefined') return;
+  if(__origDPR === null) __origDPR = Chart.defaults.devicePixelRatio;
+  Chart.defaults.devicePixelRatio = on ? 3 : __origDPR;       // resolusi 3x agar tidak buram
+  const html = document.documentElement;
+  if(on && html.getAttribute('data-mode') === 'dark'){        // cetak selalu terang (hemat tinta, teks terbaca)
+    html.setAttribute('data-mode', 'light'); __printSwitchedTheme = true;
+    state.charts.forEach(renderChartNow);
+  } else if(!on && __printSwitchedTheme){
+    html.setAttribute('data-mode', 'dark'); __printSwitchedTheme = false;
+    state.charts.forEach(renderChartNow);
+  }
+  state.charts.forEach(cfg=>{
+    const c = cfg.chartObj; if(!c) return;
+    try{ c.options.devicePixelRatio = on ? 3 : undefined; c.resize(); }catch(e){}
+  });
+}
+window.addEventListener('beforeprint', ()=> setChartsPrintMode(true));
+window.addEventListener('afterprint', ()=> setChartsPrintMode(false));
+function printCharts(){
+  switchTab('builder');
+  setTimeout(()=> window.print(), 300);
+}
+
 function exportExcel(){
   if(state.headers.length===0){ showToast('Belum ada data'); return; }
   const wsData = [state.headers, ...state.rows.map(r=>r.map(c=> c instanceof Date ? c.toLocaleString('id-ID') : c))];
@@ -3953,6 +4031,8 @@ function init(){
   $('#btnExportAllPDF').addEventListener('click', exportAllPDF);
   $('#btnExportAllPPT').addEventListener('click', exportAllPPT);
   $('#btnExportExcel').addEventListener('click', exportExcel);
+  $('#btnExportAllJPG').addEventListener('click', exportAllJPG);
+  $('#btnPrintCharts').addEventListener('click', printCharts);
 
   $('#btnSaveProject').addEventListener('click', saveProjectFile);
   $('#btnOpenProject').addEventListener('click', ()=> $('#projectInput').click());
@@ -4640,7 +4720,7 @@ function fbDownload(href, name){
   const a = document.createElement('a'); a.href = href; a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
 }
-function fbSvgToPng(svg, w, h, scale){
+function fbSvgToPng(svg, w, h, scale, mime){
   return new Promise((resolve, reject)=>{
     const img = new Image();
     const url = URL.createObjectURL(new Blob([svg], { type:'image/svg+xml;charset=utf-8' }));
@@ -4648,7 +4728,7 @@ function fbSvgToPng(svg, w, h, scale){
       const c = document.createElement('canvas'); c.width = w*scale; c.height = h*scale;
       const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height);
       x.drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url); resolve(c.toDataURL('image/png'));
+      URL.revokeObjectURL(url); resolve(mime==='image/jpeg' ? c.toDataURL('image/jpeg', 0.93) : c.toDataURL('image/png'));
     };
     img.onerror = e=>{ URL.revokeObjectURL(url); reject(e); };
     img.src = url;
@@ -4664,6 +4744,13 @@ async function fbExportPng(){
     const r = fbBuildSvg(fbState);
     fbDownload(await fbSvgToPng(r.svg, r.w, r.h, 2), fbFileStem() + '.png');
   }catch(e){ console.error(e); showToast('Gagal membuat PNG'); }
+}
+async function fbExportJpg(){
+  try{
+    if(!fbHasContent(fbState)){ showToast('Diagram masih kosong'); return; }
+    const r = fbBuildSvg(fbState);
+    fbDownload(await fbSvgToPng(r.svg, r.w, r.h, 2, 'image/jpeg'), fbFileStem() + '.jpg');
+  }catch(e){ console.error(e); showToast('Gagal membuat JPG'); }
 }
 function fbExportSvg(){
   if(!fbHasContent(fbState)){ showToast('Diagram masih kosong'); return; }
@@ -4809,6 +4896,7 @@ function fbAct(btn){
   }
   else if(a==='gotab') fbSwitchTab(btn.dataset.tab);
   else if(a==='png') fbExportPng();
+  else if(a==='jpg') fbExportJpg();
   else if(a==='svg') fbExportSvg();
   else if(a==='xlsx') fbExportXlsx();
   else if(a==='ppt') fbExportPpt();
