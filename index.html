@@ -469,6 +469,8 @@ input:focus, select:focus, textarea:focus{ outline:2px solid var(--accent1); out
 #panel-korelasi .card{ padding:20px; }
 
 
+/* Saat memotret halaman (export PDF/JPG) animasi dimatikan; kalau tidak, hasil tangkapan pucat/transparan. */
+html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !important; transition:none !important; }
 /* ================= CETAK / PDF (Ctrl+P) ================= */
 /* Animasi "muncul perlahan" diulang dari transparan saat mencetak -> hasil pucat.
    Matikan animasi, paksa warna asli, sembunyikan tombol/menu, dan tata ulang kartu grafik. */
@@ -3523,10 +3525,28 @@ function handleChartClick(cfg, elements, wrap){
 }
 
 /* ================= EXPORTS ================= */
+// html2canvas menyalin halaman ke bingkai tersembunyi; di salinan itu animasi "fade in" mulai ulang
+// dari transparan sehingga hasil pucat. Matikan animasi di halaman asli DAN di salinannya.
+async function h2c(el, opts){
+  const root = document.documentElement;
+  root.classList.add('no-anim');
+  await new Promise(r=> requestAnimationFrame(()=> requestAnimationFrame(r)));   // tunggu 2 frame
+  try{
+    return await html2canvas(el, Object.assign({
+      onclone: doc=>{
+        doc.documentElement.classList.add('no-anim');
+        const st = doc.createElement('style');
+        st.textContent = '*,*::before,*::after{animation:none !important;transition:none !important;}' +
+          '.chart-card,.tab-panel,.fb-panel,.card,.fb-report{opacity:1 !important;transform:none !important;}';
+        doc.head.appendChild(st);
+      },
+    }, opts || {}));
+  } finally { root.classList.remove('no-anim'); }
+}
 // Tangkap elemen sebagai gambar tanpa tombol/menu/pengaturan (hanya judul, grafik, legend, statistik).
 function captureEl(el){
   const bg = getComputedStyle(el).backgroundColor;
-  return html2canvas(el, {
+  return h2c(el, {
     scale: 2,
     backgroundColor: (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') ? bg : '#ffffff',
     ignoreElements: n=> !!(n.classList && (n.classList.contains('head-actions') || n.classList.contains('chart-config') ||
@@ -3589,6 +3609,7 @@ function setChartsPrintMode(on){
   if(__origDPR === null) __origDPR = Chart.defaults.devicePixelRatio;
   Chart.defaults.devicePixelRatio = on ? 3 : __origDPR;       // resolusi 3x agar tidak buram
   const html = document.documentElement;
+  if(html.classList){ if(on) html.classList.add('no-anim'); else html.classList.remove('no-anim'); }   // tanpa animasi fade saat cetak
   if(on && html.getAttribute('data-mode') === 'dark'){        // cetak selalu terang (hemat tinta, teks terbaca)
     html.setAttribute('data-mode', 'light'); __printSwitchedTheme = true;
     state.charts.forEach(renderChartNow);
@@ -4822,7 +4843,7 @@ async function fbExportPdf(){
     showToast('Membuat PDF...');
     fbSwitchTab('report');
     const el = document.getElementById('fbReport');
-    const canvas = await html2canvas(el, { scale:1.6, backgroundColor:'#ffffff' });
+    const canvas = await h2c(el, { scale:1.6, backgroundColor:'#ffffff' });
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation:'portrait', unit:'pt', format:'a4' });
     const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
