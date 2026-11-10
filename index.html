@@ -2103,7 +2103,7 @@ const UNIT_CATS = [
   ['Berat / Massa', ['ng','µg','mg','g','kg','Ton','kTon','MTon','kuintal','lb','oz']],
   ['Volume', ['nL','µL','mL','L','m³','km³','mm³','cm³','Nm³','gal','bbl','ft³']],
   ['Luas', ['µm²','mm²','cm²','m²','ha','km²','in²','ft²']],
-  ['Feed / Laju alir massa', ['g/s','kg/s','kg/min','kg/h','Ton/h','Ton/hari','Ton/bulan','Ton/tahun','wtph (wet t/h)','dtph (dry t/h)','Mt/tahun','lb/h']],
+  ['Feed / Laju alir massa', ['g/s','kg/s','kg/min','kg/h','Ton/menit','t/min','Ton/h','Ton/hari','Ton/bulan','Ton/tahun','wtph (wet t/h)','dtph (dry t/h)','Mt/tahun','lb/h']],
   ['Laju alir volume', ['mL/menit','L/detik','L/menit','L/jam','m³/detik','m³/menit','m³/h','m³/hari','Nm³/menit','Nm³/h','kNm³/h','MNm³/h','gal/menit','bbl/hari']],
   ['Daya', ['nW','µW','mW','W','kW','MW','GW','hp','kVA','MVA','kVAR','MVAR']],
   ['Energi', ['J','kJ','MJ','GJ','Wh','kWh','MWh','GWh','kcal','Mcal','BTU','kWh/Ton','MWh/Ton','kWh/m³']],
@@ -2121,36 +2121,51 @@ function unitTitle(u){
   u = (u || '').trim();
   return { display: !!u, text: u, color: textColor(), font: { weight: '700', size: 12 } };
 }
-function initUnitSelects(card){
-  ['y','y1'].forEach(p=>{
-    const cs = card.querySelector('[data-role=' + p + 'cat]'); if(!cs) return;
-    cs.innerHTML = '<option value="">— tanpa satuan —</option>' +
-      UNIT_CATS.map(c=> '<option value="' + escapeHtml(c[0]) + '">' + escapeHtml(c[0]) + '</option>').join('') +
-      '<option value="__custom">✏️ Ketik sendiri…</option>';
-  });
+function ensureUnits(cfg, p){
+  if(!Array.isArray(cfg[p + 'Units'])) cfg[p + 'Units'] = [{ cat: cfg[p + 'UnitCat'] || '', unit: cfg[p + 'Unit'] || '' }];
+  if(!cfg[p + 'Units'].length) cfg[p + 'Units'] = [{ cat:'', unit:'' }];
+  return cfg[p + 'Units'];
+}
+function axisUnitText(cfg, p){
+  const seen = [];
+  ensureUnits(cfg, p).forEach(u=>{ const t = (u.unit || '').trim(); if(t && seen.indexOf(t) < 0) seen.push(t); });
+  return seen.join(' / ');
 }
 function syncUnitControls(card, cfg){
   ['y','y1'].forEach(p=>{
-    const cs = card.querySelector('[data-role=' + p + 'cat]'), us = card.querySelector('[data-role=' + p + 'unit]'), cu = card.querySelector('[data-role=' + p + 'custom]');
-    if(!cs || !us || !cu) return;
-    const cat = cfg[p + 'UnitCat'] || '', unit = cfg[p + 'Unit'] || '';
-    cs.value = cat;
-    const def = UNIT_CATS.find(c=> c[0] === cat);
-    if(def){
-      us.innerHTML = '<option value="">— pilih satuan —</option>' + def[1].map(u=> '<option value="' + escapeHtml(u) + '">' + escapeHtml(u) + '</option>').join('');
-      us.value = unit; us.style.display = '';
-    } else { us.innerHTML = ''; us.style.display = 'none'; }
-    cu.style.display = cat === '__custom' ? '' : 'none';
-    cu.value = cat === '__custom' ? unit : '';
+    const box = card.querySelector('[data-role=' + p + 'units]'); if(!box) return;
+    const units = ensureUnits(cfg, p);
+    box.innerHTML = '';
+    units.forEach((u, i)=>{
+      const row = document.createElement('div');
+      row.className = 'unit-row'; row.style.marginTop = '0'; row.style.marginBottom = '6px';
+      row.innerHTML = '<select data-k="cat"></select><select data-k="unit" style="display:none;"></select>' +
+        '<input type="text" data-k="custom" placeholder="mis. Nm³/h" style="width:100px;display:none;">' +
+        '<button class="btn small ghost" data-k="del" type="button" title="Hapus satuan ini">✕</button>';
+      const cs = row.querySelector('[data-k=cat]'), us = row.querySelector('[data-k=unit]'), cu = row.querySelector('[data-k=custom]'), del = row.querySelector('[data-k=del]');
+      cs.innerHTML = '<option value="">— tanpa satuan —</option>' +
+        UNIT_CATS.map(c=> '<option value="' + escapeHtml(c[0]) + '">' + escapeHtml(c[0]) + '</option>').join('') +
+        '<option value="__custom">✏️ Ketik sendiri…</option>';
+      cs.value = u.cat || '';
+      const def = UNIT_CATS.find(c=> c[0] === u.cat);
+      if(def){
+        us.innerHTML = '<option value="">— pilih satuan —</option>' + def[1].map(x=> '<option value="' + escapeHtml(x) + '">' + escapeHtml(x) + '</option>').join('');
+        us.value = u.unit || ''; us.style.display = '';
+      }
+      if(u.cat === '__custom'){ cu.style.display = ''; cu.value = u.unit || ''; }
+      del.style.display = units.length > 1 ? '' : 'none';
+      cs.addEventListener('change', ()=>{ u.cat = cs.value; u.unit = ''; syncUnitControls(card, cfg); renderChart(cfg); scheduleAutosave(); });
+      us.addEventListener('change', ()=>{ u.unit = us.value; renderChart(cfg); scheduleAutosave(); });
+      cu.addEventListener('input', ()=>{ u.unit = cu.value.trim(); renderChart(cfg); scheduleAutosave(); });
+      del.addEventListener('click', ()=>{ units.splice(i, 1); syncUnitControls(card, cfg); renderChart(cfg); scheduleAutosave(); });
+      box.appendChild(row);
+    });
   });
 }
 function wireUnitControls(card, cfg){
-  initUnitSelects(card);
   ['y','y1'].forEach(p=>{
-    const cs = card.querySelector('[data-role=' + p + 'cat]'), us = card.querySelector('[data-role=' + p + 'unit]'), cu = card.querySelector('[data-role=' + p + 'custom]');
-    cs.addEventListener('change', ()=>{ cfg[p + 'UnitCat'] = cs.value; cfg[p + 'Unit'] = ''; syncUnitControls(card, cfg); renderChart(cfg); });
-    us.addEventListener('change', ()=>{ cfg[p + 'Unit'] = us.value; renderChart(cfg); });
-    cu.addEventListener('input', ()=>{ cfg[p + 'Unit'] = cu.value.trim(); renderChart(cfg); });
+    const add = card.querySelector('[data-role=' + p + 'addunit]');
+    if(add) add.addEventListener('click', ()=>{ ensureUnits(cfg, p).push({ cat:'', unit:'' }); syncUnitControls(card, cfg); });
   });
 }
 
@@ -2543,10 +2558,9 @@ function buildChartCardDom(cfg){
               <button class="btn small ghost" data-role="yreset">Reset</button>
             </div>
             <div class="unit-row">
-              <label>Satuan (tampil di sumbu)</label>
-              <select data-role="ycat"></select>
-              <select data-role="yunit" style="display:none;"></select>
-              <input type="text" data-role="ycustom" placeholder="mis. Nm³/h" style="width:100px;display:none;">
+              <label>Satuan (boleh lebih dari 1, tampil digabung dengan " / ")</label>
+              <div data-role="yunits" style="width:100%;"></div>
+              <button class="btn small ghost" data-role="yaddunit" type="button">+ Satuan lain</button>
             </div>
           </div>
           <div class="axis-box">
@@ -2557,10 +2571,9 @@ function buildChartCardDom(cfg){
               <button class="btn small ghost" data-role="y1reset">Reset</button>
             </div>
             <div class="unit-row">
-              <label>Satuan (tampil di sumbu)</label>
-              <select data-role="y1cat"></select>
-              <select data-role="y1unit" style="display:none;"></select>
-              <input type="text" data-role="y1custom" placeholder="mis. Nm³/h" style="width:100px;display:none;">
+              <label>Satuan (boleh lebih dari 1, tampil digabung dengan " / ")</label>
+              <div data-role="y1units" style="width:100%;"></div>
+              <button class="btn small ghost" data-role="y1addunit" type="button">+ Satuan lain</button>
             </div>
           </div>
         </div>
@@ -3846,7 +3859,7 @@ function renderChartNow(cfg){
         },
         y:{
           position:'left',
-          title: unitTitle(cfg.yUnit),
+          title: unitTitle(axisUnitText(cfg,'y')),
           grid:{ color:gridColor() }, ticks:{ color:textColor() },
           min: cfg.yMin===''?undefined:Number(cfg.yMin),
           max: cfg.yMax===''?undefined:Number(cfg.yMax),
@@ -3855,7 +3868,7 @@ function renderChartNow(cfg){
       if(hasSecondaryScatter){
         scatterScales.y1 = {
           position:'right',
-          title: unitTitle(cfg.y1Unit),
+          title: unitTitle(axisUnitText(cfg,'y1')),
           min: cfg.y1Min===''?undefined:Number(cfg.y1Min),
           max: cfg.y1Max===''?undefined:Number(cfg.y1Max),
           grid:{ drawOnChartArea:false }, ticks:{ color:textColor() },
@@ -3910,7 +3923,7 @@ function renderChartNow(cfg){
       },
       y: {
         position:'left',
-        title: unitTitle(cfg.yUnit),
+        title: unitTitle(axisUnitText(cfg,'y')),
         min: cfg.yMin===''?undefined:Number(cfg.yMin),
         max: cfg.yMax===''?undefined:Number(cfg.yMax),
         grid:{color:gridColor()}, ticks:{color:textColor()},
@@ -3919,7 +3932,7 @@ function renderChartNow(cfg){
     if(hasSecondary){
       scales.y1 = {
         position:'right',
-        title: unitTitle(cfg.y1Unit),
+        title: unitTitle(axisUnitText(cfg,'y1')),
         min: cfg.y1Min===''?undefined:Number(cfg.y1Min),
         max: cfg.y1Max===''?undefined:Number(cfg.y1Max),
         grid:{drawOnChartArea:false}, ticks:{color:textColor()},
@@ -4357,7 +4370,7 @@ function buildProject(){
       xCol: cfg.xCol, xCol2: cfg.xCol2, granularity: cfg.granularity, aggFn: cfg.aggFn || 'avg',
       dateFrom: cfg.dateFrom, dateTo: cfg.dateTo,
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
-      yUnitCat: cfg.yUnitCat || '', yUnit: cfg.yUnit || '', y1UnitCat: cfg.y1UnitCat || '', y1Unit: cfg.y1Unit || '',
+      yUnits: ensureUnits(cfg,'y').map(u=>Object.assign({},u)), y1Units: ensureUnits(cfg,'y1').map(u=>Object.assign({},u)),
       wPct: cfg.wPct || null, hPx: cfg.hPx || null,
       showAllCallouts: !!cfg.showAllCallouts, calloutStyle: cfg.calloutStyle || 'full',
       limitN: cfg.limitN || '', limitMode: cfg.limitMode || 'last', autoThin: cfg.autoThin !== false,
