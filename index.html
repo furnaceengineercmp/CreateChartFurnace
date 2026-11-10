@@ -1926,7 +1926,7 @@ function newChartConfig(){
   const id = state.nextChartId++;
   return {
     id, title: 'Grafik ' + id, mode: 'linebar',
-    xCol: '', xCol2: '', granularity: 'raw', dateFrom: '', dateTo: '',
+    xCol: '', xCol2: '', granularity: 'raw', aggFn: 'avg', dateFrom: '', dateTo: '',
     series: [], hiddenSeries: new Set(), filters: [], shades: [], calloutStyle: 'full', limitN: '', limitMode: 'last', autoThin: true,
     statsShow: { avg:false, sum:false, median:false, max:false, min:false },
     yMin: '', yMax: '', y1Min: '', y1Max: '',
@@ -1976,6 +1976,8 @@ function syncChartCardControls(card, cfg){
   setVal('[data-role=xcol]', cfg.xCol);
   setVal('[data-role=xcol2]', cfg.xCol2);
   setVal('[data-role=granularity]', cfg.granularity);
+  setVal('[data-role=aggfn]', cfg.aggFn || 'avg');
+  updateAggFnState(card, cfg);
   setVal('[data-role=datefrom]', cfg.dateFrom);
   setVal('[data-role=dateto]', cfg.dateTo);
   setVal('[data-role=ymin]', cfg.yMin);
@@ -1984,6 +1986,7 @@ function syncChartCardControls(card, cfg){
   setVal('[data-role=y1max]', cfg.y1Max);
   const granwrap = card.querySelector('[data-role=granwrap]');
   if(granwrap) granwrap.style.display = (cfg.mode==='pie'||cfg.mode==='donut') ? 'none' : '';
+  updateAggFnState(card, cfg);
 }
 
 function buildChartCardDom(cfg){
@@ -2041,8 +2044,18 @@ function buildChartCardDom(cfg){
               <option value="month">Per Bulan</option>
             </select>
           </div>
+          <div class="field" data-role="aggwrap">
+            <label>Nilai per Periode</label>
+            <select data-role="aggfn" title="Cara menggabungkan banyak data (mis. semua shift / semua jam) dalam 1 tanggal (sumbu X utama)">
+              <option value="avg">Rata-rata (average)</option>
+              <option value="max">Nilai Max</option>
+              <option value="min">Nilai Min</option>
+              <option value="sum">Total (sum)</option>
+              <option value="count">Jumlah data (count)</option>
+            </select>
+          </div>
         </div>
-        <p class="hint">Kolom ke-2 Sumbu X: jika berisi <b>jam</b> (mis. 08:00) digabung dengan tanggal. Jika berisi <b>No/angka/teks lain</b>, nilainya tampil sebagai label di sumbu X dan kolom utama (mis. Date) tampil sekali per kelompok di bawahnya (hanya untuk Range "Data Asli").</p>
+        <p class="hint">Kolom ke-2 Sumbu X: jika berisi <b>jam</b> (mis. 08:00) digabung dengan tanggal. Jika berisi <b>No/angka/teks lain</b>, nilainya tampil sebagai label di sumbu X dan kolom utama (mis. Date) tampil sekali per kelompok di bawahnya (pada Range "Data Asli"). Pilih Range <b>Per Hari / Minggu / Bulan</b> untuk menggabungkan semua shift/jam di tanggal yang sama menjadi 1 titik, lalu atur cara gabungnya di <b>Nilai per Periode</b> (default: rata-rata).</p>
         <div class="sec-title">Data yang digambar (Series)</div>
         <div data-role="serieslist"></div>
         <button class="btn small" data-role="addseries">+ Tambah Series</button>
@@ -2180,13 +2193,15 @@ function wireChartCard(card, cfg){
   card.querySelector('[data-role=mode]').addEventListener('change', e=>{
     cfg.mode = e.target.value;
     card.querySelector('[data-role=granwrap]').style.display = (cfg.mode==='pie'||cfg.mode==='donut') ? 'none' : '';
+    updateAggFnState(card, cfg);
     renderChart(cfg);
   });
   const xcolSel = card.querySelector('[data-role=xcol]');
   xcolSel.addEventListener('change', e=>{ cfg.xCol = e.target.value; renderChart(cfg); });
   const xcol2Sel = card.querySelector('[data-role=xcol2]');
   xcol2Sel.addEventListener('change', e=>{ cfg.xCol2 = e.target.value; renderChart(cfg); });
-  card.querySelector('[data-role=granularity]').addEventListener('change', e=>{ cfg.granularity = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=granularity]').addEventListener('change', e=>{ cfg.granularity = e.target.value; updateAggFnState(card, cfg); renderChart(cfg); });
+  card.querySelector('[data-role=aggfn]').addEventListener('change', e=>{ cfg.aggFn = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=datefrom]').addEventListener('change', e=>{ cfg.dateFrom = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=dateto]').addEventListener('change', e=>{ cfg.dateTo = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=addfilter]').addEventListener('click', ()=>{
@@ -2605,7 +2620,7 @@ function renderStatsPanel(card, cfg, labels, seriesData, pointLabels, rawStats, 
   const lim = limitInfo(cfg);
   if(lim.on) fdesc.push('hanya ' + lim.n + ' data ' + (lim.mode==='first' ? 'pertama' : 'terakhir'));
   const aggNote = (anyStat && cfg.granularity!=='raw' && state.colTypes[parseInt(cfg.xCol)]==='date')
-    ? ' · <i>statistik dihitung dari rata-rata per periode</i>' : '';
+    ? ' · <i>statistik dihitung dari ' + AGG_FN_NAMES[aggFnOf(cfg)] + ' per periode</i>' : '';
   let html = `<div class="chart-stats-summary">${escapeHtml(rangeText)}${fdesc.length ? ' · Filter: <b>' + escapeHtml(fdesc.join('; ')) + '</b>' : ''} · Jumlah titik data pada grafik ini: <b>${nid(labels.length)}</b>${rawStats ? ' (diringkas dari <b>' + nid(rawStats.count) + '</b> baris; statistik dari seluruh baris ini)' : ''}${aggNote}</div>`;
   const shadeRules = (cfg.shades||[]).filter(sh=> sh.col!=='' && sh.col!==undefined);
   if(shadeRules.length){
@@ -2643,6 +2658,18 @@ function renderStatsPanel(card, cfg, labels, seriesData, pointLabels, rawStats, 
 }
 
 /* ================= AGGREGATION ================= */
+// Cara menggabungkan banyak baris dalam 1 periode (mis. semua shift di tanggal yang sama).
+const AGG_FN_NAMES = { avg:'rata-rata', max:'nilai max', min:'nilai min', sum:'total (sum)', count:'jumlah data (count)' };
+function aggFnOf(cfg){ return AGG_FN_NAMES[cfg && cfg.aggFn] ? cfg.aggFn : 'avg'; }
+// Pilihan "Nilai per Periode" hanya aktif jika Range Sumbu X bukan "Data Asli".
+function updateAggFnState(card, cfg){
+  if(!card) return;
+  const w = card.querySelector('[data-role=aggwrap]'); if(!w) return;
+  const pie = (cfg.mode==='pie'||cfg.mode==='donut');
+  w.style.display = pie ? 'none' : '';
+  const sel = w.querySelector('select'); if(sel) sel.disabled = (cfg.granularity==='raw' || !cfg.granularity);
+  w.style.opacity = (cfg.granularity==='raw' || !cfg.granularity) ? '0.5' : '';
+}
 function periodKey(d, gran){
   const pad = n=>String(n).padStart(2,'0');
   const y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate(), h=d.getHours();
@@ -2909,13 +2936,22 @@ function getAggregatedData(cfg){
   }
 
   const ns = validSeries.length;
+  const aggFn = aggFnOf(cfg);
+  // Jika kolom ke-2 bukan jam (mis. Shift/No), tidak ada informasi jam: satuan terkecil = hari.
+  if(labelMode && gran==='hour') gran = 'day';
   const buckets = new Map();
   for(let k=0;k<items.length;k++){
     const it = items[k]; if(!it.date) continue;
     const key = periodKeyNum(it.date, gran);
     let b = buckets.get(key);
-    if(!b){ b = { date: it.date, sums: new Array(ns).fill(0), cnt: new Array(ns).fill(0) }; buckets.set(key, b); }
-    for(let j=0;j<ns;j++){ const v = colArr[j][it.i]; if(v===null) continue; b.sums[j] += v; b.cnt[j]++; }
+    if(!b){ b = { date: it.date, sums: new Array(ns).fill(0), cnt: new Array(ns).fill(0), mx: new Array(ns).fill(-Infinity), mn: new Array(ns).fill(Infinity) }; buckets.set(key, b); }
+    else if(it.date < b.date) b.date = it.date;
+    for(let j=0;j<ns;j++){
+      const v = colArr[j][it.i]; if(v===null || v===undefined || isNaN(v)) continue;
+      b.sums[j] += v; b.cnt[j]++;
+      if(v > b.mx[j]) b.mx[j] = v;
+      if(v < b.mn[j]) b.mn[j] = v;
+    }
   }
   let keys = Array.from(buckets.keys()).sort((a,b)=> a-b);
   if(!limitDone) keys = limitList(keys, cfg);
@@ -2929,7 +2965,15 @@ function getAggregatedData(cfg){
   }
   const seriesData = {};
   validSeries.forEach((s,j)=>{
-    seriesData[s.colIndex] = keys.map(key=>{ const b = buckets.get(key); return b.cnt[j] ? b.sums[j] / b.cnt[j] : null; });
+    seriesData[s.colIndex] = keys.map(key=>{
+      const b = buckets.get(key);
+      if(aggFn==='count') return b.cnt[j];
+      if(!b.cnt[j]) return null;
+      if(aggFn==='sum') return b.sums[j];
+      if(aggFn==='max') return b.mx[j];
+      if(aggFn==='min') return b.mn[j];
+      return b.sums[j] / b.cnt[j];
+    });
   });
   return {labels, seriesData, dateGroups, titles:null, auto, rawStats};
 }
@@ -3845,7 +3889,7 @@ function buildProject(){
     rows: state.rows.map(r => r.map(c => c instanceof Date ? c.toISOString() : c)),
     charts: state.charts.map(cfg => ({
       id: cfg.id, title: cfg.title, mode: cfg.mode,
-      xCol: cfg.xCol, xCol2: cfg.xCol2, granularity: cfg.granularity,
+      xCol: cfg.xCol, xCol2: cfg.xCol2, granularity: cfg.granularity, aggFn: cfg.aggFn || 'avg',
       dateFrom: cfg.dateFrom, dateTo: cfg.dateTo,
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
       showAllCallouts: !!cfg.showAllCallouts, calloutStyle: cfg.calloutStyle || 'full',
@@ -3885,7 +3929,7 @@ function loadProject(p){
   document.documentElement.setAttribute('data-theme', $('#themeSelect').value);
   document.documentElement.setAttribute('data-mode', mode);
 
-  const base = { mode:'linebar', xCol:'', xCol2:'', granularity:'raw', dateFrom:'', dateTo:'',
+  const base = { mode:'linebar', xCol:'', xCol2:'', granularity:'raw', aggFn:'avg', dateFrom:'', dateTo:'',
                  yMin:'', yMax:'', y1Min:'', y1Max:'', showAllCallouts:false, calloutStyle:'full', limitN:'', limitMode:'last', autoThin:true };
   const saved = Array.isArray(p.charts) ? p.charts.slice(0,4) : [];
   state.charts = saved.map((c, i) => Object.assign({}, base, c, {
