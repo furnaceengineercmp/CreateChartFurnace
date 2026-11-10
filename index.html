@@ -198,10 +198,9 @@ table.datatable td[contenteditable=true]:focus, table.datatable th[contenteditab
 .modal .delim-list label{display:flex; align-items:center; gap:8px; font-size:13.5px;}
 .modal .preview{ background:var(--panel-2); border:1px solid var(--border); border-radius:8px; padding:8px; font-size:11.5px; max-height:130px; overflow:auto; font-family:Consolas,monospace; white-space:pre; }
 
-.chartgrid{ display:grid; gap:16px; }
-.chartgrid.cols-1{grid-template-columns:1fr;}
-.chartgrid.cols-2{grid-template-columns:1fr 1fr;}
-@media (max-width:980px){ .chartgrid.cols-2{grid-template-columns:1fr;} }
+.chartgrid{ display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
+.chartgrid .chart-card{ position:relative; box-sizing:border-box; max-width:100%; }
+@media (max-width:760px){ .chartgrid .chart-card{ width:100% !important; } }
 
 .chart-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
 .chart-card-head{ padding:12px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; background:var(--panel-2);}
@@ -487,6 +486,59 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !i
   .chart-card-head input.title-input{ border:none !important; }
 }
 
+
+.axis-title{ font-size:13px; color:var(--text); margin:0 0 6px 0; }
+/* ===== v2: ukuran grafik bebas, ruler tanggal, satuan sumbu, info "!" ===== */
+.rs-handle{ position:absolute; z-index:6; touch-action:none; }
+.rs-r{ top:0; right:0; width:10px; height:100%; cursor:ew-resize; }
+.rs-b{ left:0; bottom:0; height:10px; width:100%; cursor:ns-resize; }
+.rs-c{ right:0; bottom:0; width:22px; height:22px; cursor:nwse-resize; z-index:7; opacity:0; transition:opacity .15s;
+  background:linear-gradient(135deg, transparent 52%, var(--accent1) 52%, var(--accent1) 60%, transparent 60%, transparent 72%, var(--accent1) 72%, var(--accent1) 80%, transparent 80%); border-bottom-right-radius:var(--radius); }
+.chart-card:hover .rs-c{ opacity:.75; }
+.rs-r:hover, .rs-b:hover{ background:rgba(200,30,40,.16); }
+.chart-card.resizing{ outline:2px dashed var(--accent1); user-select:none; }
+.rs-tip{ position:absolute; right:10px; bottom:26px; z-index:9; background:rgba(0,0,0,.78); color:#fff; font-size:12px; font-weight:700; padding:3px 9px; border-radius:8px; pointer-events:none; }
+.count-stepper{ display:inline-flex; align-items:center; background:var(--panel-2); border:1px solid var(--border); border-radius:12px; padding:3px; gap:2px; }
+.count-stepper button{ border:none; background:transparent; width:34px; height:30px; border-radius:9px; font-size:20px; font-weight:800; cursor:pointer; color:var(--accent1); line-height:1; }
+.count-stepper button:hover:not(:disabled){ background:var(--accent1); color:#fff; }
+.count-stepper button:disabled{ opacity:.35; cursor:default; }
+.count-stepper span{ min-width:34px; text-align:center; font-weight:800; font-size:15px; }
+.add-chart-bar{ margin-top:14px; }
+.add-chart-bar button{ width:100%; padding:14px; border:2px dashed var(--border); background:transparent; border-radius:var(--radius); color:var(--text-soft); font-weight:800; font-size:14px; cursor:pointer; }
+.add-chart-bar button:hover{ border-color:var(--accent1); color:var(--accent1); background:var(--panel-2); }
+.empty-note{ width:100%; text-align:center; padding:30px; color:var(--text-soft); border:2px dashed var(--border); border-radius:var(--radius); }
+
+.info-btn{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; border:1.5px solid var(--accent1); color:var(--accent1); background:var(--panel); font-weight:900; font-size:12px; line-height:1; cursor:pointer; padding:0; margin:0 4px; vertical-align:middle; font-family:inherit; }
+.info-btn:hover, .info-btn.on{ background:var(--accent1); color:#fff; }
+.info-row{ margin:2px 0 6px 0; }
+.info-pop{ position:fixed; z-index:9999; max-width:380px; background:var(--panel); color:var(--text); border:1px solid var(--accent1); border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.55; box-shadow:0 12px 34px rgba(0,0,0,.28); display:none; }
+.info-pop.show{ display:block; }
+.info-pop hr{ border:none; border-top:1px dashed var(--border); margin:8px 0; }
+
+.unit-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.unit-row label{ font-size:12px; font-weight:700; color:var(--text-soft); width:100%; }
+.unit-row select, .unit-row input{ padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:12.5px; }
+
+.date-ruler{ margin:6px 0 12px 0; padding:10px 14px 8px 14px; border:1px solid var(--border); border-radius:12px; background:var(--panel-2); }
+.date-ruler .dr-msg{ font-size:12.5px; color:var(--text-soft); }
+.dr-body{ padding:0 18px; }
+.dr-track{ position:relative; height:46px; margin-top:22px; cursor:pointer; touch-action:none; }
+.dr-ticks{ position:absolute; left:0; right:0; top:22px; height:16px; pointer-events:none; }
+.dr-ticks i{ position:absolute; bottom:0; width:1px; height:7px; background:var(--text-soft); opacity:.55; transform:translateX(-50%); }
+.dr-ticks i.wk{ height:10px; opacity:.8; }
+.dr-ticks i.mj{ height:16px; width:2px; background:var(--accent1); opacity:.9; }
+.dr-rail{ position:absolute; left:0; right:0; top:20px; height:4px; border-radius:3px; background:var(--border); pointer-events:none; }
+.dr-sel{ position:absolute; top:17px; height:10px; border-radius:6px; background:var(--accent1); opacity:.35; cursor:grab; }
+.dr-thumb{ position:absolute; top:12px; width:18px; height:20px; margin-left:-9px; border-radius:6px; background:var(--accent1); border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,.35); cursor:ew-resize; z-index:4; }
+.dr-thumb .dr-tip{ position:absolute; bottom:24px; left:50%; transform:translateX(-50%); white-space:nowrap; background:var(--accent1); color:#fff; font-size:10.5px; font-weight:800; padding:2px 6px; border-radius:6px; pointer-events:none; }
+.dr-labels{ position:relative; height:14px; margin-top:2px; }
+.dr-labels span{ position:absolute; font-size:9.5px; color:var(--text-soft); transform:translateX(-50%); white-space:nowrap; }
+.dr-labels.months{ height:16px; }
+.dr-labels.months span{ font-size:10.5px; font-weight:800; color:var(--accent1); }
+.dr-info{ font-size:12.5px; font-weight:700; margin:6px 0 4px 0; }
+.dr-quick{ display:flex; gap:6px; flex-wrap:wrap; }
+@media print{ .rs-handle, .rs-tip, .info-btn, .info-pop{ display:none !important; } .chart-card{ width:auto !important; } }
+
 /* ================= FISHBONE ================= */
 .modebar{ display:flex; align-items:center; gap:14px; padding:12px 22px 4px 22px; flex-wrap:wrap; }
 .modebar-label{ font-size:12px; font-weight:800; color:var(--text-soft); text-transform:uppercase; letter-spacing:.5px; }
@@ -700,15 +752,21 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !i
       <div class="hero-controls">
         <div class="ctl-group">
           <span class="ctl-label">Jumlah grafik</span>
-          <div class="seg" id="chartCountSeg">
-            <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button>
+          <div class="count-stepper">
+            <button id="btnChartMinus" title="Kurangi 1 grafik (yang terakhir)">−</button>
+            <span id="chartCountLabel">2</span>
+            <button id="btnChartPlus" title="Tambah 1 grafik">+</button>
           </div>
-          <select id="chartCountSelect" style="display:none;">
-            <option value="1">1 Grafik</option>
-            <option value="2" selected>2 Grafik</option>
-            <option value="3">3 Grafik</option>
-            <option value="4">4 Grafik</option>
-          </select>
+          <select id="chartCountSelect" style="display:none;"><option value="2" selected>2</option></select>
+        </div>
+        <div class="ctl-group">
+          <span class="ctl-label">Ukuran semua grafik</span>
+          <div class="btn-group">
+            <button class="btn small" data-layout="full" title="Semua grafik selebar layar dan setinggi 1 layar (landscape)">▭ 1 layar penuh</button>
+            <button class="btn small" data-layout="2" title="2 grafik per baris">▯▯ 2 per baris</button>
+            <button class="btn small" data-layout="3" title="3 grafik per baris">▯▯▯ 3 per baris</button>
+            <button class="btn small" id="btnAutoAll" title="Isi otomatis Sumbu X dan data untuk semua grafik yang masih kosong">✨ Atur otomatis</button>
+          </div>
         </div>
         <div class="ctl-group">
           <span class="ctl-label">Ekspor semua</span>
@@ -725,7 +783,8 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !i
     <div class="tip-bar">💾 Data &amp; susunan grafik tersimpan otomatis di browser ini. Gunakan <b>Simpan</b> di bagian atas untuk membuat file cadangan (.json) agar tidak perlu menyusun ulang.</div>
   </div>
 
-  <div id="chartsContainer" class="chartgrid cols-2"></div>
+  <div id="chartsContainer" class="chartgrid"></div>
+  <div class="add-chart-bar"><button id="btnAddChart" title="Tambah grafik baru">➕ Tambah grafik</button></div>
 </div>
 
 <!-- ============ TAB: KORELASI ============ -->
@@ -1930,12 +1989,365 @@ function newChartConfig(){
     series: [], hiddenSeries: new Set(), filters: [], shades: [], calloutStyle: 'full', limitN: '', limitMode: 'last', autoThin: true,
     statsShow: { avg:false, sum:false, median:false, max:false, min:false },
     yMin: '', yMax: '', y1Min: '', y1Max: '',
+    yUnitCat: '', yUnit: '', y1UnitCat: '', y1Unit: '', wPct: null, hPx: null,
     showAllCallouts: false, chartObj: null,
   };
 }
 
+
+/* ================= v2: ukuran, satuan, ruler, info ================= */
+const CHART_GAP = 16;
+function chartAutoW(){ return state.charts.length > 1 ? 50 : 100; }
+function applyChartSize(card, cfg){
+  const w = cfg.wPct ? cfg.wPct : chartAutoW();
+  card.style.width = 'calc(' + w + '% - ' + (CHART_GAP * (1 - w/100) + 0.5).toFixed(2) + 'px)';
+  const wrap = card.querySelector('.canvas-wrap');
+  if(wrap) wrap.style.height = (cfg.hPx || 410) + 'px';
+}
+function resizeChartObj(cfg){ try{ if(cfg.chartObj) cfg.chartObj.resize(); }catch(e){} }
+function reapplyAllSizes(){
+  state.charts.forEach(c=>{ const cd = document.getElementById('chartcard-' + c.id); if(cd) applyChartSize(cd, c); });
+}
+function addResizeHandles(card, cfg){
+  const mk = (cls)=>{ const d = document.createElement('div'); d.className = 'rs-handle ' + cls; card.appendChild(d); return d; };
+  const hr = mk('rs-r'), hb = mk('rs-b'), hc = mk('rs-c');
+  hr.title = 'Tarik ke kiri/kanan untuk mengubah lebar'; hb.title = 'Tarik ke atas/bawah untuk mengubah tinggi'; hc.title = 'Tarik untuk mengubah lebar dan tinggi';
+  const SNAPS = [25, 33.33, 50, 66.67, 75, 100];
+  const start = (mode)=> (e)=>{
+    e.preventDefault();
+    const h = e.currentTarget; try{ h.setPointerCapture(e.pointerId); }catch(_){}
+    const cont = card.parentElement, cw = cont.clientWidth;
+    const x0 = e.clientX, y0 = e.clientY;
+    const w0 = card.getBoundingClientRect().width;
+    const wrap = card.querySelector('.canvas-wrap');
+    const h0 = wrap.getBoundingClientRect().height;
+    card.classList.add('resizing');
+    const tip = document.createElement('div'); tip.className = 'rs-tip'; card.appendChild(tip);
+    const move = (ev)=>{
+      if(mode !== 'b'){
+        let pct = (w0 + (ev.clientX - x0) + CHART_GAP) / (cw + CHART_GAP) * 100;
+        pct = Math.max(20, Math.min(100, pct));
+        const sn = SNAPS.find(v=> Math.abs(v - pct) < 2.5);
+        pct = sn !== undefined ? sn : Math.round(pct);
+        cfg.wPct = pct;
+      }
+      if(mode !== 'r'){
+        cfg.hPx = Math.round(Math.max(220, Math.min(1800, h0 + (ev.clientY - y0))));
+      }
+      applyChartSize(card, cfg);
+      tip.textContent = (cfg.wPct || chartAutoW()) + '% × ' + (cfg.hPx || 410) + ' px';
+    };
+    const up = ()=>{
+      h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up);
+      card.classList.remove('resizing'); tip.remove();
+      resizeChartObj(cfg); scheduleAutosave();
+    };
+    h.addEventListener('pointermove', move); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+  };
+  hr.addEventListener('pointerdown', start('r'));
+  hb.addEventListener('pointerdown', start('b'));
+  hc.addEventListener('pointerdown', start('c'));
+}
+function fullScreenHeight(){ return Math.max(420, Math.round(window.innerHeight - 150)); }
+function toggleFullSize(card, cfg){
+  const isFull = cfg.wPct === 100 && cfg.hPx && cfg.hPx >= fullScreenHeight() - 30;
+  if(isFull){
+    const pv = cfg._prevSize || { wPct:null, hPx:null };
+    cfg.wPct = pv.wPct; cfg.hPx = pv.hPx;
+  } else {
+    cfg._prevSize = { wPct: cfg.wPct, hPx: cfg.hPx };
+    cfg.wPct = 100; cfg.hPx = fullScreenHeight();
+  }
+  applyChartSize(card, cfg); resizeChartObj(cfg); scheduleAutosave();
+  if(!isFull) card.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function setAllLayout(kind){
+  if(!state.charts.length) return;
+  state.charts.forEach(c=>{
+    if(kind === 'full'){ c.wPct = 100; c.hPx = fullScreenHeight(); }
+    else if(kind === '2'){ c.wPct = 50; c.hPx = null; }
+    else if(kind === '3'){ c.wPct = 33.33; c.hPx = null; }
+  });
+  reapplyAllSizes();
+  state.charts.forEach(resizeChartObj);
+  scheduleAutosave();
+}
+function addChartCard(){
+  if(state.charts.length >= 40){ showToast('Maksimal 40 grafik'); return; }
+  const cfg = newChartConfig(); state.charts.push(cfg);
+  const container = $('#chartsContainer');
+  const en = container.querySelector('.empty-note'); if(en) en.remove();
+  const card = buildChartCardDom(cfg); container.appendChild(card);
+  populateAllColumnSelectors();
+  syncChartCardControls(card, cfg);
+  renderChart(cfg);
+  reapplyAllSizes();
+  syncCountSeg(); collapseHints(container);
+  card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  scheduleAutosave();
+}
+function removeLastChartCard(){
+  const c = state.charts.pop(); if(!c) return;
+  try{ if(c.chartObj) c.chartObj.destroy(); }catch(e){}
+  const cd = document.getElementById('chartcard-' + c.id); if(cd) cd.remove();
+  const container = $('#chartsContainer');
+  if(!state.charts.length) container.innerHTML = '<div class="empty-note">Belum ada grafik. Klik <b>+</b> atau <b>➕ Tambah grafik</b>.</div>';
+  reapplyAllSizes(); syncCountSeg(); scheduleAutosave();
+}
+
+/* ---- Satuan sumbu Y ---- */
+const UNIT_CATS = [
+  ['Tekanan', ['nPa','µPa','mPa','Pa','hPa','kPa','MPa','GPa','mbar','bar','kg/cm²','mmHg','mmH₂O','mH₂O','inH₂O','psi','atm','Torr']],
+  ['Temperatur', ['°C','°F','K','°R','mK']],
+  ['Panjang / Jarak', ['nm','µm','mm','cm','dm','m','km','in','ft','yd','mi']],
+  ['Berat / Massa', ['ng','µg','mg','g','kg','Ton','kTon','MTon','kuintal','lb','oz']],
+  ['Volume', ['nL','µL','mL','L','m³','km³','mm³','cm³','Nm³','gal','bbl','ft³']],
+  ['Luas', ['µm²','mm²','cm²','m²','ha','km²','in²','ft²']],
+  ['Feed / Laju alir massa', ['g/s','kg/s','kg/min','kg/h','Ton/h','Ton/hari','Ton/bulan','Ton/tahun','wtph (wet t/h)','dtph (dry t/h)','Mt/tahun','lb/h']],
+  ['Laju alir volume', ['mL/menit','L/detik','L/menit','L/jam','m³/detik','m³/menit','m³/h','m³/hari','Nm³/menit','Nm³/h','kNm³/h','MNm³/h','gal/menit','bbl/hari']],
+  ['Daya', ['nW','µW','mW','W','kW','MW','GW','hp','kVA','MVA','kVAR','MVAR']],
+  ['Energi', ['J','kJ','MJ','GJ','Wh','kWh','MWh','GWh','kcal','Mcal','BTU','kWh/Ton','MWh/Ton','kWh/m³']],
+  ['Listrik', ['nA','µA','mA','A','kA','µV','mV','V','kV','MV','mΩ','Ω','kΩ','MΩ','cos φ','Hz','kHz','MHz']],
+  ['Persen & konsentrasi', ['%','‰','ppb','ppm','mg/L','g/L','g/t','mg/kg','% berat','% volume','% O₂','mol/L']],
+  ['Kecepatan', ['nm/s','µm/s','mm/s','cm/s','m/s','m/menit','m/jam','mm/jam','mm/hari','km/jam','rpm','rad/s']],
+  ['Waktu', ['ns','µs','ms','detik','menit','jam','hari','minggu','bulan','tahun']],
+  ['Massa jenis / Densitas', ['g/cm³','kg/m³','Ton/m³','g/L','lb/ft³']],
+  ['Gaya & Torsi', ['mN','N','kN','MN','kgf','tf','N·m','kN·m','MN·m']],
+  ['Panas & Fluks panas', ['mW/m²','W/m²','kW/m²','MW/m²','W/(m·K)','W/(m²·K)','kJ/kg','MJ/kg','kcal/kg','kcal/jam','MJ/h','GJ/Ton']],
+  ['Viskositas', ['mPa·s','Pa·s','cP','cSt','St']],
+  ['Sudut & lainnya', ['°','rad','pH','dB','µS/cm','mS/cm','NTU','Nm/s','unit','pcs','kali','batch']],
+];
+function unitTitle(u){
+  u = (u || '').trim();
+  return { display: !!u, text: u, color: textColor(), font: { weight: '700', size: 12 } };
+}
+function initUnitSelects(card){
+  ['y','y1'].forEach(p=>{
+    const cs = card.querySelector('[data-role=' + p + 'cat]'); if(!cs) return;
+    cs.innerHTML = '<option value="">— tanpa satuan —</option>' +
+      UNIT_CATS.map(c=> '<option value="' + escapeHtml(c[0]) + '">' + escapeHtml(c[0]) + '</option>').join('') +
+      '<option value="__custom">✏️ Ketik sendiri…</option>';
+  });
+}
+function syncUnitControls(card, cfg){
+  ['y','y1'].forEach(p=>{
+    const cs = card.querySelector('[data-role=' + p + 'cat]'), us = card.querySelector('[data-role=' + p + 'unit]'), cu = card.querySelector('[data-role=' + p + 'custom]');
+    if(!cs || !us || !cu) return;
+    const cat = cfg[p + 'UnitCat'] || '', unit = cfg[p + 'Unit'] || '';
+    cs.value = cat;
+    const def = UNIT_CATS.find(c=> c[0] === cat);
+    if(def){
+      us.innerHTML = '<option value="">— pilih satuan —</option>' + def[1].map(u=> '<option value="' + escapeHtml(u) + '">' + escapeHtml(u) + '</option>').join('');
+      us.value = unit; us.style.display = '';
+    } else { us.innerHTML = ''; us.style.display = 'none'; }
+    cu.style.display = cat === '__custom' ? '' : 'none';
+    cu.value = cat === '__custom' ? unit : '';
+  });
+}
+function wireUnitControls(card, cfg){
+  initUnitSelects(card);
+  ['y','y1'].forEach(p=>{
+    const cs = card.querySelector('[data-role=' + p + 'cat]'), us = card.querySelector('[data-role=' + p + 'unit]'), cu = card.querySelector('[data-role=' + p + 'custom]');
+    cs.addEventListener('change', ()=>{ cfg[p + 'UnitCat'] = cs.value; cfg[p + 'Unit'] = ''; syncUnitControls(card, cfg); renderChart(cfg); });
+    us.addEventListener('change', ()=>{ cfg[p + 'Unit'] = us.value; renderChart(cfg); });
+    cu.addEventListener('input', ()=>{ cfg[p + 'Unit'] = cu.value.trim(); renderChart(cfg); });
+  });
+}
+
+/* ---- Ruler tanggal ---- */
+var __bndCache = { ref:null, len:-1, map:{} };
+const DAY_MS = 86400000;
+function chartDateColIdx(cfg){
+  const x = parseInt(cfg.xCol);
+  const x2 = (cfg.xCol2 !== '' && cfg.xCol2 !== undefined && cfg.xCol2 !== null) ? parseInt(cfg.xCol2) : -1;
+  if(!isNaN(x) && state.colTypes[x] === 'date') return x;
+  if(x2 >= 0 && state.colTypes[x2] === 'date') return x2;
+  return state.colTypes.indexOf('date');
+}
+function getDateBounds(ci){
+  if(ci < 0) return null;
+  if(__bndCache.ref !== state.rows || __bndCache.len !== state.rows.length){ __bndCache.ref = state.rows; __bndCache.len = state.rows.length; __bndCache.map = {}; }
+  if(__bndCache.map[ci] !== undefined) return __bndCache.map[ci];
+  let mn = Infinity, mx = -Infinity;
+  const rows = state.rows;
+  for(let i=0;i<rows.length;i++){
+    const d = parseFlexibleDate(rows[i][ci]); if(!d) continue;
+    const t = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    if(t < mn) mn = t; if(t > mx) mx = t;
+  }
+  const res = mn === Infinity ? null : { min: mn, max: mx };
+  __bndCache.map[ci] = res; return res;
+}
+function rulerDayAt(b, i){ const d0 = new Date(b.min); return new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i); }
+function rulerIso(d){ const p = n=> String(n).padStart(2,'0'); return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()); }
+function rulerShort(d){ return String(d.getDate()).padStart(2,'0') + ' ' + MONTHS_ID[d.getMonth()]; }
+function rulerIdxOf(b, days, str){
+  const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return null;
+  const t = new Date(+m[1], +m[2]-1, +m[3]).getTime();
+  return Math.max(0, Math.min(days-1, Math.round((t - b.min) / DAY_MS)));
+}
+function buildRulerTicks(R, b, days){
+  const pos = i=> days > 1 ? (i/(days-1)*100) : 0;
+  const step = days <= 400 ? 1 : (days <= 1800 ? 7 : 0);
+  let ticks = '', nums = '', mons = '';
+  const every = Math.max(1, Math.ceil(days / 34));
+  let monthCount = 0;
+  for(let i=0;i<days;i++){ if(rulerDayAt(b,i).getDate() === 1 || i === 0) monthCount++; }
+  const monEvery = monthCount > 18 ? Math.ceil(monthCount / 12) : 1;
+  let mi = 0;
+  for(let i=0;i<days;i++){
+    const d = rulerDayAt(b, i), dom = d.getDate();
+    const isMonth = dom === 1 || i === 0;
+    if(isMonth){
+      if(mi % monEvery === 0) mons += '<span style="left:' + pos(i) + '%">' + MONTHS_ID[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2) + '</span>';
+      mi++;
+    }
+    if(step === 0 && dom !== 1) continue;
+    if(step === 7 && i % 7 !== 0 && dom !== 1) continue;
+    ticks += '<i class="' + (dom === 1 ? 'mj' : (d.getDay() === 1 ? 'wk' : '')) + '" style="left:' + pos(i) + '%"></i>';
+    if(days <= 250 && i % every === 0) nums += '<span style="left:' + pos(i) + '%">' + dom + '</span>';
+  }
+  R.querySelector('.dr-ticks').innerHTML = ticks;
+  R.querySelector('[data-role=drnums]').innerHTML = nums;
+  R.querySelector('[data-role=drmons]').innerHTML = mons;
+}
+function positionRuler(R){
+  const days = R.__days, b = R.__b;
+  const pos = i=> days > 1 ? (i/(days-1)*100) : 0;
+  const lo = Math.min(R.__ia, R.__ib), hi = Math.max(R.__ia, R.__ib);
+  const t1 = R.querySelector('.dr-t1'), t2 = R.querySelector('.dr-t2'), sel = R.querySelector('.dr-sel');
+  t1.style.left = pos(R.__ia) + '%'; t2.style.left = pos(R.__ib) + '%';
+  t1.querySelector('.dr-tip').textContent = rulerShort(rulerDayAt(b, R.__ia));
+  t2.querySelector('.dr-tip').textContent = rulerShort(rulerDayAt(b, R.__ib));
+  sel.style.left = pos(lo) + '%'; sel.style.width = (pos(hi) - pos(lo)) + '%';
+  const n = hi - lo + 1;
+  R.querySelector('.dr-info').textContent = (lo === 0 && hi === days-1)
+    ? 'Semua tanggal (' + days + ' hari: ' + formatDateOnly(rulerDayAt(b,0)) + ' – ' + formatDateOnly(rulerDayAt(b,days-1)) + ')'
+    : formatDateOnly(rulerDayAt(b, lo)) + '  →  ' + formatDateOnly(rulerDayAt(b, hi)) + '  ·  ' + n + ' hari dari ' + days + ' hari';
+}
+function updateDateRuler(card, cfg){
+  const R = card.querySelector('[data-role=ruler]'); if(!R) return;
+  const ci = chartDateColIdx(cfg), b = getDateBounds(ci);
+  const msg = R.querySelector('.dr-msg'), body = R.querySelector('.dr-body'), quick = R.querySelector('.dr-quick');
+  if(!b){
+    msg.textContent = 'Ruler tanggal muncul setelah data memiliki kolom tanggal (pilih Sumbu X berupa tanggal).';
+    msg.style.display = ''; body.style.display = 'none'; quick.style.display = 'none'; return;
+  }
+  msg.style.display = 'none'; body.style.display = ''; quick.style.display = '';
+  const days = Math.round((b.max - b.min) / DAY_MS) + 1;
+  const key = ci + '|' + b.min + '|' + b.max;
+  R.__b = b; R.__days = days;
+  if(R.__key !== key){ buildRulerTicks(R, b, days); R.__key = key; }
+  let i1 = 0, i2 = days - 1;
+  if(cfg.dateFrom){ const v = rulerIdxOf(b, days, cfg.dateFrom); if(v !== null) i1 = v; }
+  if(cfg.dateTo){ const v = rulerIdxOf(b, days, cfg.dateTo); if(v !== null) i2 = v; }
+  R.__ia = Math.min(i1, i2); R.__ib = Math.max(i1, i2);
+  positionRuler(R);
+  if(!R.__wired){ R.__wired = true; wireRuler(R, card, cfg); }
+}
+function wireRuler(R, card, cfg){
+  const track = R.querySelector('.dr-track');
+  const t1 = R.querySelector('.dr-t1'), t2 = R.querySelector('.dr-t2'), sel = R.querySelector('.dr-sel');
+  let sched = false;
+  const idxFromX = x=>{
+    const r = track.getBoundingClientRect();
+    const f = r.width > 0 ? (x - r.left) / r.width : 0;
+    return Math.max(0, Math.min(R.__days - 1, Math.round(f * (R.__days - 1))));
+  };
+  const commit = ()=>{
+    const b = R.__b, days = R.__days;
+    const lo = Math.min(R.__ia, R.__ib), hi = Math.max(R.__ia, R.__ib);
+    cfg.dateFrom = lo <= 0 ? '' : rulerIso(rulerDayAt(b, lo));
+    cfg.dateTo = hi >= days - 1 ? '' : rulerIso(rulerDayAt(b, hi));
+    const f = card.querySelector('[data-role=datefrom]'), t = card.querySelector('[data-role=dateto]');
+    if(f) f.value = cfg.dateFrom; if(t) t.value = cfg.dateTo;
+    if(!sched){ sched = true; requestAnimationFrame(()=>{ sched = false; renderChart(cfg); }); }
+  };
+  const drag = (el, kind)=> el.addEventListener('pointerdown', e=>{
+    e.preventDefault(); e.stopPropagation();
+    try{ el.setPointerCapture(e.pointerId); }catch(_){}
+    const startIdx = idxFromX(e.clientX), a0 = R.__ia, b0 = R.__ib;
+    const move = ev=>{
+      const i = idxFromX(ev.clientX);
+      if(kind === 't1') R.__ia = i;
+      else if(kind === 't2') R.__ib = i;
+      else {
+        const lo = Math.min(a0, b0), hi = Math.max(a0, b0), span = hi - lo;
+        let nlo = lo + (i - startIdx);
+        nlo = Math.max(0, Math.min(R.__days - 1 - span, nlo));
+        R.__ia = nlo; R.__ib = nlo + span;
+      }
+      positionRuler(R); commit();
+    };
+    const up = ()=>{ el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
+    el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  });
+  drag(t1, 't1'); drag(t2, 't2'); drag(sel, 'mid');
+  track.addEventListener('pointerdown', e=>{
+    if(e.target.closest('.dr-thumb') || e.target.closest('.dr-sel')) return;
+    const i = idxFromX(e.clientX);
+    if(Math.abs(i - R.__ia) <= Math.abs(i - R.__ib)) R.__ia = i; else R.__ib = i;
+    positionRuler(R); commit();
+  });
+  R.querySelectorAll('[data-quick]').forEach(btn=> btn.addEventListener('click', ()=>{
+    const days = R.__days, k = btn.dataset.quick;
+    if(k === 'all'){ R.__ia = 0; R.__ib = days - 1; }
+    else { const n = parseInt(k); R.__ib = days - 1; R.__ia = Math.max(0, days - n); }
+    positionRuler(R); commit();
+  }));
+}
+
+/* ---- Petunjuk jadi tanda seru "!" ---- */
+function makeInfoBtn(html){
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'info-btn'; b.textContent = '!'; b.title = 'Klik untuk melihat petunjuk';
+  b.__tip = html; return b;
+}
+function collapseHints(root){
+  if(!root) return;
+  root.querySelectorAll('.hint').forEach(h=>{
+    if(h.closest('.info-pop')) return;
+    const html = h.innerHTML.trim(); if(!html) return;
+    const b = makeInfoBtn(html);
+    if(h.tagName === 'SPAN'){ h.replaceWith(b); }
+    else { const row = document.createElement('div'); row.className = 'info-row'; row.appendChild(b); h.replaceWith(row); }
+  });
+}
+function initInfoPopovers(){
+  const pop = document.createElement('div'); pop.className = 'info-pop'; document.body.appendChild(pop);
+  let cur = null;
+  const close = ()=>{ pop.classList.remove('show'); if(cur) cur.classList.remove('on'); cur = null; };
+  document.addEventListener('click', e=>{
+    const b = e.target.closest ? e.target.closest('.info-btn') : null;
+    if(b){
+      e.preventDefault(); e.stopPropagation();
+      if(cur === b){ close(); return; }
+      close(); cur = b; b.classList.add('on');
+      pop.innerHTML = b.__tip || ''; pop.classList.add('show');
+      const r = b.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+      let left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left - 16));
+      let top = r.bottom + 8; if(top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 8);
+      pop.style.left = left + 'px'; pop.style.top = top + 'px';
+      return;
+    }
+    if(!e.target.closest('.info-pop')) close();
+  });
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape') close(); });
+  window.addEventListener('resize', close);
+  // hero: petunjuk jadi satu tanda seru di samping judul
+  const title = document.querySelector('.hero-title'), sub = document.querySelector('.hero-sub'), tip = document.querySelector('.tip-bar');
+  if(title && sub){
+    const html = sub.innerHTML + (tip ? '<hr>' + tip.innerHTML : '') +
+      '<hr><b>Ukuran grafik:</b> tarik tepi kanan / bawah / pojok kanan-bawah kartu grafik untuk mengubah lebar &amp; tinggi. Tombol ⛶ di kartu = penuh 1 layar.';
+    sub.remove(); if(tip) tip.remove();
+    title.appendChild(makeInfoBtn(html));
+  }
+  const cont = $('#chartsContainer');
+  if(cont && window.MutationObserver) new MutationObserver(()=> collapseHints(cont)).observe(cont, { childList:true, subtree:true });
+}
+
 function setChartCount(n){
-  n = Math.max(1, Math.min(4, n));
+  n = Math.max(0, Math.min(40, n));
   while(state.charts.length < n) state.charts.push(newChartConfig());
   while(state.charts.length > n) state.charts.pop();
   $('#chartCountSelect').value = String(n);
@@ -1944,8 +2356,9 @@ function setChartCount(n){
 
 function renderChartCards(){
   const container = $('#chartsContainer');
-  container.className = 'chartgrid ' + (state.charts.length>1 ? 'cols-2' : 'cols-1');
+  container.className = 'chartgrid';
   container.innerHTML = '';
+  if(!state.charts.length) container.innerHTML = '<div class="empty-note">Belum ada grafik. Klik <b>+</b> atau <b>➕ Tambah grafik</b>.</div>';
   state.charts.forEach(cfg=>{
     container.appendChild(buildChartCardDom(cfg));
   });
@@ -1956,9 +2369,11 @@ function renderChartCards(){
   });
   state.charts.forEach(renderChart);
   syncCountSeg();
+  collapseHints(container);
 }
 function syncCountSeg(){
-  $all('#chartCountSeg button').forEach(b=> b.classList.toggle('active', parseInt(b.dataset.n) === state.charts.length));
+  const l = $('#chartCountLabel'); if(l) l.textContent = String(state.charts.length);
+  const m = $('#btnChartMinus'); if(m) m.disabled = state.charts.length <= 0;
 }
 
 // Ensures the visible form controls reflect the stored config (used after
@@ -1966,6 +2381,8 @@ function syncCountSeg(){
 function syncChartCardControls(card, cfg){
   const setVal = (roleSel, val)=>{ const el = card.querySelector(roleSel); if(el) el.value = val; };
   setVal('[data-role=mode]', cfg.mode);
+  syncUnitControls(card, cfg);
+  updateDateRuler(card, cfg);
   const thin = card.querySelector('[data-role=autothin]'); if(thin) thin.checked = cfg.autoThin !== false;
   card.querySelectorAll('[data-stat]').forEach(cb=>{ cb.checked = !!(cfg.statsShow && cfg.statsShow[cb.dataset.stat]); });
   setVal('[data-role=limitn]', cfg.limitN || '');
@@ -1997,6 +2414,8 @@ function buildChartCardDom(cfg){
     <div class="chart-card-head">
       <input class="title-input" value="${escapeHtml(cfg.title)}" data-role="title" title="Klik untuk mengganti judul grafik">
       <div class="head-actions">
+        <button class="icon-btn" data-role="autosetup" title="Atur otomatis: isi Sumbu X dan data yang digambar secara otomatis">✨</button>
+        <button class="icon-btn" data-role="fullsize" title="Penuh 1 layar (landscape) / kembalikan ukuran semula">⛶</button>
         <button class="icon-btn with-text accent" data-role="toggle-config" title="Buka / tutup pengaturan grafik">⚙️ <span>Atur Grafik</span></button>
         <button class="icon-btn" data-role="exportpdf" title="Unduh grafik ini sebagai PDF">📄</button>
         <button class="icon-btn" data-role="exportjpg" title="Unduh grafik ini sebagai gambar JPG">🖼️</button>
@@ -2073,6 +2492,27 @@ function buildChartCardDom(cfg){
             <input type="date" data-role="dateto">
           </div>
         </div>
+        <div class="date-ruler" data-role="ruler">
+          <div class="dr-msg"></div>
+          <div class="dr-body">
+            <div class="dr-track">
+              <div class="dr-rail"></div>
+              <div class="dr-ticks"></div>
+              <div class="dr-sel" title="Geser untuk memindahkan seluruh rentang tanggal"></div>
+              <div class="dr-thumb dr-t1"><span class="dr-tip"></span></div>
+              <div class="dr-thumb dr-t2"><span class="dr-tip"></span></div>
+            </div>
+            <div class="dr-labels" data-role="drnums"></div>
+            <div class="dr-labels months" data-role="drmons"></div>
+            <div class="dr-info"></div>
+          </div>
+          <div class="dr-quick">
+            <button class="btn small ghost" data-quick="7">7 hari terakhir</button>
+            <button class="btn small ghost" data-quick="30">30 hari terakhir</button>
+            <button class="btn small ghost" data-quick="90">90 hari terakhir</button>
+            <button class="btn small ghost" data-quick="all">Semua tanggal</button>
+          </div>
+        </div>
         <div class="sec-title">Batasi jumlah data</div>
         <div class="row limit-row">
           <span>Tampilkan hanya</span>
@@ -2096,19 +2536,31 @@ function buildChartCardDom(cfg){
         <div class="sec-title">Batas sumbu Y</div>
         <div class="grid2">
           <div class="axis-box">
-            <div class="hint" style="margin:0 0 6px 0;"><b>Sumbu Y Kiri (Primary)</b></div>
+            <div class="axis-title"><b>Sumbu Y Kiri (Primary)</b></div>
             <div class="row">
               <div class="field"><label>Min</label><input type="text" placeholder="auto" data-role="ymin" style="width:80px;"></div>
               <div class="field"><label>Max</label><input type="text" placeholder="auto" data-role="ymax" style="width:80px;"></div>
               <button class="btn small ghost" data-role="yreset">Reset</button>
             </div>
+            <div class="unit-row">
+              <label>Satuan (tampil di sumbu)</label>
+              <select data-role="ycat"></select>
+              <select data-role="yunit" style="display:none;"></select>
+              <input type="text" data-role="ycustom" placeholder="mis. Nm³/h" style="width:100px;display:none;">
+            </div>
           </div>
           <div class="axis-box">
-            <div class="hint" style="margin:0 0 6px 0;"><b>Sumbu Y Kanan (Secondary)</b></div>
+            <div class="axis-title"><b>Sumbu Y Kanan (Secondary)</b></div>
             <div class="row">
               <div class="field"><label>Min</label><input type="text" placeholder="auto" data-role="y1min" style="width:80px;"></div>
               <div class="field"><label>Max</label><input type="text" placeholder="auto" data-role="y1max" style="width:80px;"></div>
               <button class="btn small ghost" data-role="y1reset">Reset</button>
+            </div>
+            <div class="unit-row">
+              <label>Satuan (tampil di sumbu)</label>
+              <select data-role="y1cat"></select>
+              <select data-role="y1unit" style="display:none;"></select>
+              <input type="text" data-role="y1custom" placeholder="mis. Nm³/h" style="width:100px;display:none;">
             </div>
           </div>
         </div>
@@ -2145,6 +2597,8 @@ function buildChartCardDom(cfg){
     <div class="chart-stats" data-role="statspanel"></div>
   `;
   wireChartCard(card, cfg);
+  addResizeHandles(card, cfg);
+  applyChartSize(card, cfg);
   return card;
 }
 
@@ -2167,6 +2621,7 @@ function wireChartCard(card, cfg){
     tab.addEventListener('click', ()=>{
       card.querySelectorAll('.cfg-tab').forEach(t=> t.classList.toggle('active', t===tab));
       card.querySelectorAll('.cfg-pane').forEach(p=> p.classList.toggle('active', p.dataset.pane===tab.dataset.cfgtab));
+      if(tab.dataset.cfgtab==='filter') updateDateRuler(card, cfg);
     });
   });
   card.querySelectorAll('[data-stat]').forEach(cb=>{
@@ -2197,13 +2652,13 @@ function wireChartCard(card, cfg){
     renderChart(cfg);
   });
   const xcolSel = card.querySelector('[data-role=xcol]');
-  xcolSel.addEventListener('change', e=>{ cfg.xCol = e.target.value; renderChart(cfg); });
+  xcolSel.addEventListener('change', e=>{ cfg.xCol = e.target.value; updateDateRuler(card, cfg); renderChart(cfg); });
   const xcol2Sel = card.querySelector('[data-role=xcol2]');
-  xcol2Sel.addEventListener('change', e=>{ cfg.xCol2 = e.target.value; renderChart(cfg); });
+  xcol2Sel.addEventListener('change', e=>{ cfg.xCol2 = e.target.value; updateDateRuler(card, cfg); renderChart(cfg); });
   card.querySelector('[data-role=granularity]').addEventListener('change', e=>{ cfg.granularity = e.target.value; updateAggFnState(card, cfg); renderChart(cfg); });
   card.querySelector('[data-role=aggfn]').addEventListener('change', e=>{ cfg.aggFn = e.target.value; renderChart(cfg); });
-  card.querySelector('[data-role=datefrom]').addEventListener('change', e=>{ cfg.dateFrom = e.target.value; renderChart(cfg); });
-  card.querySelector('[data-role=dateto]').addEventListener('change', e=>{ cfg.dateTo = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=datefrom]').addEventListener('change', e=>{ cfg.dateFrom = e.target.value; updateDateRuler(card, cfg); renderChart(cfg); });
+  card.querySelector('[data-role=dateto]').addEventListener('change', e=>{ cfg.dateTo = e.target.value; updateDateRuler(card, cfg); renderChart(cfg); });
   card.querySelector('[data-role=addfilter]').addEventListener('click', ()=>{
     if(!cfg.filters) cfg.filters = [];
     cfg.filters.push({ col:'', op:'gte', v1:'', v2:'' });
@@ -2241,6 +2696,12 @@ function wireChartCard(card, cfg){
     state.charts = state.charts.filter(c=>c.id!==cfg.id);
     renderChartCards();
   });
+  card.querySelector('[data-role=autosetup]').addEventListener('click', ()=>{
+    if(cfg.series.length && !confirm('Atur otomatis akan mengganti Sumbu X dan data yang digambar pada grafik ini. Lanjutkan?')) return;
+    autoSetupChart(cfg, card);
+  });
+  card.querySelector('[data-role=fullsize]').addEventListener('click', ()=> toggleFullSize(card, cfg));
+  wireUnitControls(card, cfg);
   renderFiltersList(card, cfg);
   renderShadesList(card, cfg);
   renderSeriesList(card, cfg);
@@ -2750,7 +3211,7 @@ function isTimeLikeColumn(ci){
 /* ---- cache per kolom: tanggal/angka diurai sekali, dipakai ulang di setiap render ---- */
 const __colCache = new Map();
 let __colCacheRef = null, __colCacheLen = -1;
-function bumpData(){ __colCache.clear(); }
+function bumpData(){ __colCache.clear(); __bndCache.map = {}; }
 function __cacheGuard(){
   if(__colCacheRef !== state.rows || __colCacheLen !== state.rows.length){
     __colCache.clear(); __colCacheRef = state.rows; __colCacheLen = state.rows.length;
@@ -2844,7 +3305,7 @@ function getAggregatedData(cfg){
   const isDateMode = labelMode ? groupIsDate : ((xColType==='date') || (xCol2Idx!==null && items.some(it=>it.date)));
 
   if(isDateMode && (cfg.dateFrom || cfg.dateTo)){
-    const tFrom = cfg.dateFrom ? new Date(cfg.dateFrom).getTime() : null;
+    const tFrom = cfg.dateFrom ? new Date(cfg.dateFrom + 'T00:00:00').getTime() : null;
     const tTo = cfg.dateTo ? new Date(cfg.dateTo + 'T23:59:59').getTime() : null;
     items = items.filter(it=>{
       if(!it.date) return false;
@@ -3385,6 +3846,7 @@ function renderChartNow(cfg){
         },
         y:{
           position:'left',
+          title: unitTitle(cfg.yUnit),
           grid:{ color:gridColor() }, ticks:{ color:textColor() },
           min: cfg.yMin===''?undefined:Number(cfg.yMin),
           max: cfg.yMax===''?undefined:Number(cfg.yMax),
@@ -3393,6 +3855,7 @@ function renderChartNow(cfg){
       if(hasSecondaryScatter){
         scatterScales.y1 = {
           position:'right',
+          title: unitTitle(cfg.y1Unit),
           min: cfg.y1Min===''?undefined:Number(cfg.y1Min),
           max: cfg.y1Max===''?undefined:Number(cfg.y1Max),
           grid:{ drawOnChartArea:false }, ticks:{ color:textColor() },
@@ -3447,6 +3910,7 @@ function renderChartNow(cfg){
       },
       y: {
         position:'left',
+        title: unitTitle(cfg.yUnit),
         min: cfg.yMin===''?undefined:Number(cfg.yMin),
         max: cfg.yMax===''?undefined:Number(cfg.yMax),
         grid:{color:gridColor()}, ticks:{color:textColor()},
@@ -3455,6 +3919,7 @@ function renderChartNow(cfg){
     if(hasSecondary){
       scales.y1 = {
         position:'right',
+        title: unitTitle(cfg.y1Unit),
         min: cfg.y1Min===''?undefined:Number(cfg.y1Min),
         max: cfg.y1Max===''?undefined:Number(cfg.y1Max),
         grid:{drawOnChartArea:false}, ticks:{color:textColor()},
@@ -3892,6 +4357,8 @@ function buildProject(){
       xCol: cfg.xCol, xCol2: cfg.xCol2, granularity: cfg.granularity, aggFn: cfg.aggFn || 'avg',
       dateFrom: cfg.dateFrom, dateTo: cfg.dateTo,
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
+      yUnitCat: cfg.yUnitCat || '', yUnit: cfg.yUnit || '', y1UnitCat: cfg.y1UnitCat || '', y1Unit: cfg.y1Unit || '',
+      wPct: cfg.wPct || null, hPx: cfg.hPx || null,
       showAllCallouts: !!cfg.showAllCallouts, calloutStyle: cfg.calloutStyle || 'full',
       limitN: cfg.limitN || '', limitMode: cfg.limitMode || 'last', autoThin: cfg.autoThin !== false,
       statsShow: Object.assign({ avg:false, sum:false, median:false, max:false, min:false }, cfg.statsShow || {}),
@@ -3930,8 +4397,8 @@ function loadProject(p){
   document.documentElement.setAttribute('data-mode', mode);
 
   const base = { mode:'linebar', xCol:'', xCol2:'', granularity:'raw', aggFn:'avg', dateFrom:'', dateTo:'',
-                 yMin:'', yMax:'', y1Min:'', y1Max:'', showAllCallouts:false, calloutStyle:'full', limitN:'', limitMode:'last', autoThin:true };
-  const saved = Array.isArray(p.charts) ? p.charts.slice(0,4) : [];
+                 yMin:'', yMax:'', y1Min:'', y1Max:'', yUnitCat:'', yUnit:'', y1UnitCat:'', y1Unit:'', wPct:null, hPx:null, showAllCallouts:false, calloutStyle:'full', limitN:'', limitMode:'last', autoThin:true };
+  const saved = Array.isArray(p.charts) ? p.charts.slice(0,40) : [];
   state.charts = saved.map((c, i) => Object.assign({}, base, c, {
     id: i + 1,
     title: c.title || ('Grafik ' + (i+1)),
@@ -4079,8 +4546,16 @@ function init(){
   $('#btnClearManual').addEventListener('click', manualClearAll);
   $('#btnUseManual').addEventListener('click', useManualData);
 
-  $('#chartCountSelect').addEventListener('change', e=> setChartCount(parseInt(e.target.value)));
-  $all('#chartCountSeg button').forEach(b=> b.addEventListener('click', ()=> setChartCount(parseInt(b.dataset.n))));
+  $('#btnChartPlus').addEventListener('click', addChartCard);
+  $('#btnChartMinus').addEventListener('click', removeLastChartCard);
+  $('#btnAddChart').addEventListener('click', addChartCard);
+  $all('[data-layout]').forEach(b=> b.addEventListener('click', ()=> setAllLayout(b.dataset.layout)));
+  $('#btnAutoAll').addEventListener('click', ()=>{
+    let n = 0;
+    state.charts.forEach(c=>{ if(!c.series.length){ const cd = document.getElementById('chartcard-' + c.id); if(cd){ autoSetupChart(c, cd); n++; } } });
+    if(!n) showToast('Semua grafik sudah diatur. Untuk satu grafik, klik tombol ✨ di kartunya.');
+  });
+  initInfoPopovers();
 
   const closeHelp = ()=>{
     $('#helpOverlay').classList.remove('active');
