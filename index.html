@@ -530,7 +530,17 @@ td.rp-a .rp-cell{ flex:1; text-align:right; padding-right:10px; font-weight:700;
 td.rp-a.st-ok{ background:#e6f4ec; } td.rp-a.st-ok .rp-dot{ background:#2f9e73; border-color:#1f7d5a; }
 td.rp-a.st-warn{ background:#fdf3d4; } td.rp-a.st-warn .rp-dot{ background:#f2c14e; border-color:#c99a2a; }
 td.rp-a.st-bad{ background:#fbe3df; } td.rp-a.st-bad .rp-dot{ background:#e0463a; border-color:#b5322a; }
-td.rp-ov .rp-cell{ box-shadow:inset 3px 0 0 var(--accent1); }
+td.rp-ov{ background:#dbeafe !important; }
+tr.rp-sel td.rp-ctl{ background:#fff3b0 !important; }
+.rp-colorbar{ align-items:center; gap:8px; margin-bottom:6px; }
+.rp-lbl{ font-size:12.5px; font-weight:700; }
+#rpSwatches{ display:inline-flex; gap:5px; }
+.rp-sw{ width:24px; height:24px; border-radius:7px; border:1.5px solid #aaa; cursor:pointer; padding:0; font-size:11px; line-height:1; }
+.rp-sw:hover{ transform:scale(1.15); border-color:var(--accent1); }
+#rpColorPick{ width:32px; height:28px; padding:0; border:1px solid var(--border); border-radius:6px; background:transparent; cursor:pointer; }
+.rp-legend{ font-size:12px; color:var(--text-soft); margin-left:auto; display:inline-flex; align-items:center; gap:5px; }
+.rp-legend .lg-manual{ width:14px; height:14px; background:#dbeafe; border:1px solid #93b4e6; display:inline-block; border-radius:3px; }
+.rp-selbox{ vertical-align:middle; margin-right:3px; }
 .rp-mt{ position:absolute; top:1px; right:1px; display:none; gap:2px; z-index:3; }
 td:hover > .rp-mt{ display:flex; }
 .rp-mt button{ border:1px solid #bbb; background:#fff; color:#333; border-radius:5px; font-size:11px; padding:0 5px; cursor:pointer; line-height:16px; }
@@ -878,10 +888,20 @@ td:hover > .rp-mt{ display:flex; }
       <button class="btn small ghost" id="rpReset" title="Hapus semua isian manual di kolom Parameter, Satuan, Actual, Target">↺ Kembalikan ke otomatis</button>
       <label class="rp-chk"><input type="checkbox" id="rpShowCtl" checked> Kontrol baris</label>
       <span class="rp-sp"></span>
-      <button class="btn small" id="rpCopy">📋 Salin</button>
+      <button class="btn small" id="rpCopyChat" title="Salin sebagai teks rapi (bisa ditempel di WhatsApp / Telegram / chat lain)">💬 Salin teks chat</button>
+      <button class="btn small" id="rpCopyImg" title="Salin sebagai gambar (tempel di WhatsApp Web/Desktop, Telegram, dll.)">🖼️ Salin gambar</button>
+      <button class="btn small" id="rpCopyTbl" title="Salin sebagai tabel (tempel di Excel / Word)">📋 Salin tabel</button>
       <button class="btn small" id="rpXlsx">📗 Excel</button>
       <button class="btn small" id="rpJpg">🖼️ JPG</button>
       <button class="btn small" id="rpPrint">🖨️ Cetak</button>
+    </div>
+    <div class="rp-bar rp-colorbar">
+      <span class="rp-lbl">🎨 Warna baris terpilih:</span>
+      <span id="rpSwatches"></span>
+      <input type="color" id="rpColorPick" value="#fff2cc" title="Pilih warna lain">
+      <button class="btn small ghost" id="rpSelAll">Pilih semua baris</button>
+      <button class="btn small ghost" id="rpSelNone">Hapus pilihan</button>
+      <span class="rp-legend"><i class="lg-manual"></i> Biru muda = diisi / diubah manual</span>
     </div>
     <div id="rpInfo" class="rp-info"></div>
     <div class="rp-scroll"><div id="rpExportArea">
@@ -1498,7 +1518,7 @@ function buildPreviewHead(){
   }
   if(hasUnit){
     const top = baseTop + (hasTarget ? 32 : 0);
-    html += '<tr class="target-row unit-row"><td class="rowlabel" style="top:' + top + 'px;" title="Satuan">📏</td>';
+    html += '<tr class="target-row unit-data-row"><td class="rowlabel" style="top:' + top + 'px;" title="Satuan">📏</td>';
     for(let i=0;i<n;i++) html += `<td contenteditable="true" data-uc="${i}" style="top:${top}px;">${escapeHtml(state.unitRow[i]||'')}</td>`;
     html += '</tr>';
   }
@@ -2557,10 +2577,11 @@ function rpState(){
   if(R.dateCol === undefined) R.dateCol = '';
   if(R.date === undefined) R.date = '';
   if(R.showCtl === undefined) R.showCtl = true;
-  R.rows.forEach(r=>{ if(r.gSpan === undefined) r.gSpan = 1; if(r.nSpan === undefined) r.nSpan = 1; ['p','u','a','t'].forEach(k=>{ if(r[k] === undefined) r[k] = null; }); ['g','c','n','col'].forEach(k=>{ if(r[k] === undefined || r[k] === null) r[k] = ''; }); });
+  R.rows.forEach(r=>{ if(r.gSpan === undefined) r.gSpan = 1; if(r.nSpan === undefined) r.nSpan = 1; ['p','u','a','t'].forEach(k=>{ if(r[k] === undefined) r[k] = null; }); ['g','c','n','col','bg'].forEach(k=>{ if(r[k] === undefined || r[k] === null) r[k] = ''; }); });
   return R;
 }
-function rpNewRow(col){ return { col: col || '', g:'', gSpan:1, p:null, c:'', u:null, a:null, t:null, n:'', nSpan:1 }; }
+function rpNewRow(col){ return { col: col || '', g:'', gSpan:1, p:null, c:'', u:null, a:null, t:null, n:'', nSpan:1, bg:'' }; }
+var __rpSel = new Set();
 function rpColIdx(name){ return name ? state.headers.indexOf(name) : -1; }
 function rpDateColIdx(){
   const R = rpState();
@@ -2763,7 +2784,9 @@ function rpBuildTable(forExport){
   h += '<tr><th class="rp-h-sub">ACTUAL</th><th class="rp-h-sub">TARGET</th></tr></thead><tbody>';
   const opts = '<option value="">(manual)</option>' + state.headers.map(x=> '<option value="' + rpEsc(x) + '">' + rpEsc(x) + '</option>').join('');
   R.rows.forEach((row, i)=>{
-    h += '<tr data-r="' + i + '"><td class="rp-ctl"><select class="rp-link" data-r="' + i + '" title="Hubungkan baris ini ke kolom data">' + opts.replace('value="' + rpEsc(row.col) + '"', 'value="' + rpEsc(row.col) + '" selected') + '</select>' +
+    const sel = __rpSel.has(row);
+    const bgs = row.bg ? ' style="background:' + rpEsc(row.bg) + ';"' : '';
+    h += '<tr data-r="' + i + '"' + (sel ? ' class="rp-sel"' : '') + '><td class="rp-ctl"><input type="checkbox" class="rp-selbox" data-r="' + i + '" title="Pilih baris untuk diberi warna"' + (sel ? ' checked' : '') + '><select class="rp-link" data-r="' + i + '" title="Hubungkan baris ini ke kolom data">' + opts.replace('value="' + rpEsc(row.col) + '"', 'value="' + rpEsc(row.col) + '" selected') + '</select>' +
       '<button data-act="up" data-r="' + i + '" title="Naik">↑</button><button data-act="down" data-r="' + i + '" title="Turun">↓</button>' +
       '<button data-act="ins" data-r="' + i + '" title="Sisipkan baris di bawah">＋</button><button data-act="del" data-r="' + i + '" title="Hapus baris">✕</button></td>';
     if(row.gSpan > 0){
@@ -2772,11 +2795,11 @@ function rpBuildTable(forExport){
     }
     ['p','c','u'].forEach(k=>{
       const ci = rpCellInfo(row, k, idxs);
-      h += '<td class="rp-' + k + (ci.ov ? ' rp-ov' : '') + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="' + k + '">' + rpEsc(ci.text) + '</div></td>';
+      h += '<td class="rp-' + k + (ci.ov ? ' rp-ov' : '') + '"' + bgs + '><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="' + k + '">' + rpEsc(ci.text) + '</div></td>';
     });
     const a = rpCellInfo(row, 'a', idxs), t = rpCellInfo(row, 't', idxs), st = rpRowStatus(row, idxs);
-    h += '<td class="rp-a' + (st ? ' st-' + st : '') + (a.ov ? ' rp-ov' : '') + '"><div class="rp-aw"><span class="rp-dot"></span><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="a">' + rpEsc(a.text) + '</div></div></td>';
-    h += '<td class="rp-t' + (t.ov ? ' rp-ov' : '') + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="t">' + rpEsc(t.text) + '</div></td>';
+    h += '<td class="rp-a' + (st ? ' st-' + st : '') + (a.ov ? ' rp-ov' : '') + '"' + (st ? '' : bgs) + '><div class="rp-aw"><span class="rp-dot"></span><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="a">' + rpEsc(a.text) + '</div></div></td>';
+    h += '<td class="rp-t' + (t.ov ? ' rp-ov' : '') + '"' + bgs + '><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="t">' + rpEsc(t.text) + '</div></td>';
     if(row.nSpan > 0){
       h += '<td class="rp-n" rowspan="' + row.nSpan + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="n">' + rpEsc(row.n) + '</div>' +
         '<div class="rp-mt"><button data-act="mdown" data-k="n" data-r="' + i + '" title="Gabung dengan baris di bawah">⤓</button><button data-act="msplit" data-k="n" data-r="' + i + '" title="Pisahkan gabungan">⤒</button></div></td>';
@@ -2901,6 +2924,13 @@ function rpOnClick(e){
   rpRender(); scheduleAutosave();
 }
 function rpOnChange(e){
+  const cb = e.target.closest ? e.target.closest('input.rp-selbox') : null;
+  if(cb){
+    const row = rpState().rows[parseInt(cb.dataset.r)];
+    if(cb.checked) __rpSel.add(row); else __rpSel.delete(row);
+    const tr = cb.closest('tr'); if(tr) tr.classList.toggle('rp-sel', cb.checked);
+    return;
+  }
   const sel = e.target.closest ? e.target.closest('select.rp-link') : null; if(!sel) return;
   const R = rpState(); R.rows[parseInt(sel.dataset.r)].col = sel.value;
   rpRender(); scheduleAutosave();
@@ -2949,12 +2979,73 @@ function rpTableValues(){
     ];
   });
 }
-function rpCopy(){
+function rpShowCopyDialog(text){
+  const ov = document.createElement('div'); ov.className = 'rp-overlay';
+  ov.innerHTML = '<div class="rp-dialog"><h4>Salin manual</h4><div style="font-size:13px;">Browser tidak mengizinkan salin otomatis. Tekan <b>Ctrl+C</b> (teks sudah terpilih), lalu tempel di chat.</div><textarea style="width:100%;height:260px;font-family:monospace;font-size:12px;"></textarea><div class="rp-btns"><button class="btn small primary">Tutup</button></div></div>';
+  document.body.appendChild(ov);
+  const ta = ov.querySelector('textarea'); ta.value = text; ta.focus(); ta.select();
+  ov.addEventListener('click', e=>{ if(e.target === ov || e.target.tagName === 'BUTTON') ov.remove(); });
+}
+function rpClipText(text, okMsg){
+  const fb = ()=>{
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    let done = false; try{ done = document.execCommand('copy'); }catch(e){}
+    ta.remove();
+    if(done) showToast(okMsg); else rpShowCopyDialog(text);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(()=> showToast(okMsg), fb); else fb();
+}
+function rpPrettyTarget(t){
+  return String(t).replace(/^\s*(=>|>=)\s*/, '≥ ').replace(/^\s*(=<|<=)\s*/, '≤ ').replace(/^\s*>\s*/, '> ').replace(/^\s*<\s*/, '< ');
+}
+function rpChatText(){
+  const R = rpState(), idxs = rpDayIdxs();
+  const em = { ok:'🟢', warn:'🟡', bad:'🔴', '':'▫️' };
+  const out = ['*' + R.title + '*'];
+  if(R.date) out.push(rpFmtDate(R.date));
+  const notes = {};
+  R.rows.forEach((row, i)=>{
+    if(row.nSpan > 0 && String(row.n).trim()){ const last = i + row.nSpan - 1; (notes[last] = notes[last] || []).push(String(row.n).trim().replace(/\s*\n\s*/g, ' ')); }
+  });
+  R.rows.forEach((row, i)=>{
+    if(row.gSpan > 0 && String(row.g).trim()){ out.push(''); out.push('*' + String(row.g).trim() + '*'); }
+    const p = rpCellInfo(row,'p',idxs).text, u = rpCellInfo(row,'u',idxs).text, a = rpCellInfo(row,'a',idxs).text, t = rpCellInfo(row,'t',idxs).text;
+    if(p || a){
+      let line = em[rpRowStatus(row, idxs)] + ' ' + (p || '-') + ': ' + (a !== '' ? a : '-') + (u ? ' ' + u : '');
+      if(t) line += ' (target ' + rpPrettyTarget(t) + ')';
+      out.push(line);
+    }
+    if(notes[i]) notes[i].forEach(n=> out.push('   📝 ' + n));
+  });
+  out.push('', '🟢 sesuai target · 🟡 dalam ±10% target · 🔴 di luar target');
+  return out.join('\n');
+}
+function rpCopyChat(){ rpClipText(rpChatText(), 'Teks laporan disalin. Tempel (Ctrl+V) di WhatsApp / chat.'); }
+async function rpCopyImg(){
+  const area = $('#rpExportArea'); if(!area) return;
+  if(!(navigator.clipboard && window.ClipboardItem)){ showToast('Browser ini tidak bisa menyalin gambar. Pakai “Salin teks chat” atau tombol JPG.'); return; }
+  showToast('Membuat gambar...');
+  area.classList.add('rp-exporting');
+  try{
+    const cv = await captureEl(area);
+    const blob = await new Promise(res=> cv.toBlob(res, 'image/png'));
+    await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+    showToast('Gambar disalin. Tempel (Ctrl+V) di WhatsApp / chat.');
+  }catch(err){ console.error(err); showToast('Gagal menyalin gambar (butuh izin clipboard, dan halaman via https/localhost). Gunakan tombol JPG.'); }
+  area.classList.remove('rp-exporting');
+}
+function rpCopyTbl(){
   const clean = x=> String(x === null || x === undefined ? '' : x).replace(/\t/g,' ').replace(/\r?\n/g,' ');
   const text = rpTableValues().map(r=> r.slice(0,7).map(clean).join('\t')).join('\n');
-  const ok = ()=> showToast('Daily Report disalin. Tempel (Ctrl+V) di Excel.');
-  const fb = ()=>{ const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); ok(); }catch(e){ showToast('Gagal menyalin'); } ta.remove(); };
-  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, fb); else fb();
+  const area = $('#rpExportArea').cloneNode(true);
+  area.querySelectorAll('.rp-ctl, .rp-mt').forEach(n=> n.remove());
+  area.querySelectorAll('[contenteditable]').forEach(n=> n.removeAttribute('contenteditable'));
+  const html = '<meta charset="utf-8">' + area.innerHTML;
+  if(navigator.clipboard && window.ClipboardItem){
+    navigator.clipboard.write([ new ClipboardItem({ 'text/html': new Blob([html], {type:'text/html'}), 'text/plain': new Blob([text], {type:'text/plain'}) }) ])
+      .then(()=> showToast('Tabel disalin. Tempel di Excel / Word.'), ()=> rpClipText(text, 'Tabel disalin (teks). Tempel di Excel.'));
+  } else rpClipText(text, 'Tabel disalin (teks). Tempel di Excel.');
 }
 function rpXlsx(){
   if(typeof XLSX === 'undefined'){ showToast('Pustaka Excel belum termuat (butuh internet)'); return; }
@@ -2982,6 +3073,14 @@ async function rpJpg(){
   }catch(err){ console.error(err); showToast('Gagal export JPG'); }
   area.classList.remove('rp-exporting');
 }
+function rpApplyColor(c){
+  const R = rpState();
+  if(!R.showCtl){ showToast('Aktifkan “Kontrol baris” lalu centang baris yang ingin diberi warna'); return; }
+  const rows = R.rows.filter(r=> __rpSel.has(r));
+  if(!rows.length){ showToast('Centang dulu baris yang ingin diberi warna (kotak di kiri baris)'); return; }
+  rows.forEach(r=> r.bg = c);
+  rpRender(); scheduleAutosave();
+}
 function rpPrint(){
   const area = $('#rpExportArea'); if(!area) return;
   const clone = area.cloneNode(true);
@@ -2989,7 +3088,7 @@ function rpPrint(){
   clone.querySelectorAll('[contenteditable]').forEach(n=> n.removeAttribute('contenteditable'));
   const w = window.open('', '_blank');
   if(!w){ showToast('Izinkan pop-up untuk mencetak'); return; }
-  const css = 'body{font-family:Segoe UI,Arial,sans-serif;margin:16px;color:#111}table{border-collapse:collapse;font-size:12px;width:100%}th,td{border:1px solid #777;padding:0}th{background:#e2f0d9;padding:5px 8px}.rp-h-main,.rp-h-notes{font-size:18px}.rp-title{font-size:20px;font-weight:900}.rp-subtitle{font-size:12px;margin-bottom:6px}td.rp-g{background:#dae3f3;font-weight:800;text-align:center}.rp-cell{padding:3px 8px;white-space:pre-wrap}td.rp-a .rp-aw{display:flex;align-items:center;gap:6px;padding-left:6px}td.rp-a .rp-cell{flex:1;text-align:right;font-weight:700}.rp-dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px}td.st-ok{background:#e6f4ec}td.st-ok .rp-dot{background:#2f9e73}td.st-warn{background:#fdf3d4}td.st-warn .rp-dot{background:#f2c14e}td.st-bad{background:#fbe3df}td.st-bad .rp-dot{background:#e0463a}td.rp-n{vertical-align:top}@page{size:landscape;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}';
+  const css = 'body{font-family:Segoe UI,Arial,sans-serif;margin:16px;color:#111}table{border-collapse:collapse;font-size:12px;width:100%}th,td{border:1px solid #777;padding:0}th{background:#e2f0d9;padding:5px 8px}.rp-h-main,.rp-h-notes{font-size:18px}.rp-title{font-size:20px;font-weight:900}.rp-subtitle{font-size:12px;margin-bottom:6px}td.rp-g{background:#dae3f3;font-weight:800;text-align:center}.rp-cell{padding:3px 8px;white-space:pre-wrap}td.rp-a .rp-aw{display:flex;align-items:center;gap:6px;padding-left:6px}td.rp-a .rp-cell{flex:1;text-align:right;font-weight:700}.rp-dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px}td.st-ok{background:#e6f4ec}td.st-ok .rp-dot{background:#2f9e73}td.st-warn{background:#fdf3d4}td.st-warn .rp-dot{background:#f2c14e}td.st-bad{background:#fbe3df}td.st-bad .rp-dot{background:#e0463a}td.rp-ov{background:#dbeafe!important}td.rp-n{vertical-align:top}@page{size:landscape;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}';
   w.document.write('<html><head><meta charset="utf-8"><title>' + rpEsc(rpState().title) + '</title><style>' + css + '</style></head><body>' + clone.innerHTML + '</body></html>');
   w.document.close(); w.focus(); setTimeout(()=>{ w.print(); }, 350);
 }
@@ -3009,7 +3108,17 @@ function initReportPanel(){
     rpRender(); scheduleAutosave();
   });
   $('#rpShowCtl').addEventListener('change', e=>{ R().showCtl = e.target.checked; rpRender(); scheduleAutosave(); });
-  $('#rpCopy').addEventListener('click', rpCopy);
+  $('#rpCopyChat').addEventListener('click', rpCopyChat);
+  $('#rpCopyImg').addEventListener('click', rpCopyImg);
+  $('#rpCopyTbl').addEventListener('click', rpCopyTbl);
+  const sw = $('#rpSwatches');
+  ['#fff2cc','#fde4cf','#fbd5e5','#d9f2d0','#d0f0f0','#e4dcf7','#ffd6d6','#e3e3e3'].forEach(c=>{
+    const b = document.createElement('button'); b.className = 'rp-sw'; b.style.background = c; b.title = 'Beri warna ini ke baris terpilih'; b.addEventListener('click', ()=> rpApplyColor(c)); sw.appendChild(b);
+  });
+  const nb = document.createElement('button'); nb.className = 'rp-sw'; nb.textContent = '∅'; nb.style.background = '#fff'; nb.title = 'Hapus warna baris terpilih'; nb.addEventListener('click', ()=> rpApplyColor('')); sw.appendChild(nb);
+  $('#rpColorPick').addEventListener('change', e=> rpApplyColor(e.target.value));
+  $('#rpSelAll').addEventListener('click', ()=>{ rpState().rows.forEach(r=> __rpSel.add(r)); rpRender(); });
+  $('#rpSelNone').addEventListener('click', ()=>{ __rpSel.clear(); rpRender(); });
   $('#rpXlsx').addEventListener('click', rpXlsx);
   $('#rpJpg').addEventListener('click', rpJpg);
   $('#rpPrint').addEventListener('click', rpPrint);
