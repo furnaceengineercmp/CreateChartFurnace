@@ -512,7 +512,7 @@ table.rp-table th.rp-h-daily{ font-size:14px; }
 table.rp-table th.rp-h-sub{ font-size:11px; font-weight:800; padding:3px 6px; }
 table.rp-table th.rp-h-notes{ font-size:20px; min-width:230px; }
 .rp-date{ font-size:11px; font-weight:700; }
-table.rp-table td.rp-ctl, table.rp-table th.rp-ctl{ background:#f4f4f4; border-color:#ddd; white-space:nowrap; padding:2px 4px; }
+table.rp-table td.rp-ctl, table.rp-table th.rp-ctl{ touch-action:none; user-select:none; cursor:cell; background:#f4f4f4; border-color:#ddd; white-space:nowrap; padding:2px 4px; }
 .rp-ctl select{ max-width:130px; font-size:11px; padding:2px; }
 .rp-ctl button{ border:1px solid #ccc; background:#fff; border-radius:6px; font-size:11px; cursor:pointer; padding:1px 5px; margin-left:2px; }
 .rp-ctl button:hover{ border-color:var(--accent1); color:var(--accent1); }
@@ -859,7 +859,7 @@ td:hover > .rp-mt{ display:flex; }
 <!-- ============ TAB: DAILY REPORT ============ -->
 <div class="tab-panel" id="panel-report">
   <div class="card" id="rpCard">
-    <h3><span class="dot"></span> Daily Report <span class="hint">Tabel ini dibuat dari <b>Pratinjau Data</b>. Pilih <b>tanggal</b>, lalu semua data pada tanggal itu diringkas per hari (rata-rata, atau pilih total/max/min/terakhir). <b>Kolom ② Parameter</b> = nama kolom data, <b>④ Satuan</b> = baris 📏 Satuan, <b>⑤ Actual</b> = data pada tanggal terpilih, <b>⑥ Target</b> = baris 🎯 Target. Kolom ① (grup) dan ⑦ (Notes) bisa digabung antar baris dengan tombol ⤓ / ⤒ yang muncul di sudut sel. Semua kolom bisa diedit dan bisa langsung <b>di-paste dari Excel</b> (klik sel awal, Ctrl+V). Kolom ② ④ ⑤ ⑥ yang diedit manual akan menimpa nilai otomatis; kosongkan sel untuk kembali otomatis. Warna Actual: <b>hijau</b> = sesuai target, <b>kuning</b> = di luar target tetapi masih dalam ±10% dari target, <b>merah</b> = di luar target. Target mendukung &gt;, &gt;=, =&gt;, &lt;, &lt;=, =&lt;, = (sama dengan, toleransi ±2%), ~ (sekitar, ±5%), dan rentang a-b. Angka saja tanpa tanda dianggap ≥ target (sama seperti di grafik); untuk batas atas tulis &lt; atau &lt;=.</span></h3>
+    <h3><span class="dot"></span> Daily Report <span class="hint">Tabel ini dibuat dari <b>Pratinjau Data</b>. Pilih <b>tanggal</b>, lalu semua data pada tanggal itu diringkas per hari (rata-rata, atau pilih total/max/min/terakhir). <b>Kolom ② Parameter</b> = nama kolom data, <b>④ Satuan</b> = baris 📏 Satuan, <b>⑤ Actual</b> = data pada tanggal terpilih, <b>⑥ Target</b> = baris 🎯 Target. Kolom ① (grup) dan ⑦ (Notes) bisa digabung antar baris dengan tombol ⤓ / ⤒ yang muncul di sudut sel. Semua kolom bisa diedit dan bisa langsung <b>di-paste dari Excel</b> (klik sel awal, Ctrl+V). Kolom ② ④ ⑤ ⑥ yang diedit manual akan menimpa nilai otomatis; kosongkan sel untuk kembali otomatis. Warna Actual: <b>hijau</b> = sesuai target, <b>kuning</b> = di luar target tetapi masih dalam ±10% dari target, <b>merah</b> = di luar target. <b>Pilih baris</b>: klik atau <b>tarik (drag)</b> pada kotak centang di kiri baris untuk memilih banyak baris sekaligus (Shift+klik untuk rentang), lalu pilih warna untuk kolom ①. Target mendukung &gt;, &gt;=, =&gt;, &lt;, &lt;=, =&lt;, = (sama dengan, toleransi ±2%), ~ (sekitar, ±5%), dan rentang a-b. Angka saja tanpa tanda dianggap ≥ target (sama seperti di grafik); untuk batas atas tulis &lt; atau &lt;=.</span></h3>
     <div class="rp-bar">
       <div class="field"><label>Kolom tanggal</label><select id="rpDateCol"></select></div>
       <div class="field"><label>Tanggal laporan</label>
@@ -896,7 +896,7 @@ td:hover > .rp-mt{ display:flex; }
       <button class="btn small" id="rpPrint">🖨️ Cetak</button>
     </div>
     <div class="rp-bar rp-colorbar">
-      <span class="rp-lbl">🎨 Warna baris terpilih:</span>
+      <span class="rp-lbl">🎨 Warna kolom ① untuk baris terpilih:</span>
       <span id="rpSwatches"></span>
       <input type="color" id="rpColorPick" value="#fff2cc" title="Pilih warna lain">
       <button class="btn small ghost" id="rpSelAll">Pilih semua baris</button>
@@ -1954,24 +1954,27 @@ function interpretStructured(grid){
   const isDataish = c => c!=='' && (parseNumberString(c)!==null || (/\d/.test(c) && parseFlexibleDate(c)!==null));
   const h1 = rows[0].slice();
   let h2 = new Array(width).fill('');
+  let h2Taken = false, targets = null, units = null;
   let idx = 1;
-  if(rows.length > 1){
-    const nonEmpty = rows[1].filter(c=>c!=='');
-    const dataish = nonEmpty.filter(isDataish).length;
-    if(nonEmpty.length>0 && dataish/nonEmpty.length < 0.5){ h2 = rows[1].slice(); idx = 2; }
+  const isBlank = r => r.every(c=> c === '');
+  const TL = /^(target|standar|standard|std)\b/i, UL = /^(satuan|unit|units)\b/i;
+  const isTargetRow = r => TL.test(r[0]) || (!isDataish(r[0]) && r.some(c=> /^[<>=\u2265\u2264]/.test(c)));
+  // Baris di bawah header utama: boleh ada baris kosong, sub-header (H2), baris Target, baris Satuan (urutan bebas).
+  for(let guard=0; guard<8 && idx < rows.length; guard++){
+    const r = rows[idx];
+    if(isBlank(r)){ idx++; continue; }
+    if(UL.test(r[0]) && !units){ units = r.slice(); units[0] = ''; idx++; continue; }
+    if(isTargetRow(r) && !targets){ targets = r.slice(); if(TL.test(targets[0])) targets[0] = ''; idx++; continue; }
+    if(!h2Taken && !targets && !units){
+      const nonEmpty = r.filter(c=> c !== '');
+      const dataish = nonEmpty.filter(isDataish).length;
+      if(nonEmpty.length > 0 && dataish / nonEmpty.length < 0.5){ h2 = r.slice(); h2Taken = true; idx++; continue; }
+    }
+    break;
   }
   for(let i=1;i<width;i++){ if(h1[i]==='' && h2[i]!=='' && h1[i-1]!=='') h1[i] = h1[i-1]; }
   for(let i=0;i<width;i++){ if(h2[i]!=='' && h2[i]===h1[i]) h2[i] = ''; }
-  let targets = null, units = null;
-  for(let guard=0; guard<2 && idx < rows.length; guard++){
-    const r = rows[idx];
-    const isUnitRow = /^(satuan|unit|units)\b/i.test(r[0]);
-    const looksTarget = /^(target|standar|standard|std)\b/i.test(r[0]) || r.some(c=>/^[<>=\u2265\u2264]/.test(c));
-    if(isUnitRow && !units){ units = r.slice(); if(/^(satuan|unit|units)\b/i.test(units[0])) units[0] = ''; idx++; }
-    else if(looksTarget && !targets){ targets = r.slice(); idx++; }
-    else break;
-  }
-  return { h1, h2, targets, units, rows: rows.slice(idx), headerRows: idx - (targets ? 1 : 0) - (units ? 1 : 0) };
+  return { h1, h2, targets, units, hasH2: h2Taken, rows: rows.slice(idx), headerRows: h2Taken ? 2 : 1 };
 }
 
 function getManualBodyCells(){
@@ -1987,23 +1990,27 @@ function pasteStructured(grid, startCol){
   const hc2 = $all('#manualHeaderRow2 th[data-col]');
   const hct = $all('#manualTargetRow th[data-col]');
   const hcu = $all('#manualUnitRow th[data-col]');
+  const keepBelow = info.rows.length === 0;   // hanya header yang ditempel: data & baris lain dipertahankan
   for(let i=0;i<width;i++){
     const c = startCol + i;
     hc1[c].textContent = info.h1[i];
-    hc2[c].textContent = info.h2[i];
-    hct[c].textContent = info.targets ? info.targets[i] : '';
-    if(hcu[c]) hcu[c].textContent = info.units ? info.units[i] : '';
+    if(!keepBelow || info.hasH2) hc2[c].textContent = info.h2[i];
+    if(!keepBelow || info.targets) hct[c].textContent = info.targets ? info.targets[i] : '';
+    if(hcu[c] && (!keepBelow || info.units)) hcu[c].textContent = info.units ? info.units[i] : '';
   }
-  getManualBodyCells().forEach(cells=>{
-    for(let i=0;i<width;i++) if(cells[startCol+i]) cells[startCol+i].textContent = '';
-  });
-  while(manualRows < info.rows.length) manualAddRow();
-  const cellRows = getManualBodyCells();
-  info.rows.forEach((rowArr, ri)=>{
-    rowArr.forEach((val, ci)=>{ const cell = cellRows[ri] && cellRows[ri][startCol+ci]; if(cell) cell.textContent = val; });
-  });
+  if(!keepBelow){
+    getManualBodyCells().forEach(cells=>{
+      for(let i=0;i<width;i++) if(cells[startCol+i]) cells[startCol+i].textContent = '';
+    });
+    while(manualRows < info.rows.length) manualAddRow();
+    const cellRows = getManualBodyCells();
+    info.rows.forEach((rowArr, ri)=>{
+      rowArr.forEach((val, ci)=>{ const cell = cellRows[ri] && cellRows[ri][startCol+ci]; if(cell) cell.textContent = val; });
+    });
+  }
   const hdr = info.h2.some(x=>x!=='') ? '2 baris header' : '1 baris header';
-  showToast('Tabel ditempel: ' + hdr + (info.targets ? ' + baris Target' : '') + (info.units ? ' + baris Satuan' : '') + ', ' + info.rows.length + ' baris data');
+  if(keepBelow) showToast('Header ditempel (' + width + ' kolom). Data yang sudah ada di bawahnya dipertahankan.');
+  else showToast('Tabel ditempel: ' + hdr + (info.targets ? ' + baris Target' : '') + (info.units ? ' + baris Satuan' : '') + ', ' + info.rows.length + ' baris data');
 }
 
 function setupManualPaste(){
@@ -2726,7 +2733,8 @@ function rpMergeDown(i, k){
   const add = rows[nxt][sk] || 1;
   if(!r[k] && rows[nxt][k]) r[k] = rows[nxt][k];
   r[sk] = span + add;
-  for(let j=nxt;j<nxt+add;j++) rows[j][sk] = 0;
+  if(k === 'g' && !r.bg && rows[nxt].bg) r.bg = rows[nxt].bg;
+  for(let j=nxt;j<nxt+add;j++){ rows[j][sk] = 0; if(k === 'g') rows[j].bg = ''; }
 }
 function rpSplit(i, k){
   const R = rpState(), sk = k === 'g' ? 'gSpan' : 'nSpan', rows = R.rows;
@@ -2785,21 +2793,21 @@ function rpBuildTable(forExport){
   const opts = '<option value="">(manual)</option>' + state.headers.map(x=> '<option value="' + rpEsc(x) + '">' + rpEsc(x) + '</option>').join('');
   R.rows.forEach((row, i)=>{
     const sel = __rpSel.has(row);
-    const bgs = row.bg ? ' style="background:' + rpEsc(row.bg) + ';"' : '';
+    const gbg = row.bg ? ' style="background:' + rpEsc(row.bg) + ';"' : '';
     h += '<tr data-r="' + i + '"' + (sel ? ' class="rp-sel"' : '') + '><td class="rp-ctl"><input type="checkbox" class="rp-selbox" data-r="' + i + '" title="Pilih baris untuk diberi warna"' + (sel ? ' checked' : '') + '><select class="rp-link" data-r="' + i + '" title="Hubungkan baris ini ke kolom data">' + opts.replace('value="' + rpEsc(row.col) + '"', 'value="' + rpEsc(row.col) + '" selected') + '</select>' +
       '<button data-act="up" data-r="' + i + '" title="Naik">↑</button><button data-act="down" data-r="' + i + '" title="Turun">↓</button>' +
       '<button data-act="ins" data-r="' + i + '" title="Sisipkan baris di bawah">＋</button><button data-act="del" data-r="' + i + '" title="Hapus baris">✕</button></td>';
     if(row.gSpan > 0){
-      h += '<td class="rp-g" rowspan="' + row.gSpan + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="g">' + rpEsc(row.g) + '</div>' +
+      h += '<td class="rp-g" rowspan="' + row.gSpan + '"' + gbg + '><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="g">' + rpEsc(row.g) + '</div>' +
         '<div class="rp-mt"><button data-act="mdown" data-k="g" data-r="' + i + '" title="Gabung dengan baris di bawah">⤓</button><button data-act="msplit" data-k="g" data-r="' + i + '" title="Pisahkan gabungan">⤒</button></div></td>';
     }
     ['p','c','u'].forEach(k=>{
       const ci = rpCellInfo(row, k, idxs);
-      h += '<td class="rp-' + k + (ci.ov ? ' rp-ov' : '') + '"' + bgs + '><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="' + k + '">' + rpEsc(ci.text) + '</div></td>';
+      h += '<td class="rp-' + k + (ci.ov ? ' rp-ov' : '') + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="' + k + '">' + rpEsc(ci.text) + '</div></td>';
     });
     const a = rpCellInfo(row, 'a', idxs), t = rpCellInfo(row, 't', idxs), st = rpRowStatus(row, idxs);
-    h += '<td class="rp-a' + (st ? ' st-' + st : '') + (a.ov ? ' rp-ov' : '') + '"' + (st ? '' : bgs) + '><div class="rp-aw"><span class="rp-dot"></span><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="a">' + rpEsc(a.text) + '</div></div></td>';
-    h += '<td class="rp-t' + (t.ov ? ' rp-ov' : '') + '"' + bgs + '><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="t">' + rpEsc(t.text) + '</div></td>';
+    h += '<td class="rp-a' + (st ? ' st-' + st : '') + (a.ov ? ' rp-ov' : '') + '"><div class="rp-aw"><span class="rp-dot"></span><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="a">' + rpEsc(a.text) + '</div></div></td>';
+    h += '<td class="rp-t' + (t.ov ? ' rp-ov' : '') + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="t">' + rpEsc(t.text) + '</div></td>';
     if(row.nSpan > 0){
       h += '<td class="rp-n" rowspan="' + row.nSpan + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="n">' + rpEsc(row.n) + '</div>' +
         '<div class="rp-mt"><button data-act="mdown" data-k="n" data-r="' + i + '" title="Gabung dengan baris di bawah">⤓</button><button data-act="msplit" data-k="n" data-r="' + i + '" title="Pisahkan gabungan">⤒</button></div></td>';
@@ -3073,12 +3081,48 @@ async function rpJpg(){
   }catch(err){ console.error(err); showToast('Gagal export JPG'); }
   area.classList.remove('rp-exporting');
 }
+function rpInitDragSelect(wrap){
+  let lastAnchor = null;
+  const setRowDom = (tr, on)=>{ tr.classList.toggle('rp-sel', on); const cb = tr.querySelector('input.rp-selbox'); if(cb) cb.checked = on; };
+  wrap.addEventListener('click', e=>{ if(e.target.closest && e.target.closest('input.rp-selbox') && e.detail > 0) e.preventDefault(); });
+  wrap.addEventListener('pointerdown', e=>{
+    if(e.button !== undefined && e.button !== 0) return;
+    const ctl = e.target.closest ? e.target.closest('td.rp-ctl') : null; if(!ctl) return;
+    if(e.target.closest('select, button')) return;
+    const tr0 = ctl.closest('tr'); if(!tr0 || tr0.dataset.r === undefined) return;
+    e.preventDefault();
+    const R = rpState();
+    const anchor = (e.shiftKey && lastAnchor !== null && lastAnchor < R.rows.length) ? lastAnchor : parseInt(tr0.dataset.r);
+    const start = parseInt(tr0.dataset.r);
+    const mode = !__rpSel.has(R.rows[start]);
+    const base = new Set(__rpSel);
+    const apply = (j)=>{
+      const lo = Math.min(anchor, j), hi = Math.max(anchor, j);
+      __rpSel = new Set(base);
+      for(let k=lo;k<=hi;k++){ if(mode) __rpSel.add(R.rows[k]); else __rpSel.delete(R.rows[k]); }
+      wrap.querySelectorAll('tr[data-r]').forEach(tr=> setRowDom(tr, __rpSel.has(R.rows[parseInt(tr.dataset.r)])));
+    };
+    apply(start); lastAnchor = anchor === start ? start : anchor;
+    if(!e.shiftKey) lastAnchor = start;
+    let last = start;
+    const move = ev=>{
+      if(ev.clientY < 70) window.scrollBy(0, -18); else if(ev.clientY > window.innerHeight - 70) window.scrollBy(0, 18);
+      const el = document.elementFromPoint(ev.clientX, ev.clientY);
+      const tr = el && el.closest ? el.closest('#rpTable tr[data-r]') : null;
+      if(tr){ const j = parseInt(tr.dataset.r); if(j !== last){ last = j; apply(j); } }
+    };
+    const up = ()=>{ document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up); };
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+  });
+}
 function rpApplyColor(c){
   const R = rpState();
   if(!R.showCtl){ showToast('Aktifkan “Kontrol baris” lalu centang baris yang ingin diberi warna'); return; }
-  const rows = R.rows.filter(r=> __rpSel.has(r));
-  if(!rows.length){ showToast('Centang dulu baris yang ingin diberi warna (kotak di kiri baris)'); return; }
-  rows.forEach(r=> r.bg = c);
+  const idxs = [];
+  R.rows.forEach((r, i)=>{ if(__rpSel.has(r)) idxs.push(i); });
+  if(!idxs.length){ showToast('Pilih dulu baris yang ingin diberi warna (klik atau tarik pada kotak di kiri baris)'); return; }
+  // warna dipasang pada sel kolom ① (grup). Untuk sel gabungan, warna ada di sel utamanya.
+  idxs.forEach(i=>{ R.rows[rpOwnerOf(i, 'gSpan')].bg = c; });
   rpRender(); scheduleAutosave();
 }
 function rpPrint(){
@@ -3130,6 +3174,7 @@ function initReportPanel(){
   wrap.addEventListener('keydown', rpOnKeydown);
   wrap.addEventListener('click', rpOnClick);
   wrap.addEventListener('change', rpOnChange);
+  rpInitDragSelect(wrap);
   collapseHints($('#panel-report'));
 }
 
