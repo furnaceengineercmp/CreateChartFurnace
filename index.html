@@ -350,6 +350,7 @@ table.datatable thead tr.target-row td{
 }
 #manualTable thead tr:nth-child(2) th{ top:32px; font-weight:600; }
 #manualTable thead tr:nth-child(3) th{ top:64px; font-weight:600; color:var(--accent1); }
+#manualTable thead tr:nth-child(4) th{ top:96px; font-weight:600; color:var(--accent1); }
 #manualTable thead th:not([data-col]){ text-align:center; }
 ::-webkit-scrollbar{width:10px; height:10px;}
 ::-webkit-scrollbar-thumb{background:var(--border); border-radius:6px;}
@@ -488,6 +489,62 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !i
 
 
 .axis-title{ font-size:13px; color:var(--text); margin:0 0 6px 0; }
+
+/* ===== Daily Report ===== */
+.rp-bar{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px; }
+.rp-bar .field{ margin-bottom:0; min-width:170px; }
+.rp-datebox{ display:flex; gap:6px; align-items:center; }
+.rp-datebox input{ padding:7px 9px; border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--text); }
+.rp-actions{ align-items:center; }
+.rp-sp{ flex:1; }
+.rp-chk{ font-size:12.5px; font-weight:600; display:inline-flex; gap:5px; align-items:center; }
+.rp-info{ font-size:12.5px; font-weight:700; margin:4px 0 10px 0; color:var(--text-soft); }
+.rp-info.warn{ color:#b45309; }
+.rp-scroll{ overflow:auto; }
+#rpExportArea{ display:inline-block; min-width:820px; background:var(--panel); padding:4px 2px 8px 2px; }
+.rp-title{ font-size:20px; font-weight:900; padding:4px 6px; outline:none; }
+.rp-subtitle{ font-size:13px; font-weight:700; color:var(--text-soft); padding:0 6px 8px 6px; }
+table.rp-table{ border-collapse:collapse; font-size:13px; background:#fff; color:#111; }
+table.rp-table th, table.rp-table td{ border:1px solid #9aa3a0; padding:0; vertical-align:middle; }
+table.rp-table th{ background:#e2f0d9; color:#111; font-weight:900; text-align:center; padding:6px 10px; }
+table.rp-table th.rp-h-main{ font-size:20px; letter-spacing:.5px; min-width:420px; }
+table.rp-table th.rp-h-daily{ font-size:14px; }
+table.rp-table th.rp-h-sub{ font-size:11px; font-weight:800; padding:3px 6px; }
+table.rp-table th.rp-h-notes{ font-size:20px; min-width:230px; }
+.rp-date{ font-size:11px; font-weight:700; }
+table.rp-table td.rp-ctl, table.rp-table th.rp-ctl{ background:#f4f4f4; border-color:#ddd; white-space:nowrap; padding:2px 4px; }
+.rp-ctl select{ max-width:130px; font-size:11px; padding:2px; }
+.rp-ctl button{ border:1px solid #ccc; background:#fff; border-radius:6px; font-size:11px; cursor:pointer; padding:1px 5px; margin-left:2px; }
+.rp-ctl button:hover{ border-color:var(--accent1); color:var(--accent1); }
+table.rp-table.no-ctl .rp-ctl{ display:none; }
+td.rp-g{ background:#dae3f3; font-weight:800; text-align:center; position:relative; min-width:120px; }
+td.rp-n{ position:relative; vertical-align:top; min-width:230px; }
+td.rp-p, td.rp-c, td.rp-u, td.rp-t{ position:relative; }
+td.rp-p{ min-width:190px; } td.rp-c{ min-width:46px; } td.rp-u{ min-width:60px; } td.rp-a{ min-width:110px; } td.rp-t{ min-width:70px; }
+.rp-cell{ padding:3px 8px; min-height:20px; outline:none; white-space:pre-wrap; word-break:break-word; }
+.rp-cell:focus{ background:rgba(255,235,59,.25); box-shadow:inset 0 0 0 2px var(--accent1); }
+td.rp-g .rp-cell{ text-align:center; }
+td.rp-a .rp-aw{ display:flex; align-items:center; gap:6px; padding-left:6px; }
+td.rp-a .rp-cell{ flex:1; text-align:right; padding-right:10px; font-weight:700; }
+.rp-dot{ width:13px; height:13px; border-radius:50%; background:transparent; border:1px solid transparent; flex:0 0 13px; }
+td.rp-a.st-ok{ background:#e6f4ec; } td.rp-a.st-ok .rp-dot{ background:#2f9e73; border-color:#1f7d5a; }
+td.rp-a.st-warn{ background:#fdf3d4; } td.rp-a.st-warn .rp-dot{ background:#f2c14e; border-color:#c99a2a; }
+td.rp-a.st-bad{ background:#fbe3df; } td.rp-a.st-bad .rp-dot{ background:#e0463a; border-color:#b5322a; }
+td.rp-ov .rp-cell{ box-shadow:inset 3px 0 0 var(--accent1); }
+.rp-mt{ position:absolute; top:1px; right:1px; display:none; gap:2px; z-index:3; }
+td:hover > .rp-mt{ display:flex; }
+.rp-mt button{ border:1px solid #bbb; background:#fff; color:#333; border-radius:5px; font-size:11px; padding:0 5px; cursor:pointer; line-height:16px; }
+.rp-mt button:hover{ border-color:var(--accent1); color:var(--accent1); }
+#rpExportArea.rp-exporting .rp-ctl, #rpExportArea.rp-exporting .rp-mt{ display:none !important; }
+#rpExportArea.rp-exporting .rp-cell{ box-shadow:none !important; background:transparent !important; }
+.rp-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9998; display:flex; align-items:center; justify-content:center; }
+.rp-dialog{ background:var(--panel); color:var(--text); border-radius:16px; padding:18px 20px; width:min(560px,92vw); max-height:82vh; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow); }
+.rp-dialog h4{ margin:0; font-size:16px; }
+.rp-dialog .rp-list{ overflow:auto; border:1px solid var(--border); border-radius:10px; padding:6px 10px; display:grid; grid-template-columns:1fr 1fr; gap:4px 14px; }
+.rp-dialog .rp-list label{ font-size:13px; display:flex; gap:6px; align-items:center; }
+.rp-dialog .rp-btns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+@media print{ #panel-report .rp-bar, #panel-report .rp-info{ display:none !important; } }
+
 /* ===== v2: ukuran grafik bebas, ruler tanggal, satuan sumbu, info "!" ===== */
 .rs-handle{ position:absolute; z-index:6; touch-action:none; }
 .rs-r{ top:0; right:0; width:10px; height:100%; cursor:ew-resize; }
@@ -679,6 +736,7 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !i
   <button class="tab-btn active" data-tab="input">① Masukkan Data</button>
   <button class="tab-btn" data-tab="builder">② Buat Grafik</button>
   <button class="tab-btn" data-tab="korelasi">③ Korelasi</button>
+  <button class="tab-btn" data-tab="report">④ Daily Report</button>
 </div>
 
 <!-- ============ TAB: INPUT DATA ============ -->
@@ -726,7 +784,7 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !i
         </div>
         <div class="table-scroll">
           <table class="datatable" id="manualTable">
-            <thead><tr id="manualHeaderRow"></tr><tr id="manualHeaderRow2"></tr><tr id="manualTargetRow"></tr></thead>
+            <thead><tr id="manualHeaderRow"></tr><tr id="manualHeaderRow2"></tr><tr id="manualTargetRow"></tr><tr id="manualUnitRow"></tr></thead>
             <tbody id="manualBody"></tbody>
           </table>
         </div>
@@ -785,6 +843,53 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !i
 
   <div id="chartsContainer" class="chartgrid"></div>
   <div class="add-chart-bar"><button id="btnAddChart" title="Tambah grafik baru">➕ Tambah grafik</button></div>
+</div>
+
+
+<!-- ============ TAB: DAILY REPORT ============ -->
+<div class="tab-panel" id="panel-report">
+  <div class="card" id="rpCard">
+    <h3><span class="dot"></span> Daily Report <span class="hint">Tabel ini dibuat dari <b>Pratinjau Data</b>. Pilih <b>tanggal</b>, lalu semua data pada tanggal itu diringkas per hari (rata-rata, atau pilih total/max/min/terakhir). <b>Kolom ② Parameter</b> = nama kolom data, <b>④ Satuan</b> = baris 📏 Satuan, <b>⑤ Actual</b> = data pada tanggal terpilih, <b>⑥ Target</b> = baris 🎯 Target. Kolom ① (grup) dan ⑦ (Notes) bisa digabung antar baris dengan tombol ⤓ / ⤒ yang muncul di sudut sel. Semua kolom bisa diedit dan bisa langsung <b>di-paste dari Excel</b> (klik sel awal, Ctrl+V). Kolom ② ④ ⑤ ⑥ yang diedit manual akan menimpa nilai otomatis; kosongkan sel untuk kembali otomatis. Warna Actual: <b>hijau</b> = sesuai target, <b>kuning</b> = di luar target tetapi masih dalam ±10% dari target, <b>merah</b> = di luar target. Target mendukung &gt;, &gt;=, =&gt;, &lt;, &lt;=, =&lt;, = (sama dengan, toleransi ±2%), ~ (sekitar, ±5%), dan rentang a-b. Angka saja tanpa tanda dianggap ≥ target (sama seperti di grafik); untuk batas atas tulis &lt; atau &lt;=.</span></h3>
+    <div class="rp-bar">
+      <div class="field"><label>Kolom tanggal</label><select id="rpDateCol"></select></div>
+      <div class="field"><label>Tanggal laporan</label>
+        <div class="rp-datebox">
+          <button class="btn small" id="rpPrev" title="Tanggal sebelumnya yang ada datanya">◀</button>
+          <input type="date" id="rpDate">
+          <button class="btn small" id="rpNext" title="Tanggal berikutnya yang ada datanya">▶</button>
+          <button class="btn small ghost" id="rpLatest" title="Loncat ke tanggal terakhir yang ada datanya">Terakhir</button>
+        </div>
+      </div>
+      <div class="field"><label>Ringkasan per hari</label>
+        <select id="rpAgg">
+          <option value="avg">Rata-rata (average)</option>
+          <option value="sum">Total (sum)</option>
+          <option value="max">Nilai Max</option>
+          <option value="min">Nilai Min</option>
+          <option value="last">Data terakhir hari itu</option>
+          <option value="first">Data pertama hari itu</option>
+          <option value="count">Jumlah data (count)</option>
+        </select>
+      </div>
+    </div>
+    <div class="rp-bar rp-actions">
+      <button class="btn small" id="rpPick">☑ Pilih parameter</button>
+      <button class="btn small" id="rpAddRow">＋ Baris</button>
+      <button class="btn small ghost" id="rpReset" title="Hapus semua isian manual di kolom Parameter, Satuan, Actual, Target">↺ Kembalikan ke otomatis</button>
+      <label class="rp-chk"><input type="checkbox" id="rpShowCtl" checked> Kontrol baris</label>
+      <span class="rp-sp"></span>
+      <button class="btn small" id="rpCopy">📋 Salin</button>
+      <button class="btn small" id="rpXlsx">📗 Excel</button>
+      <button class="btn small" id="rpJpg">🖼️ JPG</button>
+      <button class="btn small" id="rpPrint">🖨️ Cetak</button>
+    </div>
+    <div id="rpInfo" class="rp-info"></div>
+    <div class="rp-scroll"><div id="rpExportArea">
+      <div class="rp-title" id="rpTitle" contenteditable="true" spellcheck="false">Daily Report</div>
+      <div class="rp-subtitle" id="rpSubtitle"></div>
+      <div id="rpTableWrap"></div>
+    </div></div>
+  </div>
 </div>
 
 <!-- ============ TAB: KORELASI ============ -->
@@ -1044,6 +1149,8 @@ const state = {
   h1: [],          // header baris 1 (grup)
   h2: [],          // header baris 2 (sub-header)
   targetRow: null, // teks target/standar per kolom
+  unitRow: null,   // satuan per kolom
+  report: null,    // pengaturan Daily Report
 };
 let manualCols = 6, manualRows = 10;
 
@@ -1198,6 +1305,7 @@ function switchTab(name){
   if(name==='builder'){
     setTimeout(()=> state.charts.forEach(renderChart), 30);
   }
+  if(name==='report'){ rpRender(); }
   if(name==='korelasi' && corrChart){
     setTimeout(()=>{ corrChart.resize(); if(typeof lagChart!=='undefined' && lagChart) lagChart.resize(); }, 30);
   }
@@ -1247,6 +1355,7 @@ function finalizeData(headers, rows, extra){
   state.h1 = (extra && extra.h1) ? extra.h1 : headers.slice();
   state.h2 = (extra && extra.h2) ? extra.h2 : headers.map(()=> '');
   state.targetRow = (extra && extra.targets) ? extra.targets : null;
+  state.unitRow = (extra && extra.units) ? extra.units : null;
   state.rows = rows.map(r => headers.map((_,i)=> r[i]!==undefined ? r[i] : ''));
   detectColumnTypes();
   renderDataPreview();
@@ -1307,6 +1416,17 @@ function renderDataPreview(){
       const ci = parseInt(td.dataset.tc);
       if(!state.targetRow) state.targetRow = state.headers.map(()=> '');
       state.targetRow[ci] = td.textContent.trim();
+      state.charts.forEach(renderChart);
+      if(typeof rpRefreshIfOpen==='function') rpRefreshIfOpen();
+    });
+  });
+  wrap.querySelectorAll('td[data-uc]').forEach(td=>{
+    td.addEventListener('blur', ()=>{
+      const ci = parseInt(td.dataset.uc);
+      if(!state.unitRow) state.unitRow = state.headers.map(()=> '');
+      state.unitRow[ci] = td.textContent.trim();
+      state.charts.forEach(renderChart);
+      if(typeof rpRefreshIfOpen==='function') rpRefreshIfOpen();
     });
   });
   $('#btnGoBuilder').addEventListener('click', ()=> switchTab('builder'));
@@ -1333,7 +1453,7 @@ function renderDataPreview(){
   $('#btnClearAllData').addEventListener('click', ()=>{
     if(!confirm('Hapus semua data yang sudah dimuat? Tindakan ini tidak bisa dibatalkan.')) return;
     state.headers = []; state.rows = []; state.colTypes = [];
-    state.h1 = []; state.h2 = []; state.targetRow = null;
+    state.h1 = []; state.h2 = []; state.targetRow = null; state.unitRow = null;
     renderDataPreview();
     populateAllColumnSelectors();
     state.charts.forEach(renderChart);
@@ -1348,6 +1468,7 @@ function buildPreviewHead(){
   const h2 = (state.h2 && state.h2.length===n) ? state.h2 : state.headers.map(()=> '');
   const hasTwo = h2.some(x=>x!=='');
   const hasTarget = !!(state.targetRow && state.targetRow.some(x=>x!==''));
+  const hasUnit = !!(state.unitRow && state.unitRow.some(x=>x!==''));
   const badge = ci => ` <span class="badge">${state.colTypes[ci]}</span>`;
   const label1 = i => h1[i] || (h2[i] ? '' : state.headers[i]);
   let html = '<thead>';
@@ -1369,14 +1490,20 @@ function buildPreviewHead(){
     for(let k=0;k<n;k++) if(h2[k]!=='') html += `<th style="top:32px;">${escapeHtml(h2[k])}${badge(k)}</th>`;
     html += '</tr>';
   }
+  const baseTop = hasTwo ? 64 : 32;
   if(hasTarget){
-    const top = hasTwo ? 64 : 32;
-    html += '<tr class="target-row"><td class="rowlabel" style="top:' + top + 'px;">🎯</td>';
-    for(let i=0;i<n;i++) html += `<td contenteditable="true" data-tc="${i}" style="top:${top}px;">${escapeHtml(state.targetRow[i]||'')}</td>`;
+    html += '<tr class="target-row"><td class="rowlabel" style="top:' + baseTop + 'px;">🎯</td>';
+    for(let i=0;i<n;i++) html += `<td contenteditable="true" data-tc="${i}" style="top:${baseTop}px;">${escapeHtml(state.targetRow[i]||'')}</td>`;
+    html += '</tr>';
+  }
+  if(hasUnit){
+    const top = baseTop + (hasTarget ? 32 : 0);
+    html += '<tr class="target-row unit-row"><td class="rowlabel" style="top:' + top + 'px;" title="Satuan">📏</td>';
+    for(let i=0;i<n;i++) html += `<td contenteditable="true" data-uc="${i}" style="top:${top}px;">${escapeHtml(state.unitRow[i]||'')}</td>`;
     html += '</tr>';
   }
   html += '</thead>';
-  return { html, multi: hasTwo || hasTarget };
+  return { html, multi: hasTwo || hasTarget || hasUnit };
 }
 // Teks sel untuk diedit/disalin: tanggal ditulis dd/mm/yyyy (format yang dibaca aplikasi).
 function fmtCellEdit(v){
@@ -1398,6 +1525,7 @@ function dataToGrid(){
     h1: h1.map((x,i)=> x || (h2[i] ? '' : state.headers[i])),
     h2: h2.slice(),
     tg: (tg && tg.some(x=> x!=='')) ? tg.slice() : null,
+    un: (state.unitRow && state.unitRow.length===n && state.unitRow.some(x=> x!=='')) ? state.unitRow.slice() : null,
     rows: state.rows.map(r=> r.map(fmtCellEdit)),
   };
 }
@@ -1408,11 +1536,12 @@ function loadStateIntoManualTable(force){
   if(!force && rows*cols > 60000) return false;   // data sangat besar: jangan otomatis
   if(force && rows*cols > 150000 && !confirm('Data sangat besar (' + rows + ' baris). Memuat ke tabel bisa lambat. Lanjutkan?')) return false;
   initManualTable(cols, 1);
-  const hc1 = $all('#manualHeaderRow th[data-col]'), hc2 = $all('#manualHeaderRow2 th[data-col]'), hct = $all('#manualTargetRow th[data-col]');
+  const hc1 = $all('#manualHeaderRow th[data-col]'), hc2 = $all('#manualHeaderRow2 th[data-col]'), hct = $all('#manualTargetRow th[data-col]'), hcu = $all('#manualUnitRow th[data-col]');
   for(let c=0;c<cols;c++){
     hc1[c].textContent = g.h1[c];
     hc2[c].textContent = g.h2[c];
     hct[c].textContent = g.tg ? g.tg[c] : '';
+    if(hcu[c]) hcu[c].textContent = g.un ? g.un[c] : '';
   }
   if(rows > 0){
     let html = '';
@@ -1433,6 +1562,7 @@ function copyDataToClipboard(){
   const lines = [ g.h1.map(clean).join('\t') ];
   if(g.h2.some(x=> x!=='')) lines.push(g.h2.map(clean).join('\t'));
   if(g.tg){ const t = g.tg.slice(); if(!t[0]) t[0] = 'Target'; lines.push(t.map(clean).join('\t')); }
+  if(g.un){ const t = g.un.slice(); if(!t[0]) t[0] = 'Satuan'; lines.push(t.map(clean).join('\t')); }
   g.rows.forEach(r=> lines.push(r.map(clean).join('\t')));
   const text = lines.join('\n');
   const done = ()=> showToast('Data disalin: ' + g.rows.length + ' baris × ' + g.h1.length + ' kolom. Tempel (Ctrl+V) di Excel.');
@@ -1639,14 +1769,16 @@ function makeHeadCell(hrow, c, text){
 }
 function initManualTable(cols, rows){
   manualCols = cols; manualRows = rows;
-  const h1 = $('#manualHeaderRow'), h2 = $('#manualHeaderRow2'), ht = $('#manualTargetRow');
+  const h1 = $('#manualHeaderRow'), h2 = $('#manualHeaderRow2'), ht = $('#manualTargetRow'), hu = $('#manualUnitRow');
   h1.innerHTML = '<th style="width:30px;"><input type="checkbox" id="manualSelectAll"></th>';
   h2.innerHTML = '<th title="Baris header ke-2 (sub-header, opsional)" style="width:30px;">H2</th>';
   ht.innerHTML = '<th title="Baris Target / standar (opsional)" style="width:30px;">🎯</th>';
+  hu.innerHTML = '<th title="Baris Satuan (opsional), mis. ton, %, °C" style="width:30px;">📏</th>';
   for(let c=0;c<cols;c++){
     h1.appendChild(makeHeadCell(0, c, 'Kolom ' + (c+1)));
     h2.appendChild(makeHeadCell(1, c, ''));
     ht.appendChild(makeHeadCell(2, c, ''));
+    hu.appendChild(makeHeadCell(3, c, ''));
   }
   const body = $('#manualBody');
   body.innerHTML = '';
@@ -1688,6 +1820,7 @@ function manualAddColumn(){
   $('#manualHeaderRow').appendChild(makeHeadCell(0, manualCols, 'Kolom ' + (manualCols+1)));
   $('#manualHeaderRow2').appendChild(makeHeadCell(1, manualCols, ''));
   $('#manualTargetRow').appendChild(makeHeadCell(2, manualCols, ''));
+  $('#manualUnitRow').appendChild(makeHeadCell(3, manualCols, ''));
   $all('#manualBody tr').forEach((tr, ri)=>{
     const td = document.createElement('td');
     td.contentEditable = 'true';
@@ -1718,13 +1851,14 @@ function manualClearAll(){
   $all('#manualHeaderRow th[data-col]').forEach(th=> th.textContent = 'Kolom ' + (parseInt(th.dataset.col)+1));
   $all('#manualHeaderRow2 th[data-col]').forEach(th=> th.textContent = '');
   $all('#manualTargetRow th[data-col]').forEach(th=> th.textContent = '');
+  $all('#manualUnitRow th[data-col]').forEach(th=> th.textContent = '');
   $all('.manual-row-check').forEach(cb=> cb.checked = false);
   const selAll = $('#manualSelectAll'); if(selAll) selAll.checked = false;
   showToast('Tabel dikosongkan');
 }
 function manualDelColumn(){
   if(manualCols<=1) return;
-  ['#manualHeaderRow','#manualHeaderRow2','#manualTargetRow'].forEach(sel=>{
+  ['#manualHeaderRow','#manualHeaderRow2','#manualTargetRow','#manualUnitRow'].forEach(sel=>{
     const row = $(sel); row.removeChild(row.lastElementChild);
   });
   $all('#manualBody tr').forEach(tr=> tr.removeChild(tr.lastElementChild));
@@ -1808,13 +1942,16 @@ function interpretStructured(grid){
   }
   for(let i=1;i<width;i++){ if(h1[i]==='' && h2[i]!=='' && h1[i-1]!=='') h1[i] = h1[i-1]; }
   for(let i=0;i<width;i++){ if(h2[i]!=='' && h2[i]===h1[i]) h2[i] = ''; }
-  let targets = null;
-  if(idx < rows.length){
+  let targets = null, units = null;
+  for(let guard=0; guard<2 && idx < rows.length; guard++){
     const r = rows[idx];
-    const looksTarget = /^(target|standar|standard|std)\b/i.test(r[0]) || r.some(c=>/^[<>\u2265\u2264]/.test(c));
-    if(looksTarget){ targets = r.slice(); idx++; }
+    const isUnitRow = /^(satuan|unit|units)\b/i.test(r[0]);
+    const looksTarget = /^(target|standar|standard|std)\b/i.test(r[0]) || r.some(c=>/^[<>=\u2265\u2264]/.test(c));
+    if(isUnitRow && !units){ units = r.slice(); if(/^(satuan|unit|units)\b/i.test(units[0])) units[0] = ''; idx++; }
+    else if(looksTarget && !targets){ targets = r.slice(); idx++; }
+    else break;
   }
-  return { h1, h2, targets, rows: rows.slice(idx), headerRows: idx - (targets ? 1 : 0) };
+  return { h1, h2, targets, units, rows: rows.slice(idx), headerRows: idx - (targets ? 1 : 0) - (units ? 1 : 0) };
 }
 
 function getManualBodyCells(){
@@ -1829,11 +1966,13 @@ function pasteStructured(grid, startCol){
   const hc1 = $all('#manualHeaderRow th[data-col]');
   const hc2 = $all('#manualHeaderRow2 th[data-col]');
   const hct = $all('#manualTargetRow th[data-col]');
+  const hcu = $all('#manualUnitRow th[data-col]');
   for(let i=0;i<width;i++){
     const c = startCol + i;
     hc1[c].textContent = info.h1[i];
     hc2[c].textContent = info.h2[i];
     hct[c].textContent = info.targets ? info.targets[i] : '';
+    if(hcu[c]) hcu[c].textContent = info.units ? info.units[i] : '';
   }
   getManualBodyCells().forEach(cells=>{
     for(let i=0;i<width;i++) if(cells[startCol+i]) cells[startCol+i].textContent = '';
@@ -1844,7 +1983,7 @@ function pasteStructured(grid, startCol){
     rowArr.forEach((val, ci)=>{ const cell = cellRows[ri] && cellRows[ri][startCol+ci]; if(cell) cell.textContent = val; });
   });
   const hdr = info.h2.some(x=>x!=='') ? '2 baris header' : '1 baris header';
-  showToast('Tabel ditempel: ' + hdr + (info.targets ? ' + baris Target' : '') + ', ' + info.rows.length + ' baris data');
+  showToast('Tabel ditempel: ' + hdr + (info.targets ? ' + baris Target' : '') + (info.units ? ' + baris Satuan' : '') + ', ' + info.rows.length + ' baris data');
 }
 
 function setupManualPaste(){
@@ -1900,6 +2039,7 @@ function useManualData(){
   const h1 = $all('#manualHeaderRow th[data-col]').map(th=> th.textContent.trim());
   const h2 = $all('#manualHeaderRow2 th[data-col]').map(th=> th.textContent.trim());
   const tg = $all('#manualTargetRow th[data-col]').map(th=> th.textContent.trim());
+  const un = $all('#manualUnitRow th[data-col]').map(th=> th.textContent.trim());
   const headers = flattenHeaders(h1, h2);
   const rows = [];
   $all('#manualBody tr').forEach(tr=>{
@@ -1911,6 +2051,7 @@ function useManualData(){
     h1: h1.map((x,i)=> x || (h2[i] ? '' : headers[i])),
     h2: h2,
     targets: tg.some(x=>x!=='') ? tg : null,
+    units: un.some(x=>x!=='') ? un : null,
     fromManual: true,
   });
 }
@@ -1923,11 +2064,17 @@ function parseTargetText(raw){
   if(!s) return null;
   const num = '(-?\\d+(?:[.,]\\d+)*)';
   let m;
-  if((m = s.match(new RegExp('^(>=|\u2265|>)' + num + '$')))){
+  if((m = s.match(new RegExp('^(>=|=>|\\u2265|>)' + num + '$')))){
     const v = parseNumberString(m[2]); if(v!==null) return { type:'line', value:v, direction:'above' };
   }
-  if((m = s.match(new RegExp('^(<=|\u2264|<)' + num + '$')))){
+  if((m = s.match(new RegExp('^(<=|=<|\\u2264|<)' + num + '$')))){
     const v = parseNumberString(m[2]); if(v!==null) return { type:'line', value:v, direction:'below' };
+  }
+  if((m = s.match(new RegExp('^=' + num + '$')))){
+    const v = parseNumberString(m[1]); if(v!==null) return { type:'line', value:v, direction:'equal' };
+  }
+  if((m = s.match(new RegExp('^~' + num + '$')))){
+    const v = parseNumberString(m[1]); if(v!==null) return { type:'range', min: v*0.9, max: v*1.1 };
   }
   if((m = s.match(new RegExp('^' + num + '[-\u2013~]' + num + '$')))){
     const a = parseNumberString(m[1]), b = parseNumberString(m[2]);
@@ -1989,7 +2136,7 @@ function newChartConfig(){
     series: [], hiddenSeries: new Set(), filters: [], shades: [], calloutStyle: 'full', limitN: '', limitMode: 'last', autoThin: true,
     statsShow: { avg:false, sum:false, median:false, max:false, min:false },
     yMin: '', yMax: '', y1Min: '', y1Max: '',
-    yUnitCat: '', yUnit: '', y1UnitCat: '', y1Unit: '', wPct: null, hPx: null,
+    yUnitCat: '', yUnit: '', y1UnitCat: '', y1Unit: '', wPct: null, hPx: null, paretoFn: 'sum', paretoTop: '',
     showAllCallouts: false, chartObj: null,
   };
 }
@@ -2129,7 +2276,38 @@ function ensureUnits(cfg, p){
 function axisUnitText(cfg, p){
   const seen = [];
   ensureUnits(cfg, p).forEach(u=>{ const t = (u.unit || '').trim(); if(t && seen.indexOf(t) < 0) seen.push(t); });
-  return seen.join(' / ');
+  return seen.join(' atau ');
+}
+function refreshSeriesAutoTargets(cfg, card){
+  let changed = false;
+  (cfg.series||[]).forEach(sr=>{ if(sr.colIndex==='' || sr.colIndex===undefined) return; if(applyAutoTarget(sr)) changed = true; });
+  if(changed && card){ try{ renderSeriesList(card, cfg); }catch(e){} }
+  return changed;
+}
+// Satuan otomatis dari baris Satuan di tabel data, sesuai series yang ada di sumbu tersebut.
+function syncAutoUnits(cfg){
+  let changed = false;
+  ['y','y1'].forEach(p=>{
+    const units = ensureUnits(cfg, p);
+    const want = [];
+    (cfg.series||[]).forEach(sr=>{
+      if(sr.colIndex==='' || sr.colIndex===undefined) return;
+      if((sr.axis || 'y') !== p) return;
+      const u = state.unitRow ? String(state.unitRow[parseInt(sr.colIndex)] || '').trim() : '';
+      if(u && want.indexOf(u) < 0) want.push(u);
+    });
+    const dism = cfg[p + 'UnitDismiss'] || [];
+    for(let i=units.length-1;i>=0;i--){ if(units[i].auto && want.indexOf((units[i].unit||'').trim()) < 0){ units.splice(i,1); changed = true; } }
+    want.forEach(u=>{
+      if(dism.indexOf(u) >= 0) return;
+      if(units.some(x=> (x.unit||'').trim() === u)) return;
+      const entry = { cat:'__custom', unit:u, auto:true };
+      if(units.length === 1 && !(units[0].unit||'').trim() && !units[0].auto) units[0] = entry; else units.push(entry);
+      changed = true;
+    });
+    if(!units.length) units.push({ cat:'', unit:'' });
+  });
+  return changed;
 }
 function syncUnitControls(card, cfg){
   ['y','y1'].forEach(p=>{
@@ -2141,6 +2319,7 @@ function syncUnitControls(card, cfg){
       row.className = 'unit-row'; row.style.marginTop = '0'; row.style.marginBottom = '6px';
       row.innerHTML = '<select data-k="cat"></select><select data-k="unit" style="display:none;"></select>' +
         '<input type="text" data-k="custom" placeholder="mis. Nm³/h" style="width:100px;display:none;">' +
+        (u.auto ? '<span style="font-size:11px;color:var(--text-soft);">otomatis dari tabel</span>' : '') +
         '<button class="btn small ghost" data-k="del" type="button" title="Hapus satuan ini">✕</button>';
       const cs = row.querySelector('[data-k=cat]'), us = row.querySelector('[data-k=unit]'), cu = row.querySelector('[data-k=custom]'), del = row.querySelector('[data-k=del]');
       cs.innerHTML = '<option value="">— tanpa satuan —</option>' +
@@ -2153,11 +2332,14 @@ function syncUnitControls(card, cfg){
         us.value = u.unit || ''; us.style.display = '';
       }
       if(u.cat === '__custom'){ cu.style.display = ''; cu.value = u.unit || ''; }
-      del.style.display = units.length > 1 ? '' : 'none';
-      cs.addEventListener('change', ()=>{ u.cat = cs.value; u.unit = ''; syncUnitControls(card, cfg); renderChart(cfg); scheduleAutosave(); });
-      us.addEventListener('change', ()=>{ u.unit = us.value; renderChart(cfg); scheduleAutosave(); });
-      cu.addEventListener('input', ()=>{ u.unit = cu.value.trim(); renderChart(cfg); scheduleAutosave(); });
-      del.addEventListener('click', ()=>{ units.splice(i, 1); syncUnitControls(card, cfg); renderChart(cfg); scheduleAutosave(); });
+      del.style.display = (units.length > 1 || u.auto) ? '' : 'none';
+      cs.addEventListener('change', ()=>{ u.cat = cs.value; u.unit = ''; u.auto = false; syncUnitControls(card, cfg); renderChart(cfg); scheduleAutosave(); });
+      us.addEventListener('change', ()=>{ u.unit = us.value; u.auto = false; renderChart(cfg); scheduleAutosave(); });
+      cu.addEventListener('input', ()=>{ u.unit = cu.value.trim(); u.auto = false; renderChart(cfg); scheduleAutosave(); });
+      del.addEventListener('click', ()=>{
+        if(u.auto){ const k = p + 'UnitDismiss'; if(!cfg[k]) cfg[k] = []; if(cfg[k].indexOf(u.unit) < 0) cfg[k].push(u.unit); }
+        units.splice(i, 1); syncUnitControls(card, cfg); renderChart(cfg); scheduleAutosave();
+      });
       box.appendChild(row);
     });
   });
@@ -2361,6 +2543,487 @@ function initInfoPopovers(){
   if(cont && window.MutationObserver) new MutationObserver(()=> collapseHints(cont)).observe(cont, { childList:true, subtree:true });
 }
 
+
+/* ================= DAILY REPORT ================= */
+const RP_KEYS = ['g','p','c','u','a','t','n'];
+const RP_COLNAMES = ['Grup','Parameter','Klasifikasi','Satuan','Actual','Target','Notes'];
+var __rpCache = { ref:null, len:-1, ci:-2, map:null, dates:null };
+function rpState(){
+  if(!state.report || typeof state.report !== 'object') state.report = {};
+  const R = state.report;
+  if(!Array.isArray(R.rows)) R.rows = [];
+  if(!R.title) R.title = 'Daily Report';
+  if(!R.agg) R.agg = 'avg';
+  if(R.dateCol === undefined) R.dateCol = '';
+  if(R.date === undefined) R.date = '';
+  if(R.showCtl === undefined) R.showCtl = true;
+  R.rows.forEach(r=>{ if(r.gSpan === undefined) r.gSpan = 1; if(r.nSpan === undefined) r.nSpan = 1; ['p','u','a','t'].forEach(k=>{ if(r[k] === undefined) r[k] = null; }); ['g','c','n','col'].forEach(k=>{ if(r[k] === undefined || r[k] === null) r[k] = ''; }); });
+  return R;
+}
+function rpNewRow(col){ return { col: col || '', g:'', gSpan:1, p:null, c:'', u:null, a:null, t:null, n:'', nSpan:1 }; }
+function rpColIdx(name){ return name ? state.headers.indexOf(name) : -1; }
+function rpDateColIdx(){
+  const R = rpState();
+  const i = R.dateCol ? state.headers.indexOf(R.dateCol) : -1;
+  if(i >= 0 && state.colTypes[i] === 'date') return i;
+  return state.colTypes.indexOf('date');
+}
+function rpDefaultRows(){
+  const rows = [];
+  state.headers.forEach((h, ci)=>{
+    if(state.colTypes[ci] === 'number' && !isIndexLikeColumn(ci) && !/^(no\.?|nomor|shift|lot\s*no\.?|id)$/i.test(String(h).trim())) rows.push(rpNewRow(h));
+  });
+  return rows;
+}
+function rpIndexDates(){
+  const ci = rpDateColIdx();
+  const c = __rpCache;
+  if(c.ref === state.rows && c.len === state.rows.length && c.ci === ci && c.map) return c;
+  const map = new Map();
+  if(ci >= 0){
+    state.rows.forEach((r, i)=>{
+      const d = parseFlexibleDate(r[ci]); if(!d) return;
+      const key = rulerIso(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+      let a = map.get(key); if(!a){ a = []; map.set(key, a); } a.push(i);
+    });
+  }
+  c.ref = state.rows; c.len = state.rows.length; c.ci = ci; c.map = map; c.dates = Array.from(map.keys()).sort();
+  return c;
+}
+function rpDayIdxs(){
+  const R = rpState(), c = rpIndexDates();
+  if(rpDateColIdx() < 0) return state.rows.map((_,i)=> i);
+  return c.map.get(R.date) || [];
+}
+function rpAggCol(ci, idxs, agg){
+  if(ci < 0 || !idxs.length) return { text:'', num:null };
+  if(state.colTypes[ci] === 'number'){
+    const v = [];
+    idxs.forEach(i=>{ const x = toNumberSafe(state.rows[i][ci]); if(x !== null && !isNaN(x)) v.push(x); });
+    if(agg === 'count') return { text: String(v.length), num: v.length };
+    if(!v.length) return { text:'', num:null };
+    let r;
+    if(agg === 'sum') r = v.reduce((a,b)=> a+b, 0);
+    else if(agg === 'max') r = Math.max.apply(null, v);
+    else if(agg === 'min') r = Math.min.apply(null, v);
+    else if(agg === 'last') r = v[v.length-1];
+    else if(agg === 'first') r = v[0];
+    else r = v.reduce((a,b)=> a+b, 0) / v.length;
+    return { text: fmtNum(r), num: r };
+  }
+  const vals = idxs.map(i=> fmtCellEdit(state.rows[i][ci])).filter(x=> x !== '');
+  if(agg === 'count') return { text: String(vals.length), num: vals.length };
+  if(!vals.length) return { text:'', num:null };
+  if(agg === 'last') return { text: vals[vals.length-1], num:null };
+  if(agg === 'first') return { text: vals[0], num:null };
+  const u = Array.from(new Set(vals));
+  return { text: u.slice(0,3).join(', ') + (u.length > 3 ? ' …' : ''), num:null };
+}
+function rpAuto(row, key, idxs){
+  const ci = rpColIdx(row.col);
+  if(key === 'p') return ci >= 0 ? state.headers[ci] : '';
+  if(key === 'u') return (ci >= 0 && state.unitRow) ? (state.unitRow[ci] || '') : '';
+  if(key === 't') return (ci >= 0 && state.targetRow) ? (state.targetRow[ci] || '') : '';
+  if(key === 'a') return rpAggCol(ci, idxs, rpState().agg);
+  return '';
+}
+function rpParseTarget(raw){
+  if(raw === null || raw === undefined) return null;
+  const s = String(raw).trim().replace(/\s+/g,'').replace(/%/g,'');
+  if(!s) return null;
+  const num = '(-?\\d+(?:[.,]\\d+)*)';
+  let m;
+  if((m = s.match(new RegExp('^(>=|=>|\u2265)' + num + '$')))){ const v = parseNumberString(m[2]); return v===null ? null : { op:'ge', v }; }
+  if((m = s.match(new RegExp('^>' + num + '$')))){ const v = parseNumberString(m[1]); return v===null ? null : { op:'gt', v }; }
+  if((m = s.match(new RegExp('^(<=|=<|\u2264)' + num + '$')))){ const v = parseNumberString(m[2]); return v===null ? null : { op:'le', v }; }
+  if((m = s.match(new RegExp('^<' + num + '$')))){ const v = parseNumberString(m[1]); return v===null ? null : { op:'lt', v }; }
+  if((m = s.match(new RegExp('^=' + num + '$')))){ const v = parseNumberString(m[1]); return v===null ? null : { op:'eq', v, tol:0.02 }; }
+  if((m = s.match(new RegExp('^~' + num + '$')))){ const v = parseNumberString(m[1]); return v===null ? null : { op:'eq', v, tol:0.05 }; }
+  if((m = s.match(new RegExp('^' + num + '[-\u2013]' + num + '$')))){
+    const a = parseNumberString(m[1]), b = parseNumberString(m[2]);
+    return (a===null || b===null) ? null : { op:'range', lo:Math.min(a,b), hi:Math.max(a,b) };
+  }
+  if((m = s.match(new RegExp('^' + num + '$')))){ const v = parseNumberString(m[1]); return v===null ? null : { op:'ge', v }; }
+  return null;
+}
+function rpStatus(a, tg){
+  if(a === null || a === undefined || isNaN(a) || !tg) return '';
+  const band = v=> Math.abs(v) * 0.10 || 0.1;
+  if(tg.op === 'ge') return a >= tg.v ? 'ok' : (a >= tg.v - band(tg.v) ? 'warn' : 'bad');
+  if(tg.op === 'gt') return a > tg.v ? 'ok' : (a >= tg.v - band(tg.v) ? 'warn' : 'bad');
+  if(tg.op === 'le') return a <= tg.v ? 'ok' : (a <= tg.v + band(tg.v) ? 'warn' : 'bad');
+  if(tg.op === 'lt') return a < tg.v ? 'ok' : (a <= tg.v + band(tg.v) ? 'warn' : 'bad');
+  if(tg.op === 'range') return (a >= tg.lo && a <= tg.hi) ? 'ok' : ((a >= tg.lo - band(tg.lo) && a <= tg.hi + band(tg.hi)) ? 'warn' : 'bad');
+  if(tg.op === 'eq'){
+    const d = Math.abs(a - tg.v), base = Math.abs(tg.v);
+    if(base === 0) return d <= 0.001 ? 'ok' : (d <= 0.1 ? 'warn' : 'bad');
+    return d <= base * tg.tol ? 'ok' : (d <= base * 0.10 ? 'warn' : 'bad');
+  }
+  return '';
+}
+// Nilai sel (override manual atau otomatis). Untuk Actual juga mengembalikan angka.
+function rpCellInfo(row, key, idxs){
+  if(key === 'g' || key === 'c' || key === 'n') return { text: row[key] || '', ov:false };
+  if(row[key] !== null && row[key] !== undefined){
+    const o = { text: String(row[key]), ov:true };
+    if(key === 'a'){ const n = parseNumberString(o.text); o.num = n; }
+    return o;
+  }
+  const a = rpAuto(row, key, idxs);
+  if(key === 'a') return { text: a.text, num: a.num, ov:false };
+  return { text: a, ov:false };
+}
+function rpRowStatus(row, idxs){
+  const a = rpCellInfo(row, 'a', idxs), t = rpCellInfo(row, 't', idxs);
+  let num = a.num;
+  if((num === null || num === undefined) && a.text !== '') num = parseNumberString(a.text);
+  return rpStatus(num, rpParseTarget(t.text));
+}
+// Rapikan struktur gabungan sel (rowspan) agar konsisten.
+function rpFixSpans(){
+  const R = rpState(), n = R.rows.length;
+  ['gSpan','nSpan'].forEach(sk=>{
+    let i = 0;
+    while(i < n){
+      let span = Math.max(1, R.rows[i][sk] || 1);
+      if(i + span > n) span = n - i;
+      R.rows[i][sk] = span;
+      for(let q=1;q<span;q++) R.rows[i+q][sk] = 0;
+      i += span;
+    }
+  });
+}
+function rpOwnerOf(i, sk){
+  const R = rpState();
+  for(let j=i;j>=0;j--){ if(R.rows[j][sk] !== 0) return j; }
+  return i;
+}
+function rpMergeDown(i, k){
+  const R = rpState(), sk = k === 'g' ? 'gSpan' : 'nSpan', rows = R.rows;
+  const r = rows[i]; const span = r[sk] || 1, nxt = i + span;
+  if(nxt >= rows.length){ showToast('Tidak ada baris di bawahnya'); return; }
+  const add = rows[nxt][sk] || 1;
+  if(!r[k] && rows[nxt][k]) r[k] = rows[nxt][k];
+  r[sk] = span + add;
+  for(let j=nxt;j<nxt+add;j++) rows[j][sk] = 0;
+}
+function rpSplit(i, k){
+  const R = rpState(), sk = k === 'g' ? 'gSpan' : 'nSpan', rows = R.rows;
+  const span = rows[i][sk] || 1;
+  for(let j=i;j<i+span && j<rows.length;j++) rows[j][sk] = 1;
+}
+function rpDeleteRow(i){
+  const R = rpState(), rows = R.rows;
+  ['g','n'].forEach(k=>{
+    const sk = k === 'g' ? 'gSpan' : 'nSpan';
+    if(rows[i][sk] > 1){ // pemilik gabungan dihapus: pindahkan ke baris berikutnya
+      rows[i+1][sk] = rows[i][sk] - 1; if(!rows[i+1][k]) rows[i+1][k] = rows[i][k];
+    } else if(rows[i][sk] === 0){
+      const o = rpOwnerOf(i, sk); rows[o][sk] = Math.max(1, rows[o][sk] - 1);
+    }
+  });
+  rows.splice(i, 1);
+  rpFixSpans();
+}
+function rpInsertBelow(i){
+  const R = rpState(), rows = R.rows, nr = rpNewRow('');
+  ['g','n'].forEach(k=>{
+    const sk = k === 'g' ? 'gSpan' : 'nSpan';
+    const o = rpOwnerOf(i, sk);
+    if(rows[o][sk] > 1 && o + rows[o][sk] - 1 > i){ rows[o][sk] += 1; nr[sk] = 0; }
+  });
+  rows.splice(i+1, 0, nr);
+  rpFixSpans();
+}
+function rpMove(i, dir){
+  const R = rpState(), rows = R.rows, j = i + dir;
+  if(j < 0 || j >= rows.length) return;
+  let broke = false;
+  ['g','n'].forEach(k=>{
+    const sk = k === 'g' ? 'gSpan' : 'nSpan';
+    [i, j].forEach(x=>{
+      const o = rpOwnerOf(x, sk);
+      if(rows[o][sk] > 1){ rpSplit(o, k); broke = true; }
+    });
+  });
+  const t = rows[i]; rows[i] = rows[j]; rows[j] = t;
+  rpFixSpans();
+  if(broke) showToast('Gabungan sel pada baris yang dipindah dilepas');
+}
+function rpFmtDate(str){
+  if(!str) return '';
+  const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return str;
+  return m[3] + ' ' + MONTHS_ID[parseInt(m[2])-1] + ' ' + m[1];
+}
+function rpEsc(x){ return escapeHtml(x === null || x === undefined ? '' : String(x)); }
+function rpBuildTable(forExport){
+  const R = rpState(), idxs = rpDayIdxs();
+  let h = '<table class="rp-table' + (R.showCtl ? '' : ' no-ctl') + '" id="rpTable"><thead>';
+  h += '<tr><th class="rp-ctl" rowspan="2"></th><th colspan="4" rowspan="2" class="rp-h-main">PARAMETER</th><th colspan="2" class="rp-h-daily">DAILY</th><th rowspan="2" class="rp-h-notes">NOTES</th></tr>';
+  h += '<tr><th class="rp-h-sub">ACTUAL</th><th class="rp-h-sub">TARGET</th></tr></thead><tbody>';
+  const opts = '<option value="">(manual)</option>' + state.headers.map(x=> '<option value="' + rpEsc(x) + '">' + rpEsc(x) + '</option>').join('');
+  R.rows.forEach((row, i)=>{
+    h += '<tr data-r="' + i + '"><td class="rp-ctl"><select class="rp-link" data-r="' + i + '" title="Hubungkan baris ini ke kolom data">' + opts.replace('value="' + rpEsc(row.col) + '"', 'value="' + rpEsc(row.col) + '" selected') + '</select>' +
+      '<button data-act="up" data-r="' + i + '" title="Naik">↑</button><button data-act="down" data-r="' + i + '" title="Turun">↓</button>' +
+      '<button data-act="ins" data-r="' + i + '" title="Sisipkan baris di bawah">＋</button><button data-act="del" data-r="' + i + '" title="Hapus baris">✕</button></td>';
+    if(row.gSpan > 0){
+      h += '<td class="rp-g" rowspan="' + row.gSpan + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="g">' + rpEsc(row.g) + '</div>' +
+        '<div class="rp-mt"><button data-act="mdown" data-k="g" data-r="' + i + '" title="Gabung dengan baris di bawah">⤓</button><button data-act="msplit" data-k="g" data-r="' + i + '" title="Pisahkan gabungan">⤒</button></div></td>';
+    }
+    ['p','c','u'].forEach(k=>{
+      const ci = rpCellInfo(row, k, idxs);
+      h += '<td class="rp-' + k + (ci.ov ? ' rp-ov' : '') + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="' + k + '">' + rpEsc(ci.text) + '</div></td>';
+    });
+    const a = rpCellInfo(row, 'a', idxs), t = rpCellInfo(row, 't', idxs), st = rpRowStatus(row, idxs);
+    h += '<td class="rp-a' + (st ? ' st-' + st : '') + (a.ov ? ' rp-ov' : '') + '"><div class="rp-aw"><span class="rp-dot"></span><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="a">' + rpEsc(a.text) + '</div></div></td>';
+    h += '<td class="rp-t' + (t.ov ? ' rp-ov' : '') + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="t">' + rpEsc(t.text) + '</div></td>';
+    if(row.nSpan > 0){
+      h += '<td class="rp-n" rowspan="' + row.nSpan + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="n">' + rpEsc(row.n) + '</div>' +
+        '<div class="rp-mt"><button data-act="mdown" data-k="n" data-r="' + i + '" title="Gabung dengan baris di bawah">⤓</button><button data-act="msplit" data-k="n" data-r="' + i + '" title="Pisahkan gabungan">⤒</button></div></td>';
+    }
+    h += '</tr>';
+  });
+  if(!R.rows.length) h += '<tr><td colspan="8" style="padding:18px;text-align:center;color:#777;">Belum ada baris. Klik “☑ Pilih parameter” atau “＋ Baris”.</td></tr>';
+  h += '</tbody></table>';
+  return h;
+}
+function rpRender(){
+  const R = rpState();
+  const wrap = $('#rpTableWrap'); if(!wrap) return;
+  if(!state.headers.length){
+    wrap.innerHTML = '<div class="empty-note">Belum ada data. Masukkan data di langkah ① lebih dulu.</div>';
+    $('#rpInfo').textContent = ''; return;
+  }
+  if(!R.inited){ if(!R.rows.length) R.rows = rpDefaultRows(); R.inited = true; rpFixSpans(); }
+  // kolom tanggal
+  const dsel = $('#rpDateCol');
+  const dateCols = state.headers.map((h,i)=> ({h,i})).filter(x=> state.colTypes[x.i] === 'date');
+  dsel.innerHTML = dateCols.length ? dateCols.map(x=> '<option value="' + rpEsc(x.h) + '">' + rpEsc(x.h) + '</option>').join('') : '<option value="">(tidak ada kolom tanggal)</option>';
+  const ci = rpDateColIdx();
+  if(ci >= 0){ dsel.value = state.headers[ci]; R.dateCol = state.headers[ci]; }
+  const idx = rpIndexDates();
+  if(ci >= 0 && !R.date && idx.dates.length) R.date = idx.dates[idx.dates.length-1];
+  $('#rpDate').value = R.date || '';
+  $('#rpAgg').value = R.agg;
+  $('#rpShowCtl').checked = !!R.showCtl;
+  const ttl = $('#rpTitle'); if(document.activeElement !== ttl) ttl.textContent = R.title;
+  const n = rpDayIdxs().length;
+  const info = $('#rpInfo');
+  if(ci < 0){ info.className = 'rp-info warn'; info.textContent = 'Data tidak punya kolom tanggal: kolom Actual dihitung dari seluruh ' + nid(n) + ' baris.'; }
+  else if(!n){ info.className = 'rp-info warn'; info.textContent = 'Tidak ada data pada tanggal ' + rpFmtDate(R.date) + '. Pilih tanggal lain (tanggal tersedia: ' + (idx.dates.length ? rpFmtDate(idx.dates[0]) + ' – ' + rpFmtDate(idx.dates[idx.dates.length-1]) : '-') + ').'; }
+  else { info.className = 'rp-info'; info.textContent = nid(n) + ' baris data pada ' + rpFmtDate(R.date) + ' diringkas dengan: ' + $('#rpAgg').selectedOptions[0].textContent + '.'; }
+  $('#rpSubtitle').textContent = ci >= 0 ? rpFmtDate(R.date) : '';
+  wrap.innerHTML = rpBuildTable();
+}
+function rpRefreshIfOpen(){ const pn = $('#panel-report'); if(pn && pn.classList.contains('active')) rpRender(); }
+function rpUpdateRowStatus(tr, row){
+  const td = tr.querySelector('td.rp-a'); if(!td) return;
+  const st = rpRowStatus(row, rpDayIdxs());
+  td.classList.remove('st-ok','st-warn','st-bad'); if(st) td.classList.add('st-' + st);
+}
+function rpSetFromPaste(row, k, val){
+  if(k === 'g' || k === 'n'){ if(val !== '') row[k] = val; return; }
+  if(k === 'c'){ row.c = val; return; }
+  if(k === 'p'){
+    if(val === ''){ row.p = null; return; }
+    const hi = state.headers.findIndex(h=> h.toLowerCase() === val.toLowerCase());
+    if(hi >= 0){ row.col = state.headers[hi]; row.p = null; } else row.p = val;
+    return;
+  }
+  row[k] = val === '' ? null : val;
+}
+function rpOnPaste(e){
+  const cell = e.target.closest ? e.target.closest('.rp-cell') : null; if(!cell) return;
+  const text = (e.clipboardData || window.clipboardData).getData('text'); if(!text) return;
+  e.preventDefault();
+  const matrix = parseTSV(text);
+  while(matrix.length && matrix[matrix.length-1].every(x=> x === '')) matrix.pop();
+  if(!matrix.length) return;
+  const R = rpState();
+  const r0 = parseInt(cell.dataset.r), c0 = RP_KEYS.indexOf(cell.dataset.k);
+  while(R.rows.length < r0 + matrix.length) R.rows.push(rpNewRow(''));
+  let width = 0; matrix.forEach(l=>{ if(l.length > width) width = l.length; });
+  matrix.forEach((line, ri)=>{ line.forEach((val, ci)=>{ const k = RP_KEYS[c0 + ci]; if(k) rpSetFromPaste(R.rows[r0 + ri], k, String(val).trim()); }); });
+  if(matrix.length > 1){
+    ['g','n'].forEach(k=>{
+      const ci = RP_KEYS.indexOf(k) - c0; if(ci < 0 || ci >= width) return;
+      const sk = k === 'g' ? 'gSpan' : 'nSpan';
+      for(let i=0;i<matrix.length;){
+        const v = String(matrix[i][ci] || '').trim();
+        if(v === ''){ R.rows[r0+i][sk] = 1; i++; continue; }
+        let j = i + 1;
+        while(j < matrix.length && String(matrix[j][ci] || '').trim() === '') j++;
+        R.rows[r0+i][sk] = j - i;
+        for(let q=i+1;q<j;q++) R.rows[r0+q][sk] = 0;
+        i = j;
+      }
+    });
+  }
+  rpFixSpans();
+  rpRender(); scheduleAutosave();
+  showToast('Ditempel: ' + matrix.length + ' baris × ' + width + ' kolom');
+}
+function rpOnInput(e){
+  const cell = e.target.closest ? e.target.closest('.rp-cell') : null; if(!cell) return;
+  const R = rpState(), row = R.rows[parseInt(cell.dataset.r)]; if(!row) return;
+  const k = cell.dataset.k, text = cell.textContent.replace(/\u00a0/g,' ').trim();
+  if(k === 'g' || k === 'c' || k === 'n') row[k] = text; else row[k] = text === '' ? null : text;
+  if(k === 'a' || k === 't') rpUpdateRowStatus(cell.closest('tr'), row);
+  scheduleAutosave();
+}
+function rpOnFocusOut(e){
+  const cell = e.target.closest ? e.target.closest('.rp-cell') : null; if(!cell) return;
+  const R = rpState(), row = R.rows[parseInt(cell.dataset.r)]; if(!row) return;
+  const k = cell.dataset.k;
+  if((k === 'p' || k === 'u' || k === 'a' || k === 't') && row[k] === null){
+    const ci = rpCellInfo(row, k, rpDayIdxs()); cell.textContent = ci.text;
+    cell.closest('td').classList.remove('rp-ov');
+  } else if(k === 'p' || k === 'u' || k === 'a' || k === 't'){ cell.closest('td').classList.add('rp-ov'); }
+}
+function rpOnKeydown(e){
+  const cell = e.target.closest ? e.target.closest('.rp-cell') : null; if(!cell) return;
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    const r = parseInt(cell.dataset.r), k = cell.dataset.k;
+    const nxt = document.querySelector('#rpTable .rp-cell[data-r="' + (r+1) + '"][data-k="' + k + '"]');
+    if(nxt){ nxt.focus(); const sel = window.getSelection(), rg = document.createRange(); rg.selectNodeContents(nxt); sel.removeAllRanges(); sel.addRange(rg); } else cell.blur();
+  }
+}
+function rpOnClick(e){
+  const b = e.target.closest ? e.target.closest('button[data-act]') : null; if(!b) return;
+  const i = parseInt(b.dataset.r), act = b.dataset.act, k = b.dataset.k;
+  if(act === 'up') rpMove(i, -1);
+  else if(act === 'down') rpMove(i, 1);
+  else if(act === 'ins') rpInsertBelow(i);
+  else if(act === 'del') rpDeleteRow(i);
+  else if(act === 'mdown') rpMergeDown(i, k);
+  else if(act === 'msplit') rpSplit(i, k);
+  rpRender(); scheduleAutosave();
+}
+function rpOnChange(e){
+  const sel = e.target.closest ? e.target.closest('select.rp-link') : null; if(!sel) return;
+  const R = rpState(); R.rows[parseInt(sel.dataset.r)].col = sel.value;
+  rpRender(); scheduleAutosave();
+}
+function rpShiftDate(dir){
+  const R = rpState(), c = rpIndexDates(); if(!c.dates.length) return;
+  let cur = R.date || c.dates[c.dates.length-1], t = null;
+  if(dir < 0){ for(let i=c.dates.length-1;i>=0;i--) if(c.dates[i] < cur){ t = c.dates[i]; break; } }
+  else { for(let i=0;i<c.dates.length;i++) if(c.dates[i] > cur){ t = c.dates[i]; break; } }
+  if(!t){ showToast(dir < 0 ? 'Ini tanggal paling awal' : 'Ini tanggal paling akhir'); return; }
+  R.date = t; rpRender(); scheduleAutosave();
+}
+function rpOpenPick(){
+  const R = rpState();
+  const ov = document.createElement('div'); ov.className = 'rp-overlay';
+  ov.innerHTML = '<div class="rp-dialog"><h4>Pilih parameter yang tampil di Daily Report</h4><div class="rp-list">' +
+    state.headers.map((h,i)=> '<label><input type="checkbox" data-h="' + rpEsc(h) + '"' + (R.rows.some(r=> r.col === h) ? ' checked' : '') + '> ' + rpEsc(h) + ' <span class="badge">' + state.colTypes[i] + '</span></label>').join('') +
+    '</div><div class="rp-btns"><button class="btn small ghost" data-q="nums">Semua kolom angka</button><button class="btn small ghost" data-q="all">Semua kolom</button><button class="btn small ghost" data-q="none">Kosongkan</button><button class="btn small" data-q="cancel">Batal</button><button class="btn small primary" data-q="ok">Terapkan</button></div></div>';
+  document.body.appendChild(ov);
+  const boxes = ()=> Array.from(ov.querySelectorAll('input[data-h]'));
+  ov.addEventListener('click', e=>{
+    if(e.target === ov){ ov.remove(); return; }
+    const q = e.target.dataset ? e.target.dataset.q : null; if(!q) return;
+    if(q === 'cancel'){ ov.remove(); return; }
+    if(q === 'all') boxes().forEach(b=> b.checked = true);
+    if(q === 'none') boxes().forEach(b=> b.checked = false);
+    if(q === 'nums') boxes().forEach(b=>{ const ci = state.headers.indexOf(b.dataset.h); b.checked = state.colTypes[ci] === 'number' && !isIndexLikeColumn(ci); });
+    if(q === 'ok'){
+      boxes().forEach(b=>{
+        const h = b.dataset.h, exists = R.rows.some(r=> r.col === h);
+        if(b.checked && !exists) R.rows.push(rpNewRow(h));
+        if(!b.checked && exists){ for(let i=R.rows.length-1;i>=0;i--) if(R.rows[i].col === h) rpDeleteRow(i); }
+      });
+      rpFixSpans(); ov.remove(); rpRender(); scheduleAutosave();
+    }
+  });
+}
+function rpTableValues(){
+  const R = rpState(), idxs = rpDayIdxs();
+  return R.rows.map(row=>{
+    const a = rpCellInfo(row, 'a', idxs);
+    return [
+      row.gSpan > 0 ? row.g : '', rpCellInfo(row,'p',idxs).text, row.c, rpCellInfo(row,'u',idxs).text,
+      a.text, rpCellInfo(row,'t',idxs).text, row.nSpan > 0 ? row.n : '',
+      (a.num !== null && a.num !== undefined && !isNaN(a.num)) ? a.num : null,
+    ];
+  });
+}
+function rpCopy(){
+  const clean = x=> String(x === null || x === undefined ? '' : x).replace(/\t/g,' ').replace(/\r?\n/g,' ');
+  const text = rpTableValues().map(r=> r.slice(0,7).map(clean).join('\t')).join('\n');
+  const ok = ()=> showToast('Daily Report disalin. Tempel (Ctrl+V) di Excel.');
+  const fb = ()=>{ const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); ok(); }catch(e){ showToast('Gagal menyalin'); } ta.remove(); };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, fb); else fb();
+}
+function rpXlsx(){
+  if(typeof XLSX === 'undefined'){ showToast('Pustaka Excel belum termuat (butuh internet)'); return; }
+  const R = rpState(), vals = rpTableValues();
+  const aoa = [[R.title], [R.date ? rpFmtDate(R.date) : ''], ['PARAMETER','','','','DAILY','','NOTES'], ['','','','','ACTUAL','TARGET','']];
+  vals.forEach(v=> aoa.push([v[0], v[1], v[2], v[3], v[7] !== null ? v[7] : v[4], v[5], v[6]]));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const merges = [{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}},{s:{r:2,c:0},e:{r:3,c:3}},{s:{r:2,c:4},e:{r:2,c:5}},{s:{r:2,c:6},e:{r:3,c:6}}];
+  R.rows.forEach((row, i)=>{
+    if(row.gSpan > 1) merges.push({ s:{r:4+i,c:0}, e:{r:4+i+row.gSpan-1,c:0} });
+    if(row.nSpan > 1) merges.push({ s:{r:4+i,c:6}, e:{r:4+i+row.nSpan-1,c:6} });
+  });
+  ws['!merges'] = merges;
+  ws['!cols'] = [{wch:22},{wch:30},{wch:10},{wch:12},{wch:14},{wch:12},{wch:40}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Daily Report');
+  XLSX.writeFile(wb, fileSafe(R.title + ' ' + (R.date || '')) + '.xlsx');
+}
+async function rpJpg(){
+  const area = $('#rpExportArea'); if(!area) return;
+  showToast('Membuat JPG...');
+  area.classList.add('rp-exporting');
+  try{
+    const cv = await captureEl(area);
+    downloadDataUrl(cv.toDataURL('image/jpeg', 0.93), fileSafe(rpState().title + ' ' + (rpState().date || '')) + '.jpg');
+  }catch(err){ console.error(err); showToast('Gagal export JPG'); }
+  area.classList.remove('rp-exporting');
+}
+function rpPrint(){
+  const area = $('#rpExportArea'); if(!area) return;
+  const clone = area.cloneNode(true);
+  clone.querySelectorAll('.rp-ctl, .rp-mt').forEach(n=> n.remove());
+  clone.querySelectorAll('[contenteditable]').forEach(n=> n.removeAttribute('contenteditable'));
+  const w = window.open('', '_blank');
+  if(!w){ showToast('Izinkan pop-up untuk mencetak'); return; }
+  const css = 'body{font-family:Segoe UI,Arial,sans-serif;margin:16px;color:#111}table{border-collapse:collapse;font-size:12px;width:100%}th,td{border:1px solid #777;padding:0}th{background:#e2f0d9;padding:5px 8px}.rp-h-main,.rp-h-notes{font-size:18px}.rp-title{font-size:20px;font-weight:900}.rp-subtitle{font-size:12px;margin-bottom:6px}td.rp-g{background:#dae3f3;font-weight:800;text-align:center}.rp-cell{padding:3px 8px;white-space:pre-wrap}td.rp-a .rp-aw{display:flex;align-items:center;gap:6px;padding-left:6px}td.rp-a .rp-cell{flex:1;text-align:right;font-weight:700}.rp-dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px}td.st-ok{background:#e6f4ec}td.st-ok .rp-dot{background:#2f9e73}td.st-warn{background:#fdf3d4}td.st-warn .rp-dot{background:#f2c14e}td.st-bad{background:#fbe3df}td.st-bad .rp-dot{background:#e0463a}td.rp-n{vertical-align:top}@page{size:landscape;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}';
+  w.document.write('<html><head><meta charset="utf-8"><title>' + rpEsc(rpState().title) + '</title><style>' + css + '</style></head><body>' + clone.innerHTML + '</body></html>');
+  w.document.close(); w.focus(); setTimeout(()=>{ w.print(); }, 350);
+}
+function initReportPanel(){
+  const R = ()=> rpState();
+  $('#rpDate').addEventListener('change', e=>{ R().date = e.target.value; rpRender(); scheduleAutosave(); });
+  $('#rpDateCol').addEventListener('change', e=>{ R().dateCol = e.target.value; R().date = ''; rpRender(); scheduleAutosave(); });
+  $('#rpAgg').addEventListener('change', e=>{ R().agg = e.target.value; rpRender(); scheduleAutosave(); });
+  $('#rpPrev').addEventListener('click', ()=> rpShiftDate(-1));
+  $('#rpNext').addEventListener('click', ()=> rpShiftDate(1));
+  $('#rpLatest').addEventListener('click', ()=>{ const c = rpIndexDates(); if(c.dates.length){ R().date = c.dates[c.dates.length-1]; rpRender(); scheduleAutosave(); } });
+  $('#rpPick').addEventListener('click', ()=>{ if(!state.headers.length){ showToast('Masukkan data dulu'); return; } rpOpenPick(); });
+  $('#rpAddRow').addEventListener('click', ()=>{ R().rows.push(rpNewRow('')); rpFixSpans(); rpRender(); scheduleAutosave(); });
+  $('#rpReset').addEventListener('click', ()=>{
+    if(!confirm('Hapus semua isian manual di kolom Parameter, Satuan, Actual, dan Target (kembali ke nilai otomatis dari tabel data)?')) return;
+    R().rows.forEach(r=>{ r.p = null; r.u = null; r.a = null; r.t = null; });
+    rpRender(); scheduleAutosave();
+  });
+  $('#rpShowCtl').addEventListener('change', e=>{ R().showCtl = e.target.checked; rpRender(); scheduleAutosave(); });
+  $('#rpCopy').addEventListener('click', rpCopy);
+  $('#rpXlsx').addEventListener('click', rpXlsx);
+  $('#rpJpg').addEventListener('click', rpJpg);
+  $('#rpPrint').addEventListener('click', rpPrint);
+  $('#rpTitle').addEventListener('input', e=>{ R().title = e.target.textContent.trim() || 'Daily Report'; scheduleAutosave(); });
+  const wrap = $('#rpTableWrap');
+  wrap.addEventListener('paste', rpOnPaste);
+  wrap.addEventListener('input', rpOnInput);
+  wrap.addEventListener('focusout', rpOnFocusOut);
+  wrap.addEventListener('keydown', rpOnKeydown);
+  wrap.addEventListener('click', rpOnClick);
+  wrap.addEventListener('change', rpOnChange);
+  collapseHints($('#panel-report'));
+}
+
 function setChartCount(n){
   n = Math.max(0, Math.min(40, n));
   while(state.charts.length < n) state.charts.push(newChartConfig());
@@ -2419,6 +3082,15 @@ function syncChartCardControls(card, cfg){
   const granwrap = card.querySelector('[data-role=granwrap]');
   if(granwrap) granwrap.style.display = (cfg.mode==='pie'||cfg.mode==='donut') ? 'none' : '';
   updateAggFnState(card, cfg);
+  updateParetoState(card, cfg);
+  setVal('[data-role=paretofn]', cfg.paretoFn || 'sum');
+  setVal('[data-role=paretotop]', cfg.paretoTop || '');
+}
+function updateParetoState(card, cfg){
+  const on = cfg.mode === 'pareto';
+  const a = card.querySelector('[data-role=paretowrap]'), b = card.querySelector('[data-role=paretotopwrap]');
+  if(a) a.style.display = on ? '' : 'none';
+  if(b) b.style.display = on ? '' : 'none';
 }
 
 function buildChartCardDom(cfg){
@@ -2454,6 +3126,7 @@ function buildChartCardDom(cfg){
               <option value="scatter">Scatter (cek distribusi data)</option>
               <option value="pie">Pie</option>
               <option value="donut">Donut</option>
+              <option value="pareto">Pareto (diagram pareto)</option>
             </select>
           </div>
           <div class="field">
@@ -2477,6 +3150,20 @@ function buildChartCardDom(cfg){
               <option value="week">Per Minggu</option>
               <option value="month">Per Bulan</option>
             </select>
+          </div>
+          <div class="field" data-role="paretowrap" style="display:none;">
+            <label>Pareto: nilai per kategori <span class="hint">Diagram Pareto memakai <b>Sumbu X sebagai kategori</b> dan <b>series pertama</b> sebagai nilainya. Nilai dikelompokkan per kategori, diurutkan dari terbesar. Batang = nilai (sumbu kiri), garis = persen kumulatif (sumbu kanan), garis putus = 80%. Batang yang pekat adalah kategori yang membentuk 80% pertama (the vital few).</span></label>
+            <select data-role="paretofn">
+              <option value="sum">Total (sum)</option>
+              <option value="count">Jumlah data (count)</option>
+              <option value="avg">Rata-rata (average)</option>
+              <option value="max">Nilai Max</option>
+              <option value="min">Nilai Min</option>
+            </select>
+          </div>
+          <div class="field" data-role="paretotopwrap" style="display:none;">
+            <label>Tampilkan N kategori teratas</label>
+            <input type="number" min="1" data-role="paretotop" placeholder="semua">
           </div>
           <div class="field" data-role="aggwrap">
             <label>Nilai per Periode</label>
@@ -2558,7 +3245,7 @@ function buildChartCardDom(cfg){
               <button class="btn small ghost" data-role="yreset">Reset</button>
             </div>
             <div class="unit-row">
-              <label>Satuan (boleh lebih dari 1, tampil digabung dengan " / ")</label>
+              <label>Satuan (boleh lebih dari 1, tampil digabung dengan kata "atau")</label>
               <div data-role="yunits" style="width:100%;"></div>
               <button class="btn small ghost" data-role="yaddunit" type="button">+ Satuan lain</button>
             </div>
@@ -2571,7 +3258,7 @@ function buildChartCardDom(cfg){
               <button class="btn small ghost" data-role="y1reset">Reset</button>
             </div>
             <div class="unit-row">
-              <label>Satuan (boleh lebih dari 1, tampil digabung dengan " / ")</label>
+              <label>Satuan (boleh lebih dari 1, tampil digabung dengan kata "atau")</label>
               <div data-role="y1units" style="width:100%;"></div>
               <button class="btn small ghost" data-role="y1addunit" type="button">+ Satuan lain</button>
             </div>
@@ -2662,8 +3349,11 @@ function wireChartCard(card, cfg){
     cfg.mode = e.target.value;
     card.querySelector('[data-role=granwrap]').style.display = (cfg.mode==='pie'||cfg.mode==='donut') ? 'none' : '';
     updateAggFnState(card, cfg);
+    updateParetoState(card, cfg);
     renderChart(cfg);
   });
+  card.querySelector('[data-role=paretofn]').addEventListener('change', e=>{ cfg.paretoFn = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=paretotop]').addEventListener('input', e=>{ cfg.paretoTop = e.target.value; renderChart(cfg); });
   const xcolSel = card.querySelector('[data-role=xcol]');
   xcolSel.addEventListener('change', e=>{ cfg.xCol = e.target.value; updateDateRuler(card, cfg); renderChart(cfg); });
   const xcol2Sel = card.querySelector('[data-role=xcol2]');
@@ -2928,6 +3618,7 @@ function renderSeriesList(card, cfg){
           <select data-role="tdirection">
             <option value="above">Standar: di atas / ≥ target</option>
             <option value="below">Standar: di bawah / ≤ target</option>
+            <option value="equal">Standar: sama dengan target (±2%)</option>
           </select>
         </span>
         <span data-role="trangefields" style="display:none;">
@@ -3052,9 +3743,14 @@ function computeSeriesStats(cfg, seriesData, pointLabels){
     } else if(s.target && s.target.type==='line'){
       const val = parseFloat(s.target.value);
       if(!isNaN(val)){
-        const dir = s.target.direction==='below' ? 'below' : 'above';
-        inTarget = dir==='above' ? arr.filter(v=>v>=val).length : arr.filter(v=>v<=val).length;
-        label = dir==='above' ? 'Di atas target' : 'Di bawah target';
+        const dir = s.target.direction==='below' ? 'below' : (s.target.direction==='equal' ? 'equal' : 'above');
+        if(dir==='equal'){
+          const tol = Math.abs(val) * 0.02 || 0.001;
+          inTarget = arr.filter(v=> Math.abs(v-val) <= tol).length; label = 'Sesuai target';
+        } else {
+          inTarget = dir==='above' ? arr.filter(v=>v>=val).length : arr.filter(v=>v<=val).length;
+          label = dir==='above' ? 'Di atas target' : 'Di bawah target';
+        }
       }
     }
     const pct = (inTarget!==null && total>0) ? (inTarget/total*100) : null;
@@ -3677,6 +4373,87 @@ const targetPlugin = {
   }
 };
 
+
+/* ================= PARETO ================= */
+const paretoLabelPlugin = {
+  id: 'csParetoLabels',
+  afterDatasetsDraw(chart){
+    const ctx = chart.ctx;
+    chart.data.datasets.forEach((ds, di)=>{
+      if(ds.__noLabel) return;
+      const meta = chart.getDatasetMeta(di); if(meta.hidden) return;
+      ctx.save();
+      ctx.font = '700 11px "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = ds.__labelColor || textColor();
+      meta.data.forEach((el, i)=>{
+        const v = ds.data[i]; if(v===null || v===undefined) return;
+        const txt = ds.type==='line' ? (Math.round(v*10)/10) + '%' : fmtNum(v);
+        ctx.textBaseline = ds.type==='line' ? 'bottom' : 'bottom';
+        ctx.fillText(txt, el.x, el.y - (ds.type==='line' ? 8 : 4));
+      });
+      ctx.restore();
+    });
+  }
+};
+function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
+  const vals = seriesData[s.colIndex] || [];
+  const fn = cfg.paretoFn || 'sum';
+  const g = new Map();
+  pointLabels.forEach((lab, i)=>{
+    const key = String(lab);
+    let o = g.get(key); if(!o){ o = { sum:0, cnt:0, mx:-Infinity, mn:Infinity }; g.set(key, o); }
+    const v = vals[i]; if(v===null || v===undefined || isNaN(v)) return;
+    o.sum += v; o.cnt++; if(v > o.mx) o.mx = v; if(v < o.mn) o.mn = v;
+  });
+  let arr = Array.from(g.entries()).map(([k,o])=>({ k, v: fn==='count' ? o.cnt : (!o.cnt ? null : (fn==='avg' ? o.sum/o.cnt : (fn==='max' ? o.mx : (fn==='min' ? o.mn : o.sum)))) }))
+    .filter(x=> x.v!==null && x.v > 0);
+  if(!arr.length){ showChartError(wrap, 'Pareto membutuhkan nilai positif pada series pertama. Periksa kolom yang dipilih atau filter.'); return; }
+  arr.sort((a,b)=> b.v - a.v);
+  const total = arr.reduce((a,b)=> a + b.v, 0);
+  const topN = parseInt(cfg.paretoTop);
+  if(topN > 0) arr = arr.slice(0, topN);
+  let run = 0;
+  const cum = arr.map(x=>{ run += x.v; return run / total * 100; });
+  const before = cum.map((c,i)=> i===0 ? 0 : cum[i-1]);
+  const colors = before.map(b=> b < 80 ? s.color : hexAlpha(s.color, 0.4));
+  const header = state.headers[parseInt(s.colIndex)] || 'Nilai';
+  const xHeader = state.headers[parseInt(cfg.xCol)] || 'Kategori';
+  const labels = arr.map(x=> x.k);
+  cfg.chartObj = new Chart(canvas, {
+    data: {
+      labels,
+      datasets: [
+        { type:'bar', label: header, data: arr.map(x=> x.v), yAxisID:'y', backgroundColor: colors, borderColor: s.color, borderWidth:1, order:2 },
+        { type:'line', label:'Kumulatif (%)', data: cum, yAxisID:'y1', borderColor:'#333333', backgroundColor:'#333333', pointRadius:4, tension:0, order:1, __labelColor:'#333333' },
+        { type:'line', label:'80%', data: labels.map(()=> 80), yAxisID:'y1', borderColor:'#9aa0a6', borderDash:[6,4], borderWidth:1.5, pointRadius:0, order:3, __noLabel:true },
+      ],
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:20 } },
+      plugins:{
+        legend:{ labels:{ color:textColor() } },
+        tooltip:{ callbacks:{ label: item => item.dataset.type==='line' && item.datasetIndex===1 ? ('Kumulatif: ' + (Math.round(item.raw*10)/10) + '%') : (item.dataset.label + ': ' + fmtNum(item.raw)) } },
+      },
+      scales:{
+        x:{ title:{ display:true, text:xHeader, color:textColor() }, grid:{ display:false }, ticks:{ color:textColor(), autoSkip:false, maxRotation:60, minRotation:0 } },
+        y:{ position:'left', beginAtZero:true, title: unitTitle(axisUnitText(cfg,'y')), grid:{ color:gridColor() }, ticks:{ color:textColor() },
+            min: cfg.yMin===''?undefined:Number(cfg.yMin), max: cfg.yMax===''?undefined:Number(cfg.yMax) },
+        y1:{ position:'right', min:0, max:100, title:{ display:true, text:'Kumulatif (%)', color:textColor(), font:{ weight:'700', size:12 } },
+             grid:{ drawOnChartArea:false }, ticks:{ color:textColor(), callback: v=> v + '%' } },
+      },
+    },
+    plugins:[paretoLabelPlugin],
+  });
+  cfg.chartObj.__csCfg = cfg;
+  const chartCard = wrap.closest('.chart-card');
+  const sp = chartCard ? chartCard.querySelector('[data-role=statspanel]') : null;
+  if(sp){
+    const vital = before.filter(b=> b < 80).length;
+    sp.innerHTML = '<div class="chart-stats-summary">Pareto: <b>' + nid(g.size) + '</b> kategori, total <b>' + fmtNum(total) + '</b>. <b>' + vital + '</b> kategori teratas membentuk sekitar 80% dari total (batang pekat).</div>';
+  }
+}
+
 /* ================= CHART RENDER ================= */
 function clearChartError(wrap){
   const err = wrap.querySelector('.chart-error');
@@ -3709,6 +4486,7 @@ function autoSetupChart(cfg, card){
   cfg.xCol = String(xi);
   cfg.series = pick.map((ci,k)=>({ colIndex:String(ci), axis:'y', chartType:'line', color:palette(k), colorAuto:true,
     target:{ type:'none', value:'', min:'', max:'', direction:'above' } }));
+  cfg.series.forEach(applyAutoTarget);
   syncChartCardControls(card, cfg);
   renderSeriesList(card, cfg);
   renderChart(cfg);
@@ -3788,6 +4566,8 @@ function renderChartNow(cfg){
   setChartNotice(chartCard, null);
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width, canvas.height);
+  refreshSeriesAutoTargets(cfg, chartCard);
+  if(syncAutoUnits(cfg) && chartCard) syncUnitControls(chartCard, cfg);
 
   const validSeries = cfg.series.filter(s=>s.colIndex!=='' && s.colIndex!==undefined);
   if(cfg.xCol===''|| validSeries.length===0){
@@ -3828,6 +4608,11 @@ function renderChartNow(cfg){
     const visibleSeries = validSeries.filter(s=> !cfg.hiddenSeries.has(s.colIndex));
     if(visibleSeries.length===0){
       showChartError(wrap, 'Semua series disembunyikan lewat filter legend. Aktifkan minimal 1 series.');
+      return;
+    }
+
+    if(cfg.mode==='pareto'){
+      renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, visibleSeries[0]);
       return;
     }
 
@@ -4363,7 +5148,7 @@ function buildProject(){
     appMode: (typeof __appMode!=='undefined' ? __appMode : 'chart'),
     fishbone: fbState,
     headers: state.headers,
-    h1: state.h1, h2: state.h2, targetRow: state.targetRow,
+    h1: state.h1, h2: state.h2, targetRow: state.targetRow, unitRow: state.unitRow, report: state.report,
     rows: state.rows.map(r => r.map(c => c instanceof Date ? c.toISOString() : c)),
     charts: state.charts.map(cfg => ({
       id: cfg.id, title: cfg.title, mode: cfg.mode,
@@ -4371,6 +5156,8 @@ function buildProject(){
       dateFrom: cfg.dateFrom, dateTo: cfg.dateTo,
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
       yUnits: ensureUnits(cfg,'y').map(u=>Object.assign({},u)), y1Units: ensureUnits(cfg,'y1').map(u=>Object.assign({},u)),
+      yUnitDismiss: cfg.yUnitDismiss || [], y1UnitDismiss: cfg.y1UnitDismiss || [],
+      paretoFn: cfg.paretoFn || 'sum', paretoTop: cfg.paretoTop || '',
       wPct: cfg.wPct || null, hPx: cfg.hPx || null,
       showAllCallouts: !!cfg.showAllCallouts, calloutStyle: cfg.calloutStyle || 'full',
       limitN: cfg.limitN || '', limitMode: cfg.limitMode || 'last', autoThin: cfg.autoThin !== false,
@@ -4399,6 +5186,8 @@ function loadProject(p){
   state.h1 = (Array.isArray(p.h1) && p.h1.length===nCols) ? p.h1.map(String) : state.headers.slice();
   state.h2 = (Array.isArray(p.h2) && p.h2.length===nCols) ? p.h2.map(String) : state.headers.map(()=> '');
   state.targetRow = (Array.isArray(p.targetRow) && p.targetRow.length===nCols) ? p.targetRow.map(String) : null;
+  state.unitRow = (Array.isArray(p.unitRow) && p.unitRow.length===nCols) ? p.unitRow.map(String) : null;
+  state.report = (p.report && typeof p.report==='object') ? p.report : null;
 
   fbState = fbNormalize(p.fishbone);
   if(p.theme && THEMES.indexOf(p.theme) >= 0) $('#themeSelect').value = p.theme;
@@ -4410,7 +5199,7 @@ function loadProject(p){
   document.documentElement.setAttribute('data-mode', mode);
 
   const base = { mode:'linebar', xCol:'', xCol2:'', granularity:'raw', aggFn:'avg', dateFrom:'', dateTo:'',
-                 yMin:'', yMax:'', y1Min:'', y1Max:'', yUnitCat:'', yUnit:'', y1UnitCat:'', y1Unit:'', wPct:null, hPx:null, showAllCallouts:false, calloutStyle:'full', limitN:'', limitMode:'last', autoThin:true };
+                 yMin:'', yMax:'', y1Min:'', y1Max:'', yUnitCat:'', yUnit:'', y1UnitCat:'', y1Unit:'', wPct:null, hPx:null, paretoFn:'sum', paretoTop:'', showAllCallouts:false, calloutStyle:'full', limitN:'', limitMode:'last', autoThin:true };
   const saved = Array.isArray(p.charts) ? p.charts.slice(0,40) : [];
   state.charts = saved.map((c, i) => Object.assign({}, base, c, {
     id: i + 1,
@@ -4569,6 +5358,7 @@ function init(){
     if(!n) showToast('Semua grafik sudah diatur. Untuk satu grafik, klik tombol ✨ di kartunya.');
   });
   initInfoPopovers();
+  initReportPanel();
 
   const closeHelp = ()=>{
     $('#helpOverlay').classList.remove('active');
