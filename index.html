@@ -581,6 +581,10 @@ table.rp-table.no-ctl col.c-ctl{ display:none; }
 .pa-kpis span{ display:block; font-size:11px; color:var(--text-soft); font-weight:700; }
 .pa-kpis b{ font-size:18px; }
 .pa-list, .pa-rec ul{ margin:4px 0 8px 0; padding-left:20px; }
+.pa-intinya{ background:var(--panel-2); border-radius:10px; padding:9px 12px; margin-bottom:8px; font-size:13.5px; }
+.pa-rec ol{ margin:6px 0 2px 0; padding-left:20px; }
+.pa-rec li{ margin-bottom:3px; }
+.pareto-an details{ margin:4px 0; }
 .pa-rec{ border-left:4px solid var(--accent1); background:var(--panel-2); padding:8px 12px; border-radius:8px; margin-bottom:8px; }
 .pa-warn{ color:#b45309; font-weight:600; }
 .pa-table{ border-collapse:collapse; font-size:12px; margin-top:6px; width:100%; }
@@ -922,6 +926,7 @@ table.rp-table.no-ctl col.c-ctl{ display:none; }
       <button class="btn small ghost" id="rpReset" title="Hapus semua isian manual di kolom Parameter, Satuan, Actual, Target">↺ Kembalikan ke otomatis</button>
       <label class="rp-chk"><input type="checkbox" id="rpShowCtl" checked> Kontrol baris</label>
       <span class="rp-sp"></span>
+      <select id="rpChatMode" title="Isi teks chat yang akan disalin"><option value="full">Teks chat: dengan target + status</option><option value="notarget">Teks chat: tanpa target (status warna saja)</option><option value="plain">Teks chat: angka saja (tanpa target &amp; status)</option></select>
       <button class="btn small" id="rpCopyChat" title="Salin sebagai teks rapi (bisa ditempel di WhatsApp / Telegram / chat lain)">💬 Salin teks chat</button>
       <button class="btn small" id="rpCopyImg" title="Salin sebagai gambar (tempel di WhatsApp Web/Desktop, Telegram, dll.)">🖼️ Salin gambar</button>
       <button class="btn small" id="rpCopyTbl" title="Salin sebagai tabel (tempel di Excel / Word)">📋 Salin tabel</button>
@@ -2679,6 +2684,7 @@ function rpState(){
   if(R.dateCol === undefined) R.dateCol = '';
   if(R.date === undefined) R.date = '';
   if(R.showCtl === undefined) R.showCtl = true;
+  if(!R.chatMode) R.chatMode = 'full';
   R.colW = Object.assign({ g:130, p:230, c:60, u:80, a:130, t:100, n:240 }, R.colW || {});
   R.align = Object.assign({ g:'center', p:'left', c:'left', u:'left', a:'right', t:'right', n:'left' }, R.align || {});
   R.rows.forEach(r=>{ if(r.gSpan === undefined) r.gSpan = 1; if(r.nSpan === undefined) r.nSpan = 1; ['p','u','a','t'].forEach(k=>{ if(r[k] === undefined) r[k] = null; }); ['g','c','n','col','bg'].forEach(k=>{ if(r[k] === undefined || r[k] === null) r[k] = ''; }); });
@@ -2962,6 +2968,7 @@ function rpRender(){
   $('#rpDate').value = R.date || '';
   $('#rpAgg').value = R.agg;
   $('#rpShowCtl').checked = !!R.showCtl;
+  $('#rpChatMode').value = R.chatMode;
   const ttl = $('#rpTitle'); if(document.activeElement !== ttl) ttl.textContent = R.title;
   const n = rpDayIdxs().length;
   const info = $('#rpInfo');
@@ -3136,7 +3143,7 @@ function rpPrettyTarget(t){
   return String(t).replace(/^\s*(=>|>=)\s*/, '≥ ').replace(/^\s*(=<|<=)\s*/, '≤ ').replace(/^\s*>\s*/, '> ').replace(/^\s*<\s*/, '< ');
 }
 function rpChatText(){
-  const R = rpState(), idxs = rpDayIdxs();
+  const R = rpState(), idxs = rpDayIdxs(), mode = R.chatMode || 'full';
   const em = { ok:'🟢', warn:'🟡', bad:'🔴', '':'▫️' };
   const out = ['*' + R.title + '*'];
   if(R.date) out.push(rpFmtDate(R.date));
@@ -3148,13 +3155,14 @@ function rpChatText(){
     if(row.gSpan > 0 && String(row.g).trim()){ out.push(''); out.push('*' + String(row.g).trim() + '*'); }
     const p = rpCellInfo(row,'p',idxs).text, u = rpCellInfo(row,'u',idxs).text, a = rpCellInfo(row,'a',idxs).text, t = rpCellInfo(row,'t',idxs).text;
     if(p || a){
-      let line = em[rpRowStatus(row, idxs)] + ' ' + (p || '-') + ': ' + (a !== '' ? a : '-') + (u ? ' ' + u : '');
-      if(t) line += ' (target ' + rpPrettyTarget(t) + ')';
+      const mark = mode === 'plain' ? '•' : em[rpRowStatus(row, idxs)];
+      let line = mark + ' ' + (p || '-') + ': ' + (a !== '' ? a : '-') + (u ? ' ' + u : '');
+      if(mode === 'full' && t) line += ' (target ' + rpPrettyTarget(t) + ')';
       out.push(line);
     }
     if(notes[i]) notes[i].forEach(n=> out.push('   📝 ' + n));
   });
-  out.push('', '🟢 sesuai target · 🟡 dalam ±10% target · 🔴 di luar target');
+  if(mode !== 'plain') out.push('', '🟢 sesuai target · 🟡 dalam ±10% target · 🔴 di luar target');
   return out.join('\n');
 }
 function rpCopyChat(){ rpClipText(rpChatText(), 'Teks laporan disalin. Tempel (Ctrl+V) di WhatsApp / chat.'); }
@@ -3279,6 +3287,7 @@ function initReportPanel(){
   });
   $('#rpShowCtl').addEventListener('change', e=>{ R().showCtl = e.target.checked; rpRender(); scheduleAutosave(); });
   $('#rpCopyChat').addEventListener('click', rpCopyChat);
+  $('#rpChatMode').addEventListener('change', e=>{ R().chatMode = e.target.value; scheduleAutosave(); });
   $('#rpCopyImg').addEventListener('click', rpCopyImg);
   $('#rpCopyTbl').addEventListener('click', rpCopyTbl);
   const sw = $('#rpSwatches');
@@ -4699,33 +4708,53 @@ function paretoAnalysisHtml(full, total, excluded, info){
   const mean = total / n, sd = Math.sqrt(full.reduce((a,b)=> a + (b.v-mean)*(b.v-mean), 0) / n), cv = mean ? sd / mean * 100 : 0;
   const ratio = full[n-1].v > 0 ? full[0].v / full[n-1].v : 0;
   const pts = full.reduce((a,b)=> a + (b.n || 0), 0);
-  const allSingle = full.every(x=> (x.n || 0) <= 1);
+  const allSingle = full.filter(x=> (x.n || 0) <= 1).length / n >= 0.9;   // hampir semua kategori hanya 1 data
   let cls, verdict;
-  if(n < 3){ cls = 'na'; verdict = 'Kategori terlalu sedikit'; }
-  else if(top20 >= 70){ cls = 'strong'; verdict = 'Pareto kuat: terkonsentrasi'; }
+  if(allSingle && n >= 3){ cls = 'flat'; verdict = 'Belum bisa dibaca sebagai Pareto'; }
+  else if(n < 3){ cls = 'na'; verdict = 'Kategori terlalu sedikit'; }
+  else if(top20 >= 70){ cls = 'strong'; verdict = 'Pareto kuat: ada penyebab utama'; }
   else if(top20 >= 50){ cls = 'mid'; verdict = 'Cukup terkonsentrasi'; }
   else { cls = 'flat'; verdict = 'Merata: tidak ada yang dominan'; }
-  const names = k=> full.slice(0, k).map(x=> '<b>' + escapeHtml(x.k) + '</b> (' + pct(x.v / total * 100) + ')').join(', ');
+  const nm = k=> full.slice(0, k).map(x=> '<b>' + escapeHtml(x.k) + '</b> (' + pct(x.v / total * 100) + ')').join(', ');
   const fnName = { sum:'total (sum)', count:'jumlah data (count)', avg:'rata-rata', max:'nilai max', min:'nilai min' }[info.fn] || info.fn;
-  const li = [];
-  li.push('<b>' + n + '</b> kategori dari kolom <b>' + escapeHtml(info.xHeader) + '</b>, nilai <b>' + escapeHtml(info.header) + '</b> dihitung sebagai ' + fnName + ' per kategori. Total = <b>' + fmtNum(total) + '</b> dari ' + nid(pts) + ' data.');
-  li.push('<b>' + kVital + ' dari ' + n + '</b> kategori (' + pct(kVital / n * 100) + ') sudah membentuk <b>≥ 80%</b> total. ' + (n >= 3 ? 'Pada Pareto yang ideal, sekitar 20% kategori menyumbang 80%.' : ''));
-  li.push('Kategori terbesar: ' + names(Math.min(3, n)) + ' → ketiganya menyumbang <b>' + pct(top3) + '</b>.');
-  li.push('Sebanyak <b>' + k20 + '</b> kategori teratas (20% dari kategori) menyumbang <b>' + pct(top20) + '</b> dari total.');
-  li.push('Selisih kategori terbesar vs terkecil = <b>' + (ratio ? ratio.toFixed(1).replace('.', ',') + '×' : '-') + '</b>; variasi antar kategori (CV) = <b>' + pct(cv) + '</b>.');
-  if(excluded > 0) li.push('<span class="pa-warn">' + excluded + ' kategori bernilai 0 / kosong / negatif tidak ikut dihitung (Pareto hanya untuk nilai positif).</span>');
-  const rec = [];
-  if(allSingle && n >= 3) rec.push('<span class="pa-warn">⚠ Setiap kategori hanya berisi 1 data (mis. kombinasi tanggal + nomor lot yang unik). Pareto menjadi tidak bermakna karena yang dibandingkan hanyalah satu baris data. Ganti <b>Sumbu X</b> dengan kolom <b>pengelompokan</b> (mis. Lokasi, Material, Shift, Jenis masalah), atau atur Range Sumbu X ke Per Hari/Minggu/Bulan, lalu pilih ' + 'Total atau Jumlah data.</span>');
-  if(cls === 'strong') rec.push('Fokuskan perbaikan/pengendalian pada <b>' + kVital + ' kategori teratas</b>: ' + names(kVital) + '. Menangani kategori ini memberi dampak terbesar terhadap total.');
-  else if(cls === 'mid') rec.push('Ada beberapa kategori dominan tetapi kontribusinya masih tersebar. Prioritaskan <b>' + k20 + ' kategori teratas</b> (' + names(k20) + '), lalu tinjau kategori berikutnya secara bertahap.');
-  else if(cls === 'flat' && !allSingle) rec.push('Kontribusi merata (kategori terbesar hanya <b>' + pct(top1) + '</b>), sehingga prinsip 80/20 tidak terlihat pada data ini. Coba kelompokkan dengan kolom kategori lain, gabungkan kategori kecil, atau periksa apakah ukuran data sudah tepat (total vs jumlah data).');
-  if(info.fn === 'avg' || info.fn === 'max' || info.fn === 'min') rec.push('Catatan: Pareto umumnya memakai <b>Total</b> atau <b>Jumlah data</b>. Dengan ' + fnName + ', persen kumulatif lebih sulit ditafsirkan sebagai kontribusi terhadap keseluruhan.');
-  if(info.topN > 0 && info.topN < n) rec.push('Grafik hanya menampilkan ' + info.topN + ' kategori teratas, tetapi analisis di atas memakai seluruh ' + n + ' kategori.');
+  const X = '<b>' + escapeHtml(info.xHeader) + '</b>', Y = '<b>' + escapeHtml(info.header) + '</b>';
+  let intinya = '', fix = '';
+  if(allSingle && n >= 3){
+    intinya = 'Grafik ini <b>belum bisa dipakai sebagai Pareto</b>. Sumbu X (' + X + ') berisi nilai yang berbeda di setiap baris, sehingga ada <b>' + n + ' batang dan hampir semuanya hanya berisi 1 data</b>. Pareto baru berguna kalau beberapa baris data masuk ke kategori yang sama.';
+    fix = '<ol>' +
+      '<li><b>Anda tidak perlu menambah data di Sumbu Y.</b> Angka yang ingin dijumlahkan (' + Y + ') sudah benar.</li>' +
+      '<li>Yang perlu diganti adalah <b>kolom di Sumbu X</b>: pilih kolom <b>pengelompokan</b> yang nilainya berulang, misalnya nama ladle, lokasi, shift, jenis masalah/penyebab, atau material.</li>' +
+      (info.xIsNumber ? '<li>Kolom ' + X + ' berisi <b>angka</b>, jadi setiap angka dianggap kategori sendiri. Kolom angka lebih cocok di Sumbu Y atau grafik garis, bukan di Sumbu X Pareto.</li>' : '') +
+      (info.xIsDate ? '<li>Sumbu X Anda berisi tanggal. Atur <b>Range Sumbu X</b> ke Per Hari / Minggu / Bulan agar data di periode yang sama dijumlahkan.</li>' : '') +
+      '<li>Kalau tabel Anda belum punya kolom pengelompokan, tambahkan satu kolom di tabel data (mis. “Penyebab” atau “Ladle No”) dan isi tiap barisnya, lalu pilih kolom itu di Sumbu X.</li>' +
+      '<li>Pilih <b>Total (sum)</b> untuk menjumlahkan nilai tiap kategori, atau <b>Jumlah data (count)</b> untuk menghitung berapa kali tiap kategori muncul.</li></ol>';
+  } else if(cls === 'strong'){
+    intinya = 'Sebagian kecil kategori menyumbang sebagian besar total. Penyebab utamanya: ' + nm(Math.min(kVital, 5)) + '.';
+    fix = '<ul><li>Prioritaskan perbaikan pada <b>' + kVital + ' kategori teratas</b> (batang merah pekat). Hasilnya paling besar karena bersama-sama mereka membentuk sekitar 80% dari total.</li><li>Kategori di sebelah kanan (batang pucat) berdampak kecil; tangani belakangan.</li></ul>';
+  } else if(cls === 'mid'){
+    intinya = 'Ada beberapa kategori yang lebih besar dari yang lain, tetapi pengaruhnya belum terlalu terpusat. Yang terbesar: ' + nm(Math.min(3, n)) + '.';
+    fix = '<ul><li>Mulai dari <b>' + k20 + ' kategori teratas</b>, lalu lanjut ke kategori berikutnya secara bertahap.</li></ul>';
+  } else if(cls === 'flat'){
+    intinya = 'Semua kategori kira-kira sama besar (yang terbesar hanya <b>' + pct(top1) + '</b> dari total), jadi <b>tidak ada penyebab yang dominan</b>.';
+    fix = '<ul><li>Coba kelompokkan dengan kolom kategori lain, atau gabungkan kategori yang kecil-kecil.</li><li>Periksa juga pilihan “nilai per kategori”: Total (sum) dan Jumlah data (count) bisa memberi gambaran yang berbeda.</li></ul>';
+  } else {
+    intinya = 'Hanya ada ' + n + ' kategori, terlalu sedikit untuk analisis Pareto. Pilih kolom Sumbu X yang punya lebih banyak kategori.';
+  }
+  const notes = [];
+  if(excluded > 0) notes.push(excluded + ' kategori bernilai 0 / kosong / negatif tidak ikut dihitung (Pareto hanya untuk nilai positif).');
+  if(info.fn === 'avg' || info.fn === 'max' || info.fn === 'min') notes.push('Pareto umumnya memakai Total atau Jumlah data. Dengan ' + fnName + ', persen kumulatif sulit dibaca sebagai “kontribusi terhadap keseluruhan”.');
+  if(info.topN > 0 && info.topN < n) notes.push('Grafik hanya menampilkan ' + info.topN + ' kategori teratas, tetapi angka analisis memakai seluruh ' + n + ' kategori.');
   const rows = full.slice(0, 30).map((x, i)=> '<tr' + (i < kVital ? ' class="pa-vital"' : '') + '><td>' + (i+1) + '</td><td>' + escapeHtml(x.k) + '</td><td style="text-align:right">' + fmtNum(x.v) + '</td><td style="text-align:right">' + pct(x.v / total * 100) + '</td><td style="text-align:right">' + pct(cum[i]) + '</td></tr>').join('');
+  const detail = '<ul class="pa-list"><li>' + n + ' kategori dari kolom ' + X + ', nilai ' + Y + ' dihitung sebagai ' + fnName + ' per kategori. Total = <b>' + fmtNum(total) + '</b> dari ' + nid(pts) + ' data.</li>' +
+    '<li><b>' + kVital + ' dari ' + n + '</b> kategori (' + pct(kVital / n * 100) + ') dibutuhkan untuk mencapai 80% total. Pada Pareto yang ideal, cukup sekitar 20% kategori.</li>' +
+    '<li>Tiga kategori terbesar: ' + nm(Math.min(3, n)) + ' → bersama menyumbang <b>' + pct(top3) + '</b>.</li>' +
+    '<li>Selisih kategori terbesar dengan terkecil = <b>' + (ratio ? ratio.toFixed(1).replace('.', ',') + '×' : '-') + '</b>.</li></ul>';
   return '<div class="pareto-an"><div class="pa-head"><b>🔎 Analisis Pareto</b><span class="pa-badge ' + cls + '">' + verdict + '</span></div>' +
-    '<div class="pa-kpis"><div><span>Kategori</span><b>' + n + '</b></div><div><span>Pembentuk 80%</span><b>' + kVital + ' / ' + n + '</b></div><div><span>Kategori terbesar</span><b>' + pct(top1) + '</b></div><div><span>20% kategori teratas</span><b>' + pct(top20) + '</b></div></div>' +
-    '<ul class="pa-list">' + li.map(x=> '<li>' + x + '</li>').join('') + '</ul>' +
-    (rec.length ? '<div class="pa-rec"><b>💡 Kesimpulan &amp; rekomendasi</b><ul>' + rec.map(x=> '<li>' + x + '</li>').join('') + '</ul></div>' : '') +
+    '<div class="pa-intinya"><b>Intinya:</b> ' + intinya + '</div>' +
+    (fix ? '<div class="pa-rec"><b>' + (allSingle && n >= 3 ? '🛠 Apa yang perlu diubah?' : '💡 Apa yang sebaiknya dilakukan?') + '</b>' + fix + '</div>' : '') +
+    (notes.length ? '<ul class="pa-list">' + notes.map(x=> '<li><span class="pa-warn">' + x + '</span></li>').join('') + '</ul>' : '') +
+    '<details><summary>📖 Cara membaca grafik Pareto</summary><ul class="pa-list"><li><b>Batang</b> (sumbu kiri) = nilai tiap kategori, diurutkan dari yang terbesar ke terkecil.</li><li><b>Garis hitam</b> (sumbu kanan, %) = persen kumulatif: jumlah persen dari batang pertama sampai batang itu.</li><li><b>Garis putus-putus</b> = batas 80%. Batang pekat adalah kategori yang dibutuhkan untuk mencapai 80% total, yaitu kelompok yang paling berpengaruh (“the vital few”).</li><li>Pareto yang bagus terlihat curam di kiri: beberapa batang pertama tinggi, sisanya jauh lebih rendah.</li></ul></details>' +
+    '<details' + ((allSingle && n >= 3) ? '' : ' open') + '><summary>📊 Rincian angka</summary><div class="pa-kpis"><div><span>Kategori</span><b>' + n + '</b></div><div><span>Pembentuk 80%</span><b>' + kVital + ' / ' + n + '</b></div><div><span>Kategori terbesar</span><b>' + pct(top1) + '</b></div><div><span>20% kategori teratas</span><b>' + pct(top20) + '</b></div></div>' + detail + '</details>' +
     '<details><summary>Lihat tabel peringkat' + (n > 30 ? ' (30 teratas)' : '') + '</summary><div style="overflow:auto"><table class="pa-table"><thead><tr><th>#</th><th>Kategori</th><th>Nilai</th><th>% total</th><th>% kumulatif</th></tr></thead><tbody>' + rows + '</tbody></table></div></details></div>';
 }
 function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
@@ -4784,7 +4813,7 @@ function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
   const chartCard = wrap.closest('.chart-card');
   const sp = chartCard ? chartCard.querySelector('[data-role=statspanel]') : null;
   if(sp){
-    sp.innerHTML = paretoAnalysisHtml(full, total, excluded, { fn, header, xHeader, topN: (topN > 0 ? topN : 0) });
+    sp.innerHTML = paretoAnalysisHtml(full, total, excluded, { fn, header, xHeader, topN: (topN > 0 ? topN : 0), xIsNumber: state.colTypes[parseInt(cfg.xCol)] === 'number', xIsDate: state.colTypes[parseInt(cfg.xCol)] === 'date' });
   }
 }
 
