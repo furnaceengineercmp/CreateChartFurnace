@@ -501,31 +501,31 @@ html.no-anim *, html.no-anim *::before, html.no-anim *::after{ animation:none !i
 .rp-info{ font-size:12.5px; font-weight:700; margin:4px 0 10px 0; color:var(--text-soft); }
 .rp-info.warn{ color:#b45309; }
 .rp-scroll{ overflow:auto; }
-#rpExportArea{ display:inline-block; min-width:820px; background:var(--panel); padding:4px 2px 8px 2px; }
+#rpExportArea{ display:inline-block; background:var(--panel); padding:4px 2px 8px 2px; }
 .rp-title{ font-size:20px; font-weight:900; padding:4px 6px; outline:none; }
 .rp-subtitle{ font-size:13px; font-weight:700; color:var(--text-soft); padding:0 6px 8px 6px; }
-table.rp-table{ border-collapse:collapse; font-size:13px; background:#fff; color:#111; }
+table.rp-table{ border-collapse:collapse; table-layout:fixed; font-size:13px; background:#fff; color:#111; }
 table.rp-table th, table.rp-table td{ border:1px solid #9aa3a0; padding:0; vertical-align:middle; }
 table.rp-table th{ background:#e2f0d9; color:#111; font-weight:900; text-align:center; padding:6px 10px; }
-table.rp-table th.rp-h-main{ font-size:20px; letter-spacing:.5px; min-width:420px; }
+table.rp-table th.rp-h-main{ font-size:20px; letter-spacing:.5px; }
 table.rp-table th.rp-h-daily{ font-size:14px; }
 table.rp-table th.rp-h-sub{ font-size:11px; font-weight:800; padding:3px 6px; }
-table.rp-table th.rp-h-notes{ font-size:20px; min-width:230px; }
+table.rp-table th.rp-h-notes{ font-size:20px; }
 .rp-date{ font-size:11px; font-weight:700; }
 table.rp-table td.rp-ctl, table.rp-table th.rp-ctl{ touch-action:none; user-select:none; cursor:cell; background:#f4f4f4; border-color:#ddd; white-space:nowrap; padding:2px 4px; }
 .rp-ctl select{ max-width:130px; font-size:11px; padding:2px; }
 .rp-ctl button{ border:1px solid #ccc; background:#fff; border-radius:6px; font-size:11px; cursor:pointer; padding:1px 5px; margin-left:2px; }
 .rp-ctl button:hover{ border-color:var(--accent1); color:var(--accent1); }
 table.rp-table.no-ctl .rp-ctl{ display:none; }
-td.rp-g{ background:#dae3f3; font-weight:800; text-align:center; position:relative; min-width:120px; }
-td.rp-n{ position:relative; vertical-align:top; min-width:230px; }
+td.rp-g{ background:#dae3f3; font-weight:800; text-align:center; position:relative; }
+td.rp-n{ position:relative; vertical-align:top; }
 td.rp-p, td.rp-c, td.rp-u, td.rp-t{ position:relative; }
-td.rp-p{ min-width:190px; } td.rp-c{ min-width:46px; } td.rp-u{ min-width:60px; } td.rp-a{ min-width:110px; } td.rp-t{ min-width:70px; }
+
 .rp-cell{ padding:3px 8px; min-height:20px; outline:none; white-space:pre-wrap; word-break:break-word; }
 .rp-cell:focus{ background:rgba(255,235,59,.25); box-shadow:inset 0 0 0 2px var(--accent1); }
-td.rp-g .rp-cell{ text-align:center; }
+
 td.rp-a .rp-aw{ display:flex; align-items:center; gap:6px; padding-left:6px; }
-td.rp-a .rp-cell{ flex:1; text-align:right; padding-right:10px; font-weight:700; }
+td.rp-a .rp-cell{ flex:1; padding-right:10px; font-weight:700; min-width:0; }
 .rp-dot{ width:13px; height:13px; border-radius:50%; background:transparent; border:1px solid transparent; flex:0 0 13px; }
 td.rp-a.st-ok{ background:#e6f4ec; } td.rp-a.st-ok .rp-dot{ background:#2f9e73; border-color:#1f7d5a; }
 td.rp-a.st-warn{ background:#fdf3d4; } td.rp-a.st-warn .rp-dot{ background:#f2c14e; border-color:#c99a2a; }
@@ -554,6 +554,40 @@ td:hover > .rp-mt{ display:flex; }
 .rp-dialog .rp-list label{ font-size:13px; display:flex; gap:6px; align-items:center; }
 .rp-dialog .rp-btns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
 @media print{ #panel-report .rp-bar, #panel-report .rp-info{ display:none !important; } }
+
+
+table.rp-table td{ overflow:hidden; }
+table.rp-table .rp-colhead th{ background:#f1f1f1; color:#555; font-size:11px; font-weight:700; padding:3px 6px; position:relative; border-color:#ddd; white-space:nowrap; overflow:visible; }
+.rp-rs{ position:absolute; right:-4px; top:0; width:9px; height:100%; cursor:col-resize; z-index:6; touch-action:none; }
+.rp-rs:hover, .rp-rs.on{ background:rgba(200,30,40,.35); }
+table.rp-table.no-ctl col.c-ctl{ display:none; }
+#rpExportArea.rp-exporting .rp-colhead, #rpExportArea.rp-exporting col.c-ctl{ display:none !important; }
+.rp-aligngrp{ display:inline-flex; gap:4px; align-items:center; }
+.rp-aligngrp select{ padding:5px 8px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font-size:12.5px; }
+.sup-palette{ position:fixed; z-index:9997; display:none; align-items:center; gap:4px; background:var(--panel); color:var(--text); border:1px solid var(--accent1); border-radius:10px; padding:5px 8px; box-shadow:0 8px 24px rgba(0,0,0,.25); font-size:12px; flex-wrap:wrap; max-width:460px; }
+.sup-palette .sp-t{ font-weight:800; margin-right:2px; }
+.sup-palette button{ border:1px solid var(--border); background:var(--panel-2); color:var(--text); border-radius:6px; min-width:28px; height:26px; font-size:14px; cursor:pointer; padding:0 5px; }
+.sup-palette button:hover{ border-color:var(--accent1); color:var(--accent1); }
+.sup-palette .sp-h{ width:100%; color:var(--text-soft); font-size:11px; }
+@media print{ .sup-palette{ display:none !important; } }
+
+
+.pareto-an{ padding:12px 14px; font-size:13px; line-height:1.55; }
+.pa-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; font-size:14px; }
+.pa-badge{ padding:2px 10px; border-radius:999px; font-weight:800; font-size:12px; color:#fff; background:#888; }
+.pa-badge.strong{ background:#2f9e73; } .pa-badge.mid{ background:#e0a02a; } .pa-badge.flat{ background:#d9534f; } .pa-badge.na{ background:#888; }
+.pa-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin-bottom:8px; }
+.pa-kpis div{ border:1px solid var(--border); border-radius:10px; padding:6px 10px; background:var(--panel-2); }
+.pa-kpis span{ display:block; font-size:11px; color:var(--text-soft); font-weight:700; }
+.pa-kpis b{ font-size:18px; }
+.pa-list, .pa-rec ul{ margin:4px 0 8px 0; padding-left:20px; }
+.pa-rec{ border-left:4px solid var(--accent1); background:var(--panel-2); padding:8px 12px; border-radius:8px; margin-bottom:8px; }
+.pa-warn{ color:#b45309; font-weight:600; }
+.pa-table{ border-collapse:collapse; font-size:12px; margin-top:6px; width:100%; }
+.pa-table th, .pa-table td{ border:1px solid var(--border); padding:3px 8px; }
+.pa-table th{ background:var(--panel-2); }
+.pa-table tr.pa-vital td{ background:rgba(224,32,32,.08); font-weight:600; }
+.pareto-an summary{ cursor:pointer; font-weight:700; }
 
 /* ===== v2: ukuran grafik bebas, ruler tanggal, satuan sumbu, info "!" ===== */
 .rs-handle{ position:absolute; z-index:6; touch-action:none; }
@@ -902,6 +936,21 @@ td:hover > .rp-mt{ display:flex; }
       <button class="btn small ghost" id="rpSelAll">Pilih semua baris</button>
       <button class="btn small ghost" id="rpSelNone">Hapus pilihan</button>
       <span class="rp-legend"><i class="lg-manual"></i> Biru muda = diisi / diubah manual</span>
+    </div>
+    <div class="rp-bar rp-colorbar">
+      <span class="rp-lbl">↔ Rata teks:</span>
+      <span class="rp-aligngrp">
+        <select id="rpAlignCol">
+          <option value="all">Semua kolom</option>
+          <option value="g">① Grup</option><option value="p">② Parameter</option><option value="c">③ Klasifikasi</option>
+          <option value="u">④ Satuan</option><option value="a">⑤ Actual</option><option value="t">⑥ Target</option><option value="n">⑦ Notes</option>
+        </select>
+        <button class="btn small" data-align="left" title="Rata kiri">⇤ Kiri</button>
+        <button class="btn small" data-align="center" title="Rata tengah">↔ Tengah</button>
+        <button class="btn small" data-align="right" title="Rata kanan">⇥ Kanan</button>
+      </span>
+      <button class="btn small ghost" id="rpResetW" title="Kembalikan lebar semua kolom ke ukuran awal">↺ Reset lebar kolom</button>
+      <span class="rp-legend" style="margin-left:auto;">Geser garis pemisah di judul kolom (abu-abu) untuk mengatur lebar; teks otomatis turun ke bawah (wrap).</span>
     </div>
     <div id="rpInfo" class="rp-info"></div>
     <div class="rp-scroll"><div id="rpExportArea">
@@ -1258,8 +1307,11 @@ function parseFlexibleDateRaw(v){
       if(!isNaN(d) && d.getMonth()===mi) return d;
     }
   }
+  // Parser bawaan browser terlalu longgar ("LOT 1241" dibaca 1 Jan 1241). Terima hanya jika
+  // ada minimal 2 kelompok angka dan tahunnya wajar.
+  if((str.match(/\d+/g) || []).length < 2) return null;
   let d2 = new Date(str);
-  if(!isNaN(d2)) return d2;
+  if(!isNaN(d2) && d2.getFullYear() >= 1900 && d2.getFullYear() <= 2100) return d2;
   return null;
 }
 
@@ -1444,7 +1496,8 @@ function renderDataPreview(){
     td.addEventListener('blur', ()=>{
       const ci = parseInt(td.dataset.uc);
       if(!state.unitRow) state.unitRow = state.headers.map(()=> '');
-      state.unitRow[ci] = td.textContent.trim();
+      state.unitRow[ci] = fmtUnitText(td.textContent.trim());
+      if(td.textContent !== state.unitRow[ci]) td.textContent = state.unitRow[ci];
       state.charts.forEach(renderChart);
       if(typeof rpRefreshIfOpen==='function') rpRefreshIfOpen();
     });
@@ -1785,6 +1838,7 @@ function makeHeadCell(hrow, c, text){
   th.contentEditable = 'true';
   th.dataset.col = c; th.dataset.hrow = hrow;
   th.textContent = text;
+  if(hrow === 3) th.addEventListener('blur', ()=>{ const v = fmtUnitText(th.textContent.trim()); if(v !== th.textContent) th.textContent = v; });
   return th;
 }
 function initManualTable(cols, rows){
@@ -1963,7 +2017,7 @@ function interpretStructured(grid){
   for(let guard=0; guard<8 && idx < rows.length; guard++){
     const r = rows[idx];
     if(isBlank(r)){ idx++; continue; }
-    if(UL.test(r[0]) && !units){ units = r.slice(); units[0] = ''; idx++; continue; }
+    if(UL.test(r[0]) && !units){ units = r.slice().map(fmtUnitText); units[0] = ''; idx++; continue; }
     if(isTargetRow(r) && !targets){ targets = r.slice(); if(TL.test(targets[0])) targets[0] = ''; idx++; continue; }
     if(!h2Taken && !targets && !units){
       const nonEmpty = r.filter(c=> c !== '');
@@ -2066,7 +2120,7 @@ function useManualData(){
   const h1 = $all('#manualHeaderRow th[data-col]').map(th=> th.textContent.trim());
   const h2 = $all('#manualHeaderRow2 th[data-col]').map(th=> th.textContent.trim());
   const tg = $all('#manualTargetRow th[data-col]').map(th=> th.textContent.trim());
-  const un = $all('#manualUnitRow th[data-col]').map(th=> th.textContent.trim());
+  const un = $all('#manualUnitRow th[data-col]').map(th=> fmtUnitText(th.textContent.trim()));
   const headers = flattenHeaders(h1, h2);
   const rows = [];
   $all('#manualBody tr').forEach(tr=>{
@@ -2302,7 +2356,7 @@ function ensureUnits(cfg, p){
 }
 function axisUnitText(cfg, p){
   const seen = [];
-  ensureUnits(cfg, p).forEach(u=>{ const t = (u.unit || '').trim(); if(t && seen.indexOf(t) < 0) seen.push(t); });
+  ensureUnits(cfg, p).forEach(u=>{ const t = fmtUnitText((u.unit || '').trim()); if(t && seen.indexOf(t) < 0) seen.push(t); });
   return seen.join(' atau ');
 }
 function refreshSeriesAutoTargets(cfg, card){
@@ -2320,7 +2374,7 @@ function syncAutoUnits(cfg){
     (cfg.series||[]).forEach(sr=>{
       if(sr.colIndex==='' || sr.colIndex===undefined) return;
       if((sr.axis || 'y') !== p) return;
-      const u = state.unitRow ? String(state.unitRow[parseInt(sr.colIndex)] || '').trim() : '';
+      const u = state.unitRow ? fmtUnitText(String(state.unitRow[parseInt(sr.colIndex)] || '').trim()) : '';
       if(u && want.indexOf(u) < 0) want.push(u);
     });
     const dism = cfg[p + 'UnitDismiss'] || [];
@@ -2571,6 +2625,47 @@ function initInfoPopovers(){
 }
 
 
+
+/* ================= Satuan: pangkat & subskrip ================= */
+const SUP_MAP = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','−':'⁻','(':'⁽',')':'⁾','=':'⁼','n':'ⁿ','i':'ⁱ'};
+const SUB_MAP = {'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','+':'₊','-':'₋','−':'₋','(':'₍',')':'₎','=':'₌','a':'ₐ','e':'ₑ','o':'ₒ','x':'ₓ','h':'ₕ','k':'ₖ','l':'ₗ','m':'ₘ','n':'ₙ','p':'ₚ','s':'ₛ','t':'ₜ'};
+const CHEM_TOKENS = /\b(CO2|SO2|SO3|NO2|N2O|H2O|H2S|H2|O2|N2|NH3|CH4|SiO2|Al2O3|Fe2O3|Fe3O4|CaCO3)\b/g;
+function unitMapChars(str, map){ return String(str).split('').map(ch=> map[ch] !== undefined ? map[ch] : (map[ch.toLowerCase()] !== undefined ? map[ch.toLowerCase()] : ch)).join(''); }
+// Ketik m^3 -> m³, kg/cm^2 -> kg/cm², H_2O -> H₂O, ^{-1} -> ⁻¹. Juga m3 -> m³, Nm3/h -> Nm³/h, CO2 -> CO₂.
+function fmtUnitText(v){
+  if(v === null || v === undefined) return '';
+  let t = String(v);
+  if(!t) return t;
+  t = t.replace(/\^\{([^}]*)\}|\^\(([^)]*)\)|\^([+\-−]?\d+)/g, (m, a, b, c)=> unitMapChars(a !== undefined ? a : (b !== undefined ? b : c), SUP_MAP));
+  t = t.replace(/_\{([^}]*)\}|_\(([^)]*)\)|_([+\-−]?\d+)/g, (m, a, b, c)=> unitMapChars(a !== undefined ? a : (b !== undefined ? b : c), SUB_MAP));
+  t = t.replace(/\b((?:Nk|N|k|d|c|m|µ|n|M|G|T)?m)([23])(?![0-9A-Za-z])/g, (m, a, d)=> a + SUP_MAP[d]);
+  t = t.replace(CHEM_TOKENS, tok=> tok.replace(/\d/g, d=> SUB_MAP[d]));
+  return t;
+}
+function initSupPalette(){
+  const pal = document.createElement('div'); pal.id = 'supPalette'; pal.className = 'sup-palette';
+  const chars = ['²','³','⁻¹','⁻²','⁻³','⁴','₂','₃','₄','µ','°','‰'];
+  pal.innerHTML = '<span class="sp-t">Pangkat / subskrip:</span>' + chars.map(c=> '<button type="button" data-ch="' + c + '">' + c + '</button>').join('') + '<span class="sp-h">atau ketik <b>m^3</b> → m³, <b>H_2O</b> → H₂O</span>';
+  document.body.appendChild(pal);
+  let timer = null;
+  const isUnitCell = el=> el && el.matches && el.matches('th[data-hrow="3"], td[data-uc], .rp-cell[data-k="u"]');
+  document.addEventListener('focusin', e=>{
+    if(!isUnitCell(e.target)) return;
+    clearTimeout(timer);
+    const r = e.target.getBoundingClientRect();
+    pal.style.display = 'flex';
+    pal.style.left = Math.max(8, Math.min(window.innerWidth - pal.offsetWidth - 8, r.left)) + 'px';
+    let top = r.bottom + 4; if(top + pal.offsetHeight > window.innerHeight - 6) top = Math.max(6, r.top - pal.offsetHeight - 4);
+    pal.style.top = top + 'px';
+  });
+  document.addEventListener('focusout', e=>{ if(isUnitCell(e.target)){ timer = setTimeout(()=>{ pal.style.display = 'none'; }, 160); } });
+  pal.addEventListener('mousedown', e=>{ if(e.target.closest('button')) e.preventDefault(); });
+  pal.addEventListener('click', e=>{
+    const b = e.target.closest('button[data-ch]'); if(!b) return;
+    document.execCommand('insertText', false, b.dataset.ch);
+  });
+}
+
 /* ================= DAILY REPORT ================= */
 const RP_KEYS = ['g','p','c','u','a','t','n'];
 const RP_COLNAMES = ['Grup','Parameter','Klasifikasi','Satuan','Actual','Target','Notes'];
@@ -2584,6 +2679,8 @@ function rpState(){
   if(R.dateCol === undefined) R.dateCol = '';
   if(R.date === undefined) R.date = '';
   if(R.showCtl === undefined) R.showCtl = true;
+  R.colW = Object.assign({ g:130, p:230, c:60, u:80, a:130, t:100, n:240 }, R.colW || {});
+  R.align = Object.assign({ g:'center', p:'left', c:'left', u:'left', a:'right', t:'right', n:'left' }, R.align || {});
   R.rows.forEach(r=>{ if(r.gSpan === undefined) r.gSpan = 1; if(r.nSpan === undefined) r.nSpan = 1; ['p','u','a','t'].forEach(k=>{ if(r[k] === undefined) r[k] = null; }); ['g','c','n','col','bg'].forEach(k=>{ if(r[k] === undefined || r[k] === null) r[k] = ''; }); });
   return R;
 }
@@ -2650,7 +2747,7 @@ function rpAggCol(ci, idxs, agg){
 function rpAuto(row, key, idxs){
   const ci = rpColIdx(row.col);
   if(key === 'p') return ci >= 0 ? state.headers[ci] : '';
-  if(key === 'u') return (ci >= 0 && state.unitRow) ? (state.unitRow[ci] || '') : '';
+  if(key === 'u') return (ci >= 0 && state.unitRow) ? fmtUnitText(state.unitRow[ci] || '') : '';
   if(key === 't') return (ci >= 0 && state.targetRow) ? (state.targetRow[ci] || '') : '';
   if(key === 'a') return rpAggCol(ci, idxs, rpState().agg);
   return '';
@@ -2787,7 +2884,10 @@ function rpFmtDate(str){
 function rpEsc(x){ return escapeHtml(x === null || x === undefined ? '' : String(x)); }
 function rpBuildTable(forExport){
   const R = rpState(), idxs = rpDayIdxs();
-  let h = '<table class="rp-table' + (R.showCtl ? '' : ' no-ctl') + '" id="rpTable"><thead>';
+  const W = R.colW, CTLW = 270;
+  let h = '<table class="rp-table' + (R.showCtl ? '' : ' no-ctl') + '" id="rpTable" style="width:' + rpTotalW(R.showCtl) + 'px;"><colgroup><col class="c-ctl" style="width:' + CTLW + 'px">' +
+    RP_KEYS.map(k=> '<col data-k="' + k + '" style="width:' + W[k] + 'px">').join('') + '</colgroup><thead>';
+  h += '<tr class="rp-colhead"><th class="rp-ctl"></th>' + RP_KEYS.map((k, ix)=> '<th data-k="' + k + '">' + ['①','②','③','④','⑤','⑥','⑦'][ix] + ' ' + RP_COLNAMES[ix] + '<span class="rp-rs" data-k="' + k + '" title="Tarik untuk mengatur lebar kolom"></span></th>').join('') + '</tr>';
   h += '<tr><th class="rp-ctl" rowspan="2"></th><th colspan="4" rowspan="2" class="rp-h-main">PARAMETER</th><th colspan="2" class="rp-h-daily">DAILY</th><th rowspan="2" class="rp-h-notes">NOTES</th></tr>';
   h += '<tr><th class="rp-h-sub">ACTUAL</th><th class="rp-h-sub">TARGET</th></tr></thead><tbody>';
   const opts = '<option value="">(manual)</option>' + state.headers.map(x=> '<option value="' + rpEsc(x) + '">' + rpEsc(x) + '</option>').join('');
@@ -2798,18 +2898,18 @@ function rpBuildTable(forExport){
       '<button data-act="up" data-r="' + i + '" title="Naik">↑</button><button data-act="down" data-r="' + i + '" title="Turun">↓</button>' +
       '<button data-act="ins" data-r="' + i + '" title="Sisipkan baris di bawah">＋</button><button data-act="del" data-r="' + i + '" title="Hapus baris">✕</button></td>';
     if(row.gSpan > 0){
-      h += '<td class="rp-g" rowspan="' + row.gSpan + '"' + gbg + '><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="g">' + rpEsc(row.g) + '</div>' +
+      h += '<td class="rp-g" rowspan="' + row.gSpan + '"' + gbg + '><div class="rp-cell" style="text-align:' + R.align.g + '" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="g">' + rpEsc(row.g) + '</div>' +
         '<div class="rp-mt"><button data-act="mdown" data-k="g" data-r="' + i + '" title="Gabung dengan baris di bawah">⤓</button><button data-act="msplit" data-k="g" data-r="' + i + '" title="Pisahkan gabungan">⤒</button></div></td>';
     }
     ['p','c','u'].forEach(k=>{
       const ci = rpCellInfo(row, k, idxs);
-      h += '<td class="rp-' + k + (ci.ov ? ' rp-ov' : '') + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="' + k + '">' + rpEsc(ci.text) + '</div></td>';
+      h += '<td class="rp-' + k + (ci.ov ? ' rp-ov' : '') + '"><div class="rp-cell" style="text-align:' + R.align[k] + '" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="' + k + '">' + rpEsc(ci.text) + '</div></td>';
     });
     const a = rpCellInfo(row, 'a', idxs), t = rpCellInfo(row, 't', idxs), st = rpRowStatus(row, idxs);
-    h += '<td class="rp-a' + (st ? ' st-' + st : '') + (a.ov ? ' rp-ov' : '') + '"><div class="rp-aw"><span class="rp-dot"></span><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="a">' + rpEsc(a.text) + '</div></div></td>';
-    h += '<td class="rp-t' + (t.ov ? ' rp-ov' : '') + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="t">' + rpEsc(t.text) + '</div></td>';
+    h += '<td class="rp-a' + (st ? ' st-' + st : '') + (a.ov ? ' rp-ov' : '') + '"><div class="rp-aw"><span class="rp-dot"></span><div class="rp-cell" style="text-align:' + R.align.a + '" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="a">' + rpEsc(a.text) + '</div></div></td>';
+    h += '<td class="rp-t' + (t.ov ? ' rp-ov' : '') + '"><div class="rp-cell" style="text-align:' + R.align.t + '" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="t">' + rpEsc(t.text) + '</div></td>';
     if(row.nSpan > 0){
-      h += '<td class="rp-n" rowspan="' + row.nSpan + '"><div class="rp-cell" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="n">' + rpEsc(row.n) + '</div>' +
+      h += '<td class="rp-n" rowspan="' + row.nSpan + '"><div class="rp-cell" style="text-align:' + R.align.n + '" contenteditable="true" spellcheck="false" data-r="' + i + '" data-k="n">' + rpEsc(row.n) + '</div>' +
         '<div class="rp-mt"><button data-act="mdown" data-k="n" data-r="' + i + '" title="Gabung dengan baris di bawah">⤓</button><button data-act="msplit" data-k="n" data-r="' + i + '" title="Pisahkan gabungan">⤒</button></div></td>';
     }
     h += '</tr>';
@@ -2817,6 +2917,31 @@ function rpBuildTable(forExport){
   if(!R.rows.length) h += '<tr><td colspan="8" style="padding:18px;text-align:center;color:#777;">Belum ada baris. Klik “☑ Pilih parameter” atau “＋ Baris”.</td></tr>';
   h += '</tbody></table>';
   return h;
+}
+function rpTotalW(withCtl){
+  const R = rpState(); let w = 0;
+  RP_KEYS.forEach(k=> w += (R.colW[k] || 100));
+  return w + (withCtl ? 270 : 0);
+}
+function rpInitColResize(wrap){
+  wrap.addEventListener('pointerdown', e=>{
+    const h = e.target.closest ? e.target.closest('.rp-rs') : null; if(!h) return;
+    e.preventDefault(); e.stopPropagation();
+    const R = rpState(), k = h.dataset.k, x0 = e.clientX, w0 = R.colW[k];
+    const tbl = $('#rpTable'), col = tbl.querySelector('col[data-k="' + k + '"]');
+    h.classList.add('on');
+    const move = ev=>{
+      const w = Math.max(40, Math.min(900, Math.round(w0 + ev.clientX - x0)));
+      R.colW[k] = w; col.style.width = w + 'px'; tbl.style.width = rpTotalW(R.showCtl) + 'px';
+    };
+    const up = ()=>{ h.classList.remove('on'); document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up); scheduleAutosave(); };
+    document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+  });
+}
+async function rpExportCapture(fn){
+  const area = $('#rpExportArea'), tbl = $('#rpTable'); const old = tbl ? tbl.style.width : '';
+  area.classList.add('rp-exporting'); if(tbl) tbl.style.width = rpTotalW(false) + 'px';
+  try{ return await fn(area); } finally { area.classList.remove('rp-exporting'); if(tbl) tbl.style.width = old; }
 }
 function rpRender(){
   const R = rpState();
@@ -2861,7 +2986,7 @@ function rpSetFromPaste(row, k, val){
     if(hi >= 0){ row.col = state.headers[hi]; row.p = null; } else row.p = val;
     return;
   }
-  row[k] = val === '' ? null : val;
+  row[k] = val === '' ? null : (k === 'u' ? fmtUnitText(val) : val);
 }
 function rpOnPaste(e){
   const cell = e.target.closest ? e.target.closest('.rp-cell') : null; if(!cell) return;
@@ -2909,7 +3034,10 @@ function rpOnFocusOut(e){
   if((k === 'p' || k === 'u' || k === 'a' || k === 't') && row[k] === null){
     const ci = rpCellInfo(row, k, rpDayIdxs()); cell.textContent = ci.text;
     cell.closest('td').classList.remove('rp-ov');
-  } else if(k === 'p' || k === 'u' || k === 'a' || k === 't'){ cell.closest('td').classList.add('rp-ov'); }
+  } else if(k === 'p' || k === 'u' || k === 'a' || k === 't'){
+    if(k === 'u'){ const f = fmtUnitText(row.u); if(f !== row.u){ row.u = f; cell.textContent = f; } }
+    cell.closest('td').classList.add('rp-ov');
+  }
 }
 function rpOnKeydown(e){
   const cell = e.target.closest ? e.target.closest('.rp-cell') : null; if(!cell) return;
@@ -3031,23 +3159,23 @@ function rpChatText(){
 }
 function rpCopyChat(){ rpClipText(rpChatText(), 'Teks laporan disalin. Tempel (Ctrl+V) di WhatsApp / chat.'); }
 async function rpCopyImg(){
-  const area = $('#rpExportArea'); if(!area) return;
   if(!(navigator.clipboard && window.ClipboardItem)){ showToast('Browser ini tidak bisa menyalin gambar. Pakai “Salin teks chat” atau tombol JPG.'); return; }
   showToast('Membuat gambar...');
-  area.classList.add('rp-exporting');
   try{
-    const cv = await captureEl(area);
-    const blob = await new Promise(res=> cv.toBlob(res, 'image/png'));
+    const blob = await rpExportCapture(async area=>{
+      const cv = await captureEl(area);
+      return await new Promise(res=> cv.toBlob(res, 'image/png'));
+    });
     await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
     showToast('Gambar disalin. Tempel (Ctrl+V) di WhatsApp / chat.');
   }catch(err){ console.error(err); showToast('Gagal menyalin gambar (butuh izin clipboard, dan halaman via https/localhost). Gunakan tombol JPG.'); }
-  area.classList.remove('rp-exporting');
 }
 function rpCopyTbl(){
   const clean = x=> String(x === null || x === undefined ? '' : x).replace(/\t/g,' ').replace(/\r?\n/g,' ');
   const text = rpTableValues().map(r=> r.slice(0,7).map(clean).join('\t')).join('\n');
   const area = $('#rpExportArea').cloneNode(true);
-  area.querySelectorAll('.rp-ctl, .rp-mt').forEach(n=> n.remove());
+  area.querySelectorAll('.rp-ctl, .rp-mt, .rp-colhead, col.c-ctl').forEach(n=> n.remove());
+  const _t = area.querySelector('table'); if(_t) _t.style.width = rpTotalW(false) + 'px';
   area.querySelectorAll('[contenteditable]').forEach(n=> n.removeAttribute('contenteditable'));
   const html = '<meta charset="utf-8">' + area.innerHTML;
   if(navigator.clipboard && window.ClipboardItem){
@@ -3067,19 +3195,16 @@ function rpXlsx(){
     if(row.nSpan > 1) merges.push({ s:{r:4+i,c:6}, e:{r:4+i+row.nSpan-1,c:6} });
   });
   ws['!merges'] = merges;
-  ws['!cols'] = [{wch:22},{wch:30},{wch:10},{wch:12},{wch:14},{wch:12},{wch:40}];
+  ws['!cols'] = RP_KEYS.map(k=> ({ wch: Math.max(6, Math.round(R.colW[k] / 7)) }));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Daily Report');
   XLSX.writeFile(wb, fileSafe(R.title + ' ' + (R.date || '')) + '.xlsx');
 }
 async function rpJpg(){
-  const area = $('#rpExportArea'); if(!area) return;
   showToast('Membuat JPG...');
-  area.classList.add('rp-exporting');
   try{
-    const cv = await captureEl(area);
-    downloadDataUrl(cv.toDataURL('image/jpeg', 0.93), fileSafe(rpState().title + ' ' + (rpState().date || '')) + '.jpg');
+    const url = await rpExportCapture(async area=>{ const cv = await captureEl(area); return cv.toDataURL('image/jpeg', 0.93); });
+    downloadDataUrl(url, fileSafe(rpState().title + ' ' + (rpState().date || '')) + '.jpg');
   }catch(err){ console.error(err); showToast('Gagal export JPG'); }
-  area.classList.remove('rp-exporting');
 }
 function rpInitDragSelect(wrap){
   let lastAnchor = null;
@@ -3128,11 +3253,12 @@ function rpApplyColor(c){
 function rpPrint(){
   const area = $('#rpExportArea'); if(!area) return;
   const clone = area.cloneNode(true);
-  clone.querySelectorAll('.rp-ctl, .rp-mt').forEach(n=> n.remove());
+  clone.querySelectorAll('.rp-ctl, .rp-mt, .rp-colhead, col.c-ctl').forEach(n=> n.remove());
+  const _pt = clone.querySelector('table'); if(_pt) _pt.style.width = '100%';
   clone.querySelectorAll('[contenteditable]').forEach(n=> n.removeAttribute('contenteditable'));
   const w = window.open('', '_blank');
   if(!w){ showToast('Izinkan pop-up untuk mencetak'); return; }
-  const css = 'body{font-family:Segoe UI,Arial,sans-serif;margin:16px;color:#111}table{border-collapse:collapse;font-size:12px;width:100%}th,td{border:1px solid #777;padding:0}th{background:#e2f0d9;padding:5px 8px}.rp-h-main,.rp-h-notes{font-size:18px}.rp-title{font-size:20px;font-weight:900}.rp-subtitle{font-size:12px;margin-bottom:6px}td.rp-g{background:#dae3f3;font-weight:800;text-align:center}.rp-cell{padding:3px 8px;white-space:pre-wrap}td.rp-a .rp-aw{display:flex;align-items:center;gap:6px;padding-left:6px}td.rp-a .rp-cell{flex:1;text-align:right;font-weight:700}.rp-dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px}td.st-ok{background:#e6f4ec}td.st-ok .rp-dot{background:#2f9e73}td.st-warn{background:#fdf3d4}td.st-warn .rp-dot{background:#f2c14e}td.st-bad{background:#fbe3df}td.st-bad .rp-dot{background:#e0463a}td.rp-ov{background:#dbeafe!important}td.rp-n{vertical-align:top}@page{size:landscape;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}';
+  const css = 'body{font-family:Segoe UI,Arial,sans-serif;margin:16px;color:#111}table{border-collapse:collapse;table-layout:fixed;font-size:12px;width:100%}th,td{border:1px solid #777;padding:0}th{background:#e2f0d9;padding:5px 8px}.rp-h-main,.rp-h-notes{font-size:18px}.rp-title{font-size:20px;font-weight:900}.rp-subtitle{font-size:12px;margin-bottom:6px}td.rp-g{background:#dae3f3;font-weight:800;text-align:center}.rp-cell{padding:3px 8px;white-space:pre-wrap}td.rp-a .rp-aw{display:flex;align-items:center;gap:6px;padding-left:6px}td.rp-a .rp-cell{flex:1;font-weight:700;min-width:0}.rp-dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px}td.st-ok{background:#e6f4ec}td.st-ok .rp-dot{background:#2f9e73}td.st-warn{background:#fdf3d4}td.st-warn .rp-dot{background:#f2c14e}td.st-bad{background:#fbe3df}td.st-bad .rp-dot{background:#e0463a}td.rp-ov{background:#dbeafe!important}td.rp-n{vertical-align:top}@page{size:landscape;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}';
   w.document.write('<html><head><meta charset="utf-8"><title>' + rpEsc(rpState().title) + '</title><style>' + css + '</style></head><body>' + clone.innerHTML + '</body></html>');
   w.document.close(); w.focus(); setTimeout(()=>{ w.print(); }, 350);
 }
@@ -3175,6 +3301,13 @@ function initReportPanel(){
   wrap.addEventListener('click', rpOnClick);
   wrap.addEventListener('change', rpOnChange);
   rpInitDragSelect(wrap);
+  rpInitColResize(wrap);
+  document.querySelectorAll('#panel-report [data-align]').forEach(b=> b.addEventListener('click', ()=>{
+    const R = rpState(), sel = $('#rpAlignCol').value, v = b.dataset.align;
+    (sel === 'all' ? RP_KEYS : [sel]).forEach(k=> R.align[k] = v);
+    rpRender(); scheduleAutosave();
+  }));
+  $('#rpResetW').addEventListener('click', ()=>{ rpState().colW = { g:130, p:230, c:60, u:80, a:130, t:100, n:240 }; rpState(); rpRender(); scheduleAutosave(); });
   collapseHints($('#panel-report'));
 }
 
@@ -4538,17 +4671,63 @@ const paretoLabelPlugin = {
       const meta = chart.getDatasetMeta(di); if(meta.hidden) return;
       ctx.save();
       ctx.font = '700 11px "Segoe UI", sans-serif'; ctx.textAlign = 'center';
-      ctx.fillStyle = ds.__labelColor || textColor();
       meta.data.forEach((el, i)=>{
         const v = ds.data[i]; if(v===null || v===undefined) return;
-        const txt = ds.type==='line' ? (Math.round(v*10)/10) + '%' : fmtNum(v);
-        ctx.textBaseline = ds.type==='line' ? 'bottom' : 'bottom';
-        ctx.fillText(txt, el.x, el.y - (ds.type==='line' ? 8 : 4));
+        if(ds.type === 'line'){
+          const txt = (Math.round(v*10)/10) + '%';
+          const w = ctx.measureText(txt).width + 8, h = 15, x = el.x - w/2, y = el.y - 10 - h;
+          ctx.fillStyle = 'rgba(255,255,255,0.88)'; ctx.strokeStyle = '#333333'; ctx.lineWidth = 1;
+          ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x, y, w, h, 5); else ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#222222'; ctx.textBaseline = 'middle'; ctx.fillText(txt, el.x, y + h/2 + 0.5);
+        } else {
+          const txt = fmtNum(v), barH = (el.base !== undefined ? el.base - el.y : 0);
+          if(barH >= 40){ ctx.fillStyle = '#ffffff'; ctx.textBaseline = 'top'; ctx.fillText(txt, el.x, el.y + 5); }
+          else { ctx.fillStyle = textColor(); ctx.textBaseline = 'bottom'; ctx.fillText(txt, el.x, el.y - 4); }
+        }
       });
       ctx.restore();
     });
   }
 };
+function paretoAnalysisHtml(full, total, excluded, info){
+  const n = full.length, pct = v=> (Math.round(v*10)/10).toString().replace('.', ',') + '%';
+  let run = 0; const cum = full.map(x=>{ run += x.v; return run / total * 100; });
+  let kVital = cum.findIndex(c=> c >= 80) + 1; if(kVital <= 0) kVital = n;
+  const share = k=> full.slice(0, k).reduce((a,b)=> a + b.v, 0) / total * 100;
+  const top1 = share(1), top3 = share(Math.min(3, n));
+  const k20 = Math.max(1, Math.ceil(n * 0.2)), top20 = share(k20);
+  const mean = total / n, sd = Math.sqrt(full.reduce((a,b)=> a + (b.v-mean)*(b.v-mean), 0) / n), cv = mean ? sd / mean * 100 : 0;
+  const ratio = full[n-1].v > 0 ? full[0].v / full[n-1].v : 0;
+  const pts = full.reduce((a,b)=> a + (b.n || 0), 0);
+  const allSingle = full.every(x=> (x.n || 0) <= 1);
+  let cls, verdict;
+  if(n < 3){ cls = 'na'; verdict = 'Kategori terlalu sedikit'; }
+  else if(top20 >= 70){ cls = 'strong'; verdict = 'Pareto kuat: terkonsentrasi'; }
+  else if(top20 >= 50){ cls = 'mid'; verdict = 'Cukup terkonsentrasi'; }
+  else { cls = 'flat'; verdict = 'Merata: tidak ada yang dominan'; }
+  const names = k=> full.slice(0, k).map(x=> '<b>' + escapeHtml(x.k) + '</b> (' + pct(x.v / total * 100) + ')').join(', ');
+  const fnName = { sum:'total (sum)', count:'jumlah data (count)', avg:'rata-rata', max:'nilai max', min:'nilai min' }[info.fn] || info.fn;
+  const li = [];
+  li.push('<b>' + n + '</b> kategori dari kolom <b>' + escapeHtml(info.xHeader) + '</b>, nilai <b>' + escapeHtml(info.header) + '</b> dihitung sebagai ' + fnName + ' per kategori. Total = <b>' + fmtNum(total) + '</b> dari ' + nid(pts) + ' data.');
+  li.push('<b>' + kVital + ' dari ' + n + '</b> kategori (' + pct(kVital / n * 100) + ') sudah membentuk <b>≥ 80%</b> total. ' + (n >= 3 ? 'Pada Pareto yang ideal, sekitar 20% kategori menyumbang 80%.' : ''));
+  li.push('Kategori terbesar: ' + names(Math.min(3, n)) + ' → ketiganya menyumbang <b>' + pct(top3) + '</b>.');
+  li.push('Sebanyak <b>' + k20 + '</b> kategori teratas (20% dari kategori) menyumbang <b>' + pct(top20) + '</b> dari total.');
+  li.push('Selisih kategori terbesar vs terkecil = <b>' + (ratio ? ratio.toFixed(1).replace('.', ',') + '×' : '-') + '</b>; variasi antar kategori (CV) = <b>' + pct(cv) + '</b>.');
+  if(excluded > 0) li.push('<span class="pa-warn">' + excluded + ' kategori bernilai 0 / kosong / negatif tidak ikut dihitung (Pareto hanya untuk nilai positif).</span>');
+  const rec = [];
+  if(allSingle && n >= 3) rec.push('<span class="pa-warn">⚠ Setiap kategori hanya berisi 1 data (mis. kombinasi tanggal + nomor lot yang unik). Pareto menjadi tidak bermakna karena yang dibandingkan hanyalah satu baris data. Ganti <b>Sumbu X</b> dengan kolom <b>pengelompokan</b> (mis. Lokasi, Material, Shift, Jenis masalah), atau atur Range Sumbu X ke Per Hari/Minggu/Bulan, lalu pilih ' + 'Total atau Jumlah data.</span>');
+  if(cls === 'strong') rec.push('Fokuskan perbaikan/pengendalian pada <b>' + kVital + ' kategori teratas</b>: ' + names(kVital) + '. Menangani kategori ini memberi dampak terbesar terhadap total.');
+  else if(cls === 'mid') rec.push('Ada beberapa kategori dominan tetapi kontribusinya masih tersebar. Prioritaskan <b>' + k20 + ' kategori teratas</b> (' + names(k20) + '), lalu tinjau kategori berikutnya secara bertahap.');
+  else if(cls === 'flat' && !allSingle) rec.push('Kontribusi merata (kategori terbesar hanya <b>' + pct(top1) + '</b>), sehingga prinsip 80/20 tidak terlihat pada data ini. Coba kelompokkan dengan kolom kategori lain, gabungkan kategori kecil, atau periksa apakah ukuran data sudah tepat (total vs jumlah data).');
+  if(info.fn === 'avg' || info.fn === 'max' || info.fn === 'min') rec.push('Catatan: Pareto umumnya memakai <b>Total</b> atau <b>Jumlah data</b>. Dengan ' + fnName + ', persen kumulatif lebih sulit ditafsirkan sebagai kontribusi terhadap keseluruhan.');
+  if(info.topN > 0 && info.topN < n) rec.push('Grafik hanya menampilkan ' + info.topN + ' kategori teratas, tetapi analisis di atas memakai seluruh ' + n + ' kategori.');
+  const rows = full.slice(0, 30).map((x, i)=> '<tr' + (i < kVital ? ' class="pa-vital"' : '') + '><td>' + (i+1) + '</td><td>' + escapeHtml(x.k) + '</td><td style="text-align:right">' + fmtNum(x.v) + '</td><td style="text-align:right">' + pct(x.v / total * 100) + '</td><td style="text-align:right">' + pct(cum[i]) + '</td></tr>').join('');
+  return '<div class="pareto-an"><div class="pa-head"><b>🔎 Analisis Pareto</b><span class="pa-badge ' + cls + '">' + verdict + '</span></div>' +
+    '<div class="pa-kpis"><div><span>Kategori</span><b>' + n + '</b></div><div><span>Pembentuk 80%</span><b>' + kVital + ' / ' + n + '</b></div><div><span>Kategori terbesar</span><b>' + pct(top1) + '</b></div><div><span>20% kategori teratas</span><b>' + pct(top20) + '</b></div></div>' +
+    '<ul class="pa-list">' + li.map(x=> '<li>' + x + '</li>').join('') + '</ul>' +
+    (rec.length ? '<div class="pa-rec"><b>💡 Kesimpulan &amp; rekomendasi</b><ul>' + rec.map(x=> '<li>' + x + '</li>').join('') + '</ul></div>' : '') +
+    '<details><summary>Lihat tabel peringkat' + (n > 30 ? ' (30 teratas)' : '') + '</summary><div style="overflow:auto"><table class="pa-table"><thead><tr><th>#</th><th>Kategori</th><th>Nilai</th><th>% total</th><th>% kumulatif</th></tr></thead><tbody>' + rows + '</tbody></table></div></details></div>';
+}
 function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
   const vals = seriesData[s.colIndex] || [];
   const fn = cfg.paretoFn || 'sum';
@@ -4559,11 +4738,13 @@ function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
     const v = vals[i]; if(v===null || v===undefined || isNaN(v)) return;
     o.sum += v; o.cnt++; if(v > o.mx) o.mx = v; if(v < o.mn) o.mn = v;
   });
-  let arr = Array.from(g.entries()).map(([k,o])=>({ k, v: fn==='count' ? o.cnt : (!o.cnt ? null : (fn==='avg' ? o.sum/o.cnt : (fn==='max' ? o.mx : (fn==='min' ? o.mn : o.sum)))) }))
+  let arr = Array.from(g.entries()).map(([k,o])=>({ k, n: o.cnt, v: fn==='count' ? o.cnt : (!o.cnt ? null : (fn==='avg' ? o.sum/o.cnt : (fn==='max' ? o.mx : (fn==='min' ? o.mn : o.sum)))) }))
     .filter(x=> x.v!==null && x.v > 0);
+  const excluded = g.size - arr.length;
   if(!arr.length){ showChartError(wrap, 'Pareto membutuhkan nilai positif pada series pertama. Periksa kolom yang dipilih atau filter.'); return; }
   arr.sort((a,b)=> b.v - a.v);
   const total = arr.reduce((a,b)=> a + b.v, 0);
+  const full = arr.slice();
   const topN = parseInt(cfg.paretoTop);
   if(topN > 0) arr = arr.slice(0, topN);
   let run = 0;
@@ -4603,8 +4784,7 @@ function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
   const chartCard = wrap.closest('.chart-card');
   const sp = chartCard ? chartCard.querySelector('[data-role=statspanel]') : null;
   if(sp){
-    const vital = before.filter(b=> b < 80).length;
-    sp.innerHTML = '<div class="chart-stats-summary">Pareto: <b>' + nid(g.size) + '</b> kategori, total <b>' + fmtNum(total) + '</b>. <b>' + vital + '</b> kategori teratas membentuk sekitar 80% dari total (batang pekat).</div>';
+    sp.innerHTML = paretoAnalysisHtml(full, total, excluded, { fn, header, xHeader, topN: (topN > 0 ? topN : 0) });
   }
 }
 
@@ -5513,6 +5693,7 @@ function init(){
   });
   initInfoPopovers();
   initReportPanel();
+  initSupPalette();
 
   const closeHelp = ()=>{
     $('#helpOverlay').classList.remove('active');
