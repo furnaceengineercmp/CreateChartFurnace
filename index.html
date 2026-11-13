@@ -581,6 +581,8 @@ table.rp-table.no-ctl col.c-ctl{ display:none; }
 .pa-kpis span{ display:block; font-size:11px; color:var(--text-soft); font-weight:700; }
 .pa-kpis b{ font-size:18px; }
 .pa-list, .pa-rec ul{ margin:4px 0 8px 0; padding-left:20px; }
+.pa-btn{ margin-left:6px; border:1px solid var(--accent1); background:var(--panel); color:var(--accent1); border-radius:8px; padding:2px 10px; font-weight:700; cursor:pointer; font-size:12px; }
+.pa-btn:hover{ background:var(--accent1); color:#fff; }
 .pa-intinya{ background:var(--panel-2); border-radius:10px; padding:9px 12px; margin-bottom:8px; font-size:13.5px; }
 .pa-rec ol{ margin:6px 0 2px 0; padding-left:20px; }
 .pa-rec li{ margin-bottom:3px; }
@@ -2222,7 +2224,7 @@ function newChartConfig(){
     series: [], hiddenSeries: new Set(), filters: [], shades: [], calloutStyle: 'full', limitN: '', limitMode: 'last', autoThin: true,
     statsShow: { avg:false, sum:false, median:false, max:false, min:false },
     yMin: '', yMax: '', y1Min: '', y1Max: '',
-    yUnitCat: '', yUnit: '', y1UnitCat: '', y1Unit: '', wPct: null, hPx: null, paretoFn: 'sum', paretoTop: '',
+    yUnitCat: '', yUnit: '', y1UnitCat: '', y1Unit: '', wPct: null, hPx: null, paretoFn: 'sum', paretoTop: '', paretoBin: '',
     showAllCallouts: false, chartObj: null,
   };
 }
@@ -3381,12 +3383,14 @@ function syncChartCardControls(card, cfg){
   updateParetoState(card, cfg);
   setVal('[data-role=paretofn]', cfg.paretoFn || 'sum');
   setVal('[data-role=paretotop]', cfg.paretoTop || '');
+  setVal('[data-role=paretobin]', cfg.paretoBin || '');
 }
 function updateParetoState(card, cfg){
   const on = cfg.mode === 'pareto';
-  const a = card.querySelector('[data-role=paretowrap]'), b = card.querySelector('[data-role=paretotopwrap]');
+  const a = card.querySelector('[data-role=paretowrap]'), b = card.querySelector('[data-role=paretotopwrap]'), c = card.querySelector('[data-role=paretobinwrap]');
   if(a) a.style.display = on ? '' : 'none';
   if(b) b.style.display = on ? '' : 'none';
+  if(c) c.style.display = on ? '' : 'none';
 }
 
 function buildChartCardDom(cfg){
@@ -3456,6 +3460,11 @@ function buildChartCardDom(cfg){
               <option value="max">Nilai Max</option>
               <option value="min">Nilai Min</option>
             </select>
+          </div>
+          <div class="field" data-role="paretobinwrap" style="display:none;">
+            <label>Kelompokkan Sumbu X jadi rentang <span class="hint">Khusus jika Sumbu X berupa <b>angka</b> dan nilainya sangat banyak. Isi <b>lebar rentang</b> (boleh angka berapa saja, mis. 0,5 · 5 · 10 · 15 · 100). Contoh lebar 5 membuat kelompok 0 – &lt;5, 5 – &lt;10, 10 – &lt;15, dan seterusnya; nilai tiap kelompok dijumlahkan sesuai pilihan “nilai per kategori”. Kosongkan jika tiap nilai ingin dianggap kategori sendiri. Klik kolom untuk memilih angka umum, atau ketik sendiri.</span></label>
+            <input type="text" inputmode="decimal" data-role="paretobin" list="paretoBinList" placeholder="tanpa rentang">
+            <datalist id="paretoBinList"><option value="0,1"><option value="0,5"><option value="1"><option value="2"><option value="5"><option value="10"><option value="15"><option value="20"><option value="25"><option value="50"><option value="100"><option value="250"><option value="500"><option value="1000"></datalist>
           </div>
           <div class="field" data-role="paretotopwrap" style="display:none;">
             <label>Tampilkan N kategori teratas</label>
@@ -3650,6 +3659,12 @@ function wireChartCard(card, cfg){
   });
   card.querySelector('[data-role=paretofn]').addEventListener('change', e=>{ cfg.paretoFn = e.target.value; renderChart(cfg); });
   card.querySelector('[data-role=paretotop]').addEventListener('input', e=>{ cfg.paretoTop = e.target.value; renderChart(cfg); });
+  card.querySelector('[data-role=paretobin]').addEventListener('input', e=>{ cfg.paretoBin = e.target.value.trim(); renderChart(cfg); });
+  card.addEventListener('click', e=>{
+    const b = e.target.closest ? e.target.closest('button[data-setbin]') : null; if(!b) return;
+    cfg.paretoBin = b.dataset.setbin; const inp = card.querySelector('[data-role=paretobin]'); if(inp) inp.value = cfg.paretoBin;
+    renderChart(cfg);
+  });
   const xcolSel = card.querySelector('[data-role=xcol]');
   xcolSel.addEventListener('change', e=>{ cfg.xCol = e.target.value; updateDateRuler(card, cfg); renderChart(cfg); });
   const xcol2Sel = card.querySelector('[data-role=xcol2]');
@@ -4337,7 +4352,7 @@ function getAggregatedData(cfg){
   let gran = cfg.granularity;
   const L = limitInfo(cfg);
   let auto = null, rawStats = null, limitDone = false;
-  if((!isDateMode || gran==='raw') && cfg.autoThin !== false){
+  if((!isDateMode || gran==='raw') && cfg.autoThin !== false && cfg.mode !== 'pareto'){
     const n = L.on ? Math.min(items.length, L.n) : items.length;
     if(n > MAX_POINTS){
       if(L.on && isDateMode) items = sortItemsByDate(items);
@@ -4398,7 +4413,7 @@ function getAggregatedData(cfg){
       const col = colArr[j];
       seriesData[s.colIndex] = items.map(it=> col[it.i]);
     });
-    return {labels, seriesData, dateGroups, titles, auto, rawStats};
+    return {labels, seriesData, dateGroups, titles, auto, rawStats, rowIdx: items.map(it=> it.i)};
   }
 
   const ns = validSeries.length;
@@ -4723,8 +4738,8 @@ function paretoAnalysisHtml(full, total, excluded, info){
     intinya = 'Grafik ini <b>belum bisa dipakai sebagai Pareto</b>. Sumbu X (' + X + ') berisi nilai yang berbeda di setiap baris, sehingga ada <b>' + n + ' batang dan hampir semuanya hanya berisi 1 data</b>. Pareto baru berguna kalau beberapa baris data masuk ke kategori yang sama.';
     fix = '<ol>' +
       '<li><b>Anda tidak perlu menambah data di Sumbu Y.</b> Angka yang ingin dijumlahkan (' + Y + ') sudah benar.</li>' +
-      '<li>Yang perlu diganti adalah <b>kolom di Sumbu X</b>: pilih kolom <b>pengelompokan</b> yang nilainya berulang, misalnya nama ladle, lokasi, shift, jenis masalah/penyebab, atau material.</li>' +
-      (info.xIsNumber ? '<li>Kolom ' + X + ' berisi <b>angka</b>, jadi setiap angka dianggap kategori sendiri. Kolom angka lebih cocok di Sumbu Y atau grafik garis, bukan di Sumbu X Pareto.</li>' : '') +
+      '<li>' + (info.xIsNumber ? 'Atau ganti' : 'Yang perlu diganti adalah') + ' <b>kolom di Sumbu X</b> dengan kolom <b>pengelompokan</b> yang nilainya berulang, misalnya nama ladle, lokasi, shift, jenis masalah/penyebab, atau material.</li>' +
+      (info.xIsNumber ? '<li>Kolom ' + X + ' berisi <b>angka</b>, jadi setiap angka dianggap kategori sendiri. Solusinya: isi <b>“Kelompokkan Sumbu X jadi rentang”</b> (di atas) dengan lebar rentang, mis. 5, 10, atau 100 — angka-angka berdekatan akan digabung jadi satu kelompok.' + (info.suggest ? ' Untuk data ini, lebar <b>' + paretoNum(info.suggest) + '</b> menghasilkan sekitar 10 kelompok. <button type="button" class="pa-btn" data-setbin="' + paretoNum(info.suggest) + '">Pakai lebar ' + paretoNum(info.suggest) + '</button>' : '') + '</li>' : '') +
       (info.xIsDate ? '<li>Sumbu X Anda berisi tanggal. Atur <b>Range Sumbu X</b> ke Per Hari / Minggu / Bulan agar data di periode yang sama dijumlahkan.</li>' : '') +
       '<li>Kalau tabel Anda belum punya kolom pengelompokan, tambahkan satu kolom di tabel data (mis. “Penyebab” atau “Ladle No”) dan isi tiap barisnya, lalu pilih kolom itu di Sumbu X.</li>' +
       '<li>Pilih <b>Total (sum)</b> untuk menjumlahkan nilai tiap kategori, atau <b>Jumlah data (count)</b> untuk menghitung berapa kali tiap kategori muncul.</li></ol>';
@@ -4740,7 +4755,12 @@ function paretoAnalysisHtml(full, total, excluded, info){
   } else {
     intinya = 'Hanya ada ' + n + ' kategori, terlalu sedikit untuk analisis Pareto. Pilih kolom Sumbu X yang punya lebih banyak kategori.';
   }
+  let binHint = '';
+  if(info.xIsNumber && !info.binOn && n > 25 && !(allSingle && n >= 3)){
+    binHint = '<div class="pa-rec"><b>💡 Sumbu X punya terlalu banyak nilai (' + n + ' kategori)</b><ul><li>Kolom ' + X + ' berisi angka, sehingga hampir tiap angka menjadi batang sendiri dan grafik sulit dibaca. Isi <b>“Kelompokkan Sumbu X jadi rentang”</b> dengan lebar rentang (boleh angka berapa saja, mis. 5, 10, 15, 100).' + (info.suggest ? ' Untuk data ini, lebar <b>' + paretoNum(info.suggest) + '</b> menghasilkan sekitar 10 kelompok. <button type="button" class="pa-btn" data-setbin="' + paretoNum(info.suggest) + '">Pakai lebar ' + paretoNum(info.suggest) + '</button>' : '') + '</li></ul></div>';
+  }
   const notes = [];
+  if(info.binOn) notes.push('Sumbu X dikelompokkan per rentang ' + paretoNum(info.step) + '. Setiap batang = satu rentang; nilai awal rentang termasuk, nilai akhir tidak (mis. 5 – &lt;10 berarti 5 sampai kurang dari 10).');
   if(excluded > 0) notes.push(excluded + ' kategori bernilai 0 / kosong / negatif tidak ikut dihitung (Pareto hanya untuk nilai positif).');
   if(info.fn === 'avg' || info.fn === 'max' || info.fn === 'min') notes.push('Pareto umumnya memakai Total atau Jumlah data. Dengan ' + fnName + ', persen kumulatif sulit dibaca sebagai “kontribusi terhadap keseluruhan”.');
   if(info.topN > 0 && info.topN < n) notes.push('Grafik hanya menampilkan ' + info.topN + ' kategori teratas, tetapi angka analisis memakai seluruh ' + n + ' kategori.');
@@ -4751,18 +4771,38 @@ function paretoAnalysisHtml(full, total, excluded, info){
     '<li>Selisih kategori terbesar dengan terkecil = <b>' + (ratio ? ratio.toFixed(1).replace('.', ',') + '×' : '-') + '</b>.</li></ul>';
   return '<div class="pareto-an"><div class="pa-head"><b>🔎 Analisis Pareto</b><span class="pa-badge ' + cls + '">' + verdict + '</span></div>' +
     '<div class="pa-intinya"><b>Intinya:</b> ' + intinya + '</div>' +
+    binHint +
     (fix ? '<div class="pa-rec"><b>' + (allSingle && n >= 3 ? '🛠 Apa yang perlu diubah?' : '💡 Apa yang sebaiknya dilakukan?') + '</b>' + fix + '</div>' : '') +
     (notes.length ? '<ul class="pa-list">' + notes.map(x=> '<li><span class="pa-warn">' + x + '</span></li>').join('') + '</ul>' : '') +
     '<details><summary>📖 Cara membaca grafik Pareto</summary><ul class="pa-list"><li><b>Batang</b> (sumbu kiri) = nilai tiap kategori, diurutkan dari yang terbesar ke terkecil.</li><li><b>Garis hitam</b> (sumbu kanan, %) = persen kumulatif: jumlah persen dari batang pertama sampai batang itu.</li><li><b>Garis putus-putus</b> = batas 80%. Batang pekat adalah kategori yang dibutuhkan untuk mencapai 80% total, yaitu kelompok yang paling berpengaruh (“the vital few”).</li><li>Pareto yang bagus terlihat curam di kiri: beberapa batang pertama tinggi, sisanya jauh lebih rendah.</li></ul></details>' +
     '<details' + ((allSingle && n >= 3) ? '' : ' open') + '><summary>📊 Rincian angka</summary><div class="pa-kpis"><div><span>Kategori</span><b>' + n + '</b></div><div><span>Pembentuk 80%</span><b>' + kVital + ' / ' + n + '</b></div><div><span>Kategori terbesar</span><b>' + pct(top1) + '</b></div><div><span>20% kategori teratas</span><b>' + pct(top20) + '</b></div></div>' + detail + '</details>' +
     '<details><summary>Lihat tabel peringkat' + (n > 30 ? ' (30 teratas)' : '') + '</summary><div style="overflow:auto"><table class="pa-table"><thead><tr><th>#</th><th>Kategori</th><th>Nilai</th><th>% total</th><th>% kumulatif</th></tr></thead><tbody>' + rows + '</tbody></table></div></details></div>';
 }
-function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
+function paretoNiceStep(min, max){
+  const raw = (max - min) / 10; if(!(raw > 0)) return null;
+  const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  for(const m of [1, 2, 2.5, 5, 10]){ if(m * pow >= raw) return m * pow; }
+  return 10 * pow;
+}
+function paretoNum(v){ return String(Math.round(v * 1e6) / 1e6).replace('.', ','); }
+function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s, rowIdx){
   const vals = seriesData[s.colIndex] || [];
   const fn = cfg.paretoFn || 'sum';
-  const g = new Map();
+  const xIdx = parseInt(cfg.xCol);
+  const xIsNumber = state.colTypes[xIdx] === 'number';
+  const step = parseFloat(String(cfg.paretoBin || '').replace(',', '.'));
+  const binOn = xIsNumber && step > 0 && Array.isArray(rowIdx);
+  const xNums = (xIsNumber && Array.isArray(rowIdx)) ? numCol(xIdx) : null;
+  const g = new Map(), order = new Map();
+  let xMin = Infinity, xMax = -Infinity;
   pointLabels.forEach((lab, i)=>{
-    const key = String(lab);
+    let key = String(lab);
+    if(xNums){ const xv = xNums[rowIdx[i]]; if(xv !== null && xv !== undefined && !isNaN(xv)){ if(xv < xMin) xMin = xv; if(xv > xMax) xMax = xv; } }
+    if(binOn){
+      const xv = xNums[rowIdx[i]];
+      if(xv === null || xv === undefined || isNaN(xv)) key = '(kosong)';
+      else { const lo = Math.round(Math.floor(xv / step + 1e-9) * step * 1e6) / 1e6; key = paretoNum(lo) + ' – <' + paretoNum(lo + step); }
+    }
     let o = g.get(key); if(!o){ o = { sum:0, cnt:0, mx:-Infinity, mn:Infinity }; g.set(key, o); }
     const v = vals[i]; if(v===null || v===undefined || isNaN(v)) return;
     o.sum += v; o.cnt++; if(v > o.mx) o.mx = v; if(v < o.mn) o.mn = v;
@@ -4781,7 +4821,7 @@ function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
   const before = cum.map((c,i)=> i===0 ? 0 : cum[i-1]);
   const colors = before.map(b=> b < 80 ? s.color : hexAlpha(s.color, 0.4));
   const header = state.headers[parseInt(s.colIndex)] || 'Nilai';
-  const xHeader = state.headers[parseInt(cfg.xCol)] || 'Kategori';
+  const xHeader = (state.headers[parseInt(cfg.xCol)] || 'Kategori') + (binOn ? ' (rentang ' + paretoNum(step) + ')' : '');
   const labels = arr.map(x=> x.k);
   cfg.chartObj = new Chart(canvas, {
     data: {
@@ -4813,7 +4853,7 @@ function renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, s){
   const chartCard = wrap.closest('.chart-card');
   const sp = chartCard ? chartCard.querySelector('[data-role=statspanel]') : null;
   if(sp){
-    sp.innerHTML = paretoAnalysisHtml(full, total, excluded, { fn, header, xHeader, topN: (topN > 0 ? topN : 0), xIsNumber: state.colTypes[parseInt(cfg.xCol)] === 'number', xIsDate: state.colTypes[parseInt(cfg.xCol)] === 'date' });
+    sp.innerHTML = paretoAnalysisHtml(full, total, excluded, { fn, header, xHeader, topN: (topN > 0 ? topN : 0), xIsNumber: xIsNumber, xIsDate: state.colTypes[xIdx] === 'date', binOn: binOn, step: step, suggest: (xMin < xMax ? paretoNiceStep(xMin, xMax) : null) });
   }
 }
 
@@ -4939,7 +4979,7 @@ function renderChartNow(cfg){
   }
 
   try{
-    const {labels, seriesData, dateGroups, titles, auto, rawStats} = getAggregatedData(cfg);
+    const {labels, seriesData, dateGroups, titles, auto, rawStats, rowIdx} = getAggregatedData(cfg);
     setChartNotice(chartCard, auto, rawStats ? rawStats.count : 0);
     const pointLabels = labels.map((l,i)=> (titles && titles[i]) ? titles[i] : ((dateGroups && dateGroups[i]) ? dateGroups[i] + ' ' + l : l));
     if(labels.length===0){
@@ -4975,7 +5015,7 @@ function renderChartNow(cfg){
     }
 
     if(cfg.mode==='pareto'){
-      renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, visibleSeries[0]);
+      renderParetoChart(cfg, canvas, wrap, pointLabels, seriesData, visibleSeries[0], rowIdx);
       return;
     }
 
@@ -5520,7 +5560,7 @@ function buildProject(){
       yMin: cfg.yMin, yMax: cfg.yMax, y1Min: cfg.y1Min, y1Max: cfg.y1Max,
       yUnits: ensureUnits(cfg,'y').map(u=>Object.assign({},u)), y1Units: ensureUnits(cfg,'y1').map(u=>Object.assign({},u)),
       yUnitDismiss: cfg.yUnitDismiss || [], y1UnitDismiss: cfg.y1UnitDismiss || [],
-      paretoFn: cfg.paretoFn || 'sum', paretoTop: cfg.paretoTop || '',
+      paretoFn: cfg.paretoFn || 'sum', paretoTop: cfg.paretoTop || '', paretoBin: cfg.paretoBin || '',
       wPct: cfg.wPct || null, hPx: cfg.hPx || null,
       showAllCallouts: !!cfg.showAllCallouts, calloutStyle: cfg.calloutStyle || 'full',
       limitN: cfg.limitN || '', limitMode: cfg.limitMode || 'last', autoThin: cfg.autoThin !== false,
@@ -5562,7 +5602,7 @@ function loadProject(p){
   document.documentElement.setAttribute('data-mode', mode);
 
   const base = { mode:'linebar', xCol:'', xCol2:'', granularity:'raw', aggFn:'avg', dateFrom:'', dateTo:'',
-                 yMin:'', yMax:'', y1Min:'', y1Max:'', yUnitCat:'', yUnit:'', y1UnitCat:'', y1Unit:'', wPct:null, hPx:null, paretoFn:'sum', paretoTop:'', showAllCallouts:false, calloutStyle:'full', limitN:'', limitMode:'last', autoThin:true };
+                 yMin:'', yMax:'', y1Min:'', y1Max:'', yUnitCat:'', yUnit:'', y1UnitCat:'', y1Unit:'', wPct:null, hPx:null, paretoFn:'sum', paretoTop:'', paretoBin:'', showAllCallouts:false, calloutStyle:'full', limitN:'', limitMode:'last', autoThin:true };
   const saved = Array.isArray(p.charts) ? p.charts.slice(0,40) : [];
   state.charts = saved.map((c, i) => Object.assign({}, base, c, {
     id: i + 1,
