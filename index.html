@@ -6710,9 +6710,11 @@ function fbInit(){
 }
 
 </script>
-  <!-- ================================================================
-  PATCH CHART STUDIO v3  — tempel SATU KALI tepat sebelum </body>
+ <!-- ================================================================
+  PATCH CHART STUDIO v4  — tempel SATU KALI tepat sebelum </body>
   (setelah </script> terakhir milik aplikasi Anda).
+  v4: perbaikan ukuran titik, ekspor baru (semua grafik, opsi statistik/Pareto),
+      rentang tanggal Korelasi, angka (callout) per series.
   Isi: arsir di Pareto, garis tren (naik/turun/datar), ketebalan garis/titik,
   duplikat & salin template grafik, blok+Delete sel tabel, freeze kolom,
   sel error (#DIV/0! dll) jadi kosong, filter tanggal untuk semua grafik.
@@ -6779,7 +6781,41 @@ const trendPlugin = { id:'csTrend', afterDatasetsDraw(chart){
     ctx.fillStyle='#222'; ctx.fillText(text,bx+7,by+h/2+.5); ctx.restore();
   });
 }};
-function regPlugins(){ try{ Chart.register(paretoShade, trendPlugin); }catch(e){ console.warn(e); } }
+const seriesNums = { id:'csSeriesNums', afterDatasetsDraw(chart){
+  const cfg = chart.__csCfg; if(!cfg || cfg.showAllCallouts) return;
+  const type = chart.config.type; if(type==='pie' || type==='doughnut') return;
+  const ctx = chart.ctx, area = chart.chartArea, cands = [];
+  chart.data.datasets.forEach((ds,di)=>{
+    if(!ds.__showNum || !chart.isDatasetVisible(di)) return;
+    const meta = chart.getDatasetMeta(di);
+    meta.data.forEach((el,i)=>{
+      const raw = ds.data[i], v = (raw!==null && typeof raw==='object') ? raw.y : raw;
+      if(v===null || v===undefined || isNaN(v) || isNaN(el.x) || isNaN(el.y)) return;
+      cands.push({ x:el.x, y:el.y, text:fmtNum(v), color:ds.borderColor || '#333' });
+    });
+  });
+  if(!cands.length || cands.length > 1500) return;
+  cands.sort((a,b)=> a.x-b.x);
+  ctx.save(); ctx.font = '700 11px "Segoe UI", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  const H = 14, placed = [], halo = cssVar('--panel') || '#fff';
+  const hit = (a,b)=> !(a.x+a.w+2 <= b.x || b.x+b.w+2 <= a.x || a.y+a.h+1 <= b.y || b.y+b.h+1 <= a.y);
+  cands.forEach(c=>{
+    const w = ctx.measureText(c.text).width + 6;
+    for(const side of ['above','below']){
+      const rx = Math.max(area.left, Math.min(c.x - w/2, area.right - w));
+      const ry = side==='above' ? (c.y - 7 - H) : (c.y + 7);
+      if(ry < area.top - 2 || ry + H > area.bottom + 2) continue;
+      const r = { x:rx, y:ry, w, h:H };
+      if(placed.some(p=> hit(r,p))) continue;
+      placed.push(r);
+      ctx.lineWidth = 3; ctx.strokeStyle = halo; ctx.strokeText(c.text, rx+w/2, ry+H/2);
+      ctx.fillStyle = c.color; ctx.fillText(c.text, rx+w/2, ry+H/2);
+      break;
+    }
+  });
+  ctx.restore();
+}};
+function regPlugins(){ try{ Chart.register(paretoShade, trendPlugin, seriesNums); }catch(e){ console.warn(e); } }
 if(typeof Chart!=='undefined') regPlugins(); else document.addEventListener('cs-libs-ready', regPlugins);
 
 /* ---------- 1) Arsir untuk Pareto ---------- */
@@ -6857,6 +6893,7 @@ function postRender(cfg){
     if(lw>0 && s.chartType!=='point' && !isScatter) ds.borderWidth = lw;
     if(pr>=0 && (s.chartType!=='bar' || isScatter)){ ds.pointRadius = pr; ds.pointHoverRadius = Math.max(pr+2,4); }
     ds.__trend = null;
+    ds.__showNum = !!s.showNum;
     if(s.trend){
       const pts = [];
       (ds.data||[]).forEach((v,k)=>{
@@ -6867,7 +6904,7 @@ function postRender(cfg){
       if(t){ t.color = s.color; t.name = ds.label; ds.__trend = t; trends.push(t); }
     }
   });
-  chart.update('none');
+  chart.update();   // update penuh: mode 'none' tidak menerapkan ukuran titik/garis baru
   const card = document.getElementById('chartcard-'+cfg.id), sp = card && card.querySelector('[data-role=statspanel]');
   if(sp && trends.length){
     const word = {up:'Naik',down:'Turun',flat:'Datar (sejajar)'}, arrow = {up:'↗',down:'↘',flat:'→'};
@@ -6900,14 +6937,18 @@ W.renderSeriesList = function(card, cfg){
     span.innerHTML =
       '<label title="Tebal garis (px). Kosong = otomatis">Garis <input type="number" step="0.5" min="0.5" max="12" data-k="lw" placeholder="auto"></label>' +
       '<label title="Ukuran titik (px). Kosong = otomatis. Untuk data banyak coba 1–2">Titik <input type="number" step="0.5" min="0" max="20" data-k="pr" placeholder="auto"></label>' +
-      '<label title="Tampilkan garis tren (naik / turun / sejajar)"><input type="checkbox" data-k="trend"> 📈 Tren</label>' +
-      '<label title="Dianggap datar bila perubahan tren kurang dari % ini">datar &lt; <input type="number" step="0.5" min="0" data-k="flat" placeholder="3"> %</label>';
+      '<label title="Tampilkan angka (callout) hanya pada series ini"><input type="checkbox" data-k="showNum"> 🔢 Angka</label>' +
+      '<label title="Tampilkan garis tren (naik / turun / datar)"><input type="checkbox" data-k="trend"> 📈 Tren</label>' +
+      '<label class="sx-flat" title="Batas kepekaan: bila garis tren hanya berubah kurang dari % ini (dari rata-rata data) dari awal ke akhir, dianggap Datar">dianggap datar jika perubahan &lt; <input type="number" step="0.5" min="0" data-k="flat" placeholder="3"> %</label>';
     const set = (k,v)=>{ const el = span.querySelector('[data-k='+k+']'); if(el){ if(el.type==='checkbox') el.checked = !!v; else el.value = (v===undefined||v===null)?'':v; } };
-    set('lw',s.lw); set('pr',s.pr); set('trend',s.trend); set('flat',s.flat);
+    set('lw',s.lw); set('pr',s.pr); set('showNum',s.showNum); set('trend',s.trend); set('flat',s.flat);
+    const flatLbl = span.querySelector('.sx-flat');
+    flatLbl.style.display = s.trend ? '' : 'none';   // hanya relevan jika Tren dicentang
     span.querySelectorAll('input').forEach(inp=>{
       inp.addEventListener('input', ()=>{
         const k = inp.dataset.k;
         s[k] = inp.type==='checkbox' ? inp.checked : inp.value;
+        if(k==='trend') flatLbl.style.display = s.trend ? '' : 'none';
         renderChart(cfg);
       });
     });
@@ -6927,7 +6968,7 @@ function applyTemplate(src, dst, withData){
     dst.filters = J(src.filters || []); dst.series = J(src.series || []); dst.hiddenSeries = new Set(Array.from(src.hiddenSeries||[]));
   } else {
     dst.series.forEach((s,i)=>{ const t = src.series[i]; if(!t) return;
-      ['axis','chartType','color','colorAuto','lw','pr','trend','flat'].forEach(k=>{ if(t[k]!==undefined) s[k] = t[k]; });
+      ['axis','chartType','color','colorAuto','lw','pr','trend','flat','showNum'].forEach(k=>{ if(t[k]!==undefined) s[k] = t[k]; });
       s.target = J(t.target || s.target);
     });
   }
@@ -7123,7 +7164,7 @@ W.buildProject = function(){
   p.globalDate = state.globalDate;
   (p.charts||[]).forEach((pc,i)=>{
     const cfg = state.charts[i]; if(!cfg) return;
-    (pc.series||[]).forEach((ps,j)=>{ const s = cfg.series[j]; if(!s) return; ps.lw=s.lw; ps.pr=s.pr; ps.trend=!!s.trend; ps.flat=s.flat; });
+    (pc.series||[]).forEach((ps,j)=>{ const s = cfg.series[j]; if(!s) return; ps.lw=s.lw; ps.pr=s.pr; ps.trend=!!s.trend; ps.flat=s.flat; ps.showNum=!!s.showNum; });
   });
   return p;
 };
@@ -7135,14 +7176,201 @@ W.loadProject = function(p){
     syncGlobalDateUI();
     (p.charts||[]).slice(0,40).forEach((c,i)=>{
       const cfg = state.charts[i]; if(!cfg) return;
-      (c.series||[]).forEach((s,j)=>{ const t = cfg.series[j]; if(!t) return; ['lw','pr','trend','flat'].forEach(k=>{ if(s[k]!==undefined) t[k]=s[k]; }); });
+      (c.series||[]).forEach((s,j)=>{ const t = cfg.series[j]; if(!t) return; ['lw','pr','trend','flat','showNum'].forEach(k=>{ if(s[k]!==undefined) t[k]=s[k]; }); });
     });
     state.charts.forEach(c=>{ const cd = document.getElementById('chartcard-'+c.id); if(cd) renderSeriesList(cd,c); });
     state.charts.forEach(renderChart);
   }catch(e){ console.error(e); }
 };
+
+/* ---------- v4: Korelasi dengan rentang tanggal ---------- */
+(function(){
+  const btn = q('#btnComputeCorr'); if(!btn) return;
+  btn.parentElement.insertAdjacentHTML('beforebegin',
+    '<div class="field"><label>Korelasi dari tanggal</label><input type="date" id="corrFrom"></div>' +
+    '<div class="field"><label>Sampai tanggal</label><input type="date" id="corrTo"></div>');
+  const resBox = q('#corrResultText');
+  resBox.insertAdjacentHTML('beforebegin',
+    '<div class="row" style="margin-bottom:6px;"><span class="ctl-label">Rentang cepat</span>' +
+    '<button class="btn small" data-cq="30">30 hari terakhir</button><button class="btn small" data-cq="90">90 hari terakhir</button><button class="btn small" data-cq="180">180 hari terakhir</button>' +
+    '<button class="btn small ghost" data-cq="all">Semua tanggal</button></div><div class="corr-sub" id="corrRangeInfo" style="margin-bottom:6px;"></div>');
+  const info = ()=>{
+    const f = q('#corrFrom').value, t = q('#corrTo').value, box = q('#corrRangeInfo');
+    if(!f && !t){ box.textContent = 'Rentang tanggal: semua data. Pilih tanggal di atas untuk membatasi periode korelasi (baris yang angkanya kosong otomatis dilewati).'; return; }
+    const n = corrOrderedRows().length;
+    box.innerHTML = 'Rentang aktif: <b>' + (f||'awal') + '</b> s/d <b>' + (t||'akhir') + '</b> · <b>' + n + '</b> dari ' + state.rows.length + ' baris berada di rentang ini. Baris tanpa tanggal tidak ikut.';
+  };
+  const refresh = ()=>{
+    info();
+    if(q('#lagPanel').style.display !== 'none') scanLags(); else if(corrChart) computeCorrelation();
+  };
+  W.corrOrderedRows = function(){
+    const f = q('#corrFrom').value, t = q('#corrTo').value;
+    let dc = $('#corrDateCol').value;
+    if(dc==='' && (f||t)){
+      const i = state.colTypes.indexOf('date');
+      if(i>=0){ dc = String(i); const sel = $('#corrDateCol'); if(Array.from(sel.options).some(o=>o.value===dc)) sel.value = dc; }
+    }
+    if(dc==='') return state.rows;
+    const ci = parseInt(dc);
+    const tf = f ? new Date(f+'T00:00:00').getTime() : null, tt = t ? new Date(t+'T23:59:59').getTime() : null;
+    return state.rows.map((r,i)=>({ r, i, d: parseFlexibleDate(r[ci]) }))
+      .filter(o=> o.d && (tf===null || o.d.getTime()>=tf) && (tt===null || o.d.getTime()<=tt))
+      .sort((a,b)=> (a.d-b.d) || (a.i-b.i)).map(o=>o.r);
+  };
+  q('#corrFrom').addEventListener('change', refresh); q('#corrTo').addEventListener('change', refresh);
+  document.querySelectorAll('[data-cq]').forEach(b=> b.addEventListener('click', ()=>{
+    const k = b.dataset.cq;
+    if(k==='all'){ q('#corrFrom').value=''; q('#corrTo').value=''; }
+    else {
+      let ci = parseInt($('#corrDateCol').value); if(isNaN(ci)) ci = state.colTypes.indexOf('date');
+      const bd = ci>=0 ? getDateBounds(ci) : null;
+      if(!bd){ showToast('Data belum punya kolom tanggal'); return; }
+      const mx = new Date(bd.max);
+      q('#corrFrom').value = rulerIso(new Date(mx.getFullYear(), mx.getMonth(), mx.getDate()-(parseInt(k)-1)));
+      q('#corrTo').value = '';
+    }
+    refresh();
+  }));
+  info();
+})();
+
+/* ---------- v4: Ekspor baru (PDF / JPG / PPT) ---------- */
+const sleep = ms=> new Promise(r=> setTimeout(r, ms));
+const XO_KEY = 'chartStudioExportOpts';
+function loadXO(){ try{ return Object.assign({ stats:true, pareto:false }, JSON.parse(localStorage.getItem(XO_KEY) || '{}')); }catch(e){ return { stats:true, pareto:false }; } }
+function askExportOptions(label, hasPareto){
+  return new Promise(res=>{
+    const o = loadXO();
+    const ov = document.createElement('div'); ov.className = 'rp-overlay';
+    ov.innerHTML = '<div class="rp-dialog"><h4>Ekspor ke ' + esc(label) + '</h4>' +
+      '<div style="font-size:12.5px;color:var(--text-soft);">Grafik selalu disertakan. Tombol 🔢 Angka &amp; callout dan pilihan legend tidak ikut diekspor.</div>' +
+      '<label class="rp-chk"><input type="checkbox" id="xoStats"' + (o.stats?' checked':'') + '> Sertakan statistik (rentang waktu, filter, kartu statistik, arah tren)</label>' +
+      '<div style="font-size:11.5px;color:var(--text-soft);margin:-4px 0 4px 22px;">Isi kartu statistik mengikuti centang di tombol 📊 Statistik pada tiap grafik. Hilangkan centang ini untuk hasil berupa grafik saja.</div>' +
+      (hasPareto ? '<label class="rp-chk"><input type="checkbox" id="xoPareto"' + (o.pareto?' checked':'') + '> Sertakan analisis Pareto (penjelasan &amp; rekomendasi di bawah grafik Pareto)</label>' : '') +
+      '<div class="rp-btns"><button class="btn small" data-q="cancel">Batal</button><button class="btn small primary" data-q="ok">Ekspor</button></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', e=>{
+      if(e.target===ov){ ov.remove(); res(null); return; }
+      const a = e.target.dataset && e.target.dataset.q; if(!a) return;
+      if(a==='cancel'){ ov.remove(); res(null); return; }
+      const r = { stats: q('#xoStats',ov).checked, pareto: hasPareto ? q('#xoPareto',ov).checked : o.pareto };
+      try{ localStorage.setItem(XO_KEY, JSON.stringify(r)); }catch(e2){}
+      ov.remove(); res(r);
+    });
+  });
+}
+function xHost(){
+  let h = document.getElementById('xoHost');
+  if(!h){ h = document.createElement('div'); h.id = 'xoHost'; h.style.cssText = 'position:absolute;left:0;top:0;z-index:-1;pointer-events:none;'; document.body.appendChild(h); }
+  return h;
+}
+const XW = 1100;
+async function buildExportParts(cfg, opts){
+  const host = xHost(); host.innerHTML = '';
+  const img = cfg.chartObj.toBase64Image('image/png', 1);
+  const a = document.createElement('div');
+  a.style.cssText = 'width:'+XW+'px;background:#fff;color:#222;padding:14px 18px 8px;box-sizing:border-box;font-family:"Segoe UI",Arial,sans-serif;';
+  a.innerHTML = '<div style="font-size:22px;font-weight:800;margin-bottom:8px;">'+esc(cfg.title)+'</div><img src="'+img+'" style="width:100%;display:block;">';
+  host.appendChild(a);
+  const im = a.querySelector('img'); if(!im.complete) await new Promise(r=>{ im.onload = r; im.onerror = r; });
+  const ca = await h2c(a, { scale:2, backgroundColor:'#ffffff' });
+  a.remove();
+  let cb = null;
+  const card = document.getElementById('chartcard-'+cfg.id), sp = card && card.querySelector('[data-role=statspanel]');
+  if(sp){
+    const clone = sp.cloneNode(true);
+    clone.querySelectorAll('button').forEach(n=> n.remove());
+    if(!opts.stats) clone.querySelectorAll('.chart-stats-summary,.chart-stats-grid,.shade-legend,.trend-box').forEach(n=> n.remove());
+    if(!opts.pareto) clone.querySelectorAll('.pareto-an').forEach(n=> n.remove());
+    else clone.querySelectorAll('details:not([open])').forEach(n=> n.remove());
+    if(clone.textContent.trim()){
+      const b = document.createElement('div');
+      b.style.cssText = 'width:'+XW+'px;background:#fff;color:#222;padding:6px 18px 14px;box-sizing:border-box;font-family:"Segoe UI",Arial,sans-serif;';
+      b.appendChild(clone); host.appendChild(b);
+      cb = await h2c(b, { scale:2, backgroundColor:'#ffffff' });
+      b.remove();
+    }
+  }
+  return { chart: ca, info: cb };
+}
+function stackCanvases(list, gap){
+  list = list.filter(Boolean); gap = gap || 0;
+  const w = Math.max.apply(null, list.map(c=> c.width)), h = list.reduce((s,c)=> s + c.height, 0) + gap*(list.length-1);
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,w,h);
+  let y = 0; list.forEach(c=>{ x.drawImage(c, 0, y); y += c.height + gap; });
+  return cv;
+}
+function makePdf(canvases){
+  const { jsPDF } = window.jspdf; let pdf = null; const M = 24, A4W = 595.28, A4H = 841.89;
+  const newPage = o=>{ if(!pdf) pdf = new jsPDF({ orientation:o, unit:'pt', format:'a4' }); else pdf.addPage('a4', o); };
+  canvases.forEach(cv=>{
+    if(cv.height/cv.width <= 0.75){
+      newPage('l'); const s = Math.min((A4H-2*M)/cv.width, (A4W-2*M)/cv.height);
+      pdf.addImage(cv.toDataURL('image/jpeg',0.93), 'JPEG', M, M, cv.width*s, cv.height*s);
+    } else {
+      const sW = (A4W-2*M)/cv.width, sliceH = Math.floor((A4H-2*M)/sW);
+      for(let y=0; y<cv.height; y+=sliceH){
+        const h = Math.min(sliceH, cv.height-y), part = document.createElement('canvas'); part.width = cv.width; part.height = h;
+        const c = part.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0,0,part.width,h); c.drawImage(cv, 0, y, cv.width, h, 0, 0, cv.width, h);
+        newPage('p'); pdf.addImage(part.toDataURL('image/jpeg',0.93), 'JPEG', M, M, cv.width*sW, h*sW);
+      }
+    }
+  });
+  return pdf;
+}
+async function runExport(kind, cfgs){
+  const list = cfgs.filter(c=> c.chartObj);
+  if(!list.length){ showToast('Belum ada grafik yang siap diekspor'); return; }
+  const label = { pdf:'PDF', jpg:'gambar JPG', ppt:'PowerPoint' }[kind];
+  const opts = await askExportOptions(label, list.some(c=> c.mode==='pareto'));
+  if(!opts) return;
+  showBusy('Menyiapkan ekspor…');
+  const oldAnim = Chart.defaults.animation;
+  try{
+    Chart.defaults.animation = false;
+    setChartsPrintMode(true); await sleep(400);        // tema terang + resolusi tinggi
+    const parts = [];
+    for(let i=0;i<list.length;i++){
+      setBusyMsg('Memproses grafik ' + (i+1) + ' dari ' + list.length + '…');
+      parts.push(await buildExportParts(list[i], opts)); await sleep(20);
+    }
+    const stem = list.length===1 ? fileSafe(list[0].title) : 'semua-grafik';
+    if(kind==='pdf'){
+      makePdf(parts.map(p=> stackCanvases([p.chart, p.info]))).save(stem + '.pdf');
+    } else if(kind==='jpg'){
+      let big = stackCanvases(parts.map(p=> stackCanvases([p.chart, p.info])), 30);
+      if(big.height > 16000){
+        const k = 16000/big.height, sm = document.createElement('canvas'); sm.width = Math.round(big.width*k); sm.height = 16000;
+        sm.getContext('2d').drawImage(big, 0, 0, sm.width, sm.height); big = sm;
+      }
+      downloadDataUrl(big.toDataURL('image/jpeg', 0.93), stem + '.jpg');
+    } else {
+      const pptx = new PptxGenJS();
+      const put = cv=>{
+        const sl = pptx.addSlide(), r = cv.height/cv.width, w = Math.min(9.4, 5.0/r), h = w*r;
+        sl.addImage({ data: cv.toDataURL('image/png'), x:(10-w)/2, y:0.3, w, h });
+      };
+      parts.forEach(p=>{ put(p.chart); if(p.info) put(p.info); });
+      await pptx.writeFile({ fileName: stem + '.pptx' });
+    }
+    showToast('Ekspor ' + label + ' selesai (' + list.length + ' grafik)');
+  }catch(err){ console.error(err); showToast('Gagal ekspor: ' + (err && err.message ? err.message : err)); }
+  finally{
+    Chart.defaults.animation = oldAnim;
+    try{ setChartsPrintMode(false); }catch(e){}
+    const h = document.getElementById('xoHost'); if(h) h.remove();
+    hideBusy();
+  }
+}
+W.exportChartPDF = cfg=> runExport('pdf', [cfg]);
+W.exportChartJPG = cfg=> runExport('jpg', [cfg]);
+W.exportChartPPT = cfg=> runExport('ppt', [cfg]);
+W.exportAllPDF = ()=> runExport('pdf', state.charts);
+W.exportAllJPG = ()=> runExport('jpg', state.charts);
+W.exportAllPPT = ()=> runExport('ppt', state.charts);
 })();
 </script>
-
 </body>
 </html>
