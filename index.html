@@ -6710,5 +6710,439 @@ function fbInit(){
 }
 
 </script>
+  <!-- ================================================================
+  PATCH CHART STUDIO v3  — tempel SATU KALI tepat sebelum </body>
+  (setelah </script> terakhir milik aplikasi Anda).
+  Isi: arsir di Pareto, garis tren (naik/turun/datar), ketebalan garis/titik,
+  duplikat & salin template grafik, blok+Delete sel tabel, freeze kolom,
+  sel error (#DIV/0! dll) jadi kosong, filter tanggal untuk semua grafik.
+================================================================ -->
+<style>
+.rng-sel{background:rgba(47,128,237,.28) !important;outline:1px solid rgba(47,128,237,.8);outline-offset:-1px;}
+.rng-drag, .rng-drag *{user-select:none !important;-webkit-user-select:none !important;}
+#manualTable .frz{position:sticky;z-index:3;background:var(--panel);box-shadow:1px 0 0 var(--border);}
+#manualTable thead th{z-index:6;}
+#manualTable thead .frz{z-index:9;background:var(--panel-2);}
+.sx-extra{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--text-soft);}
+.sx-extra label{display:inline-flex;gap:4px;align-items:center;font-weight:600;}
+.sx-extra input[type=number]{width:62px;padding:5px 6px;border-radius:7px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:12px;}
+.trend-box{margin:0 0 10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--panel-2);font-size:12.5px;line-height:1.6;}
+.trend-box .tb-row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;}
+.trend-box .tb-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+.trend-up{color:#1E8449;font-weight:800;} .trend-down{color:#C62828;font-weight:800;} .trend-flat{color:#7a7a7a;font-weight:800;}
+.gd-box{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.gd-box input[type=date]{padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text);}
+.gd-info{font-size:11.5px;color:var(--text-soft);margin-top:4px;max-width:420px;}
+.gd-on{color:var(--accent1);font-weight:700;}
+.frz-ctl{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin-left:6px;}
+.frz-ctl select{padding:5px 8px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);}
+.rng-hint{font-size:11.5px;color:var(--text-soft);margin-left:6px;}
+</style>
+<script>
+(function(){
+'use strict';
+const W = window;
+const q = (s,r)=> (r||document).querySelector(s);
+const esc = s=> escapeHtml(s==null?'':String(s));
+state.globalDate = { from:'', to:'' };
+
+/* ---------- plugin Chart.js: arsir Pareto + garis tren ---------- */
+const paretoShade = { id:'csParetoShade', beforeDatasetsDraw(chart){
+  const list = chart.__csParetoShade; if(!list || !list.length) return;
+  const xs = chart.scales.x; const n = (chart.data.labels||[]).length; if(!xs || !n) return;
+  const a = chart.chartArea, ctx = chart.ctx;
+  const step = n>1 ? Math.abs(xs.getPixelForValue(1)-xs.getPixelForValue(0)) : (a.right-a.left);
+  list.forEach(o=>{
+    ctx.save(); ctx.beginPath(); ctx.rect(a.left,a.top,a.right-a.left,a.bottom-a.top); ctx.clip();
+    ctx.fillStyle = hexAlpha(o.rule.color,(o.rule.alpha||20)/100);
+    for(let i=0;i<n;i++){ if(!shadePass(o.rule,o.vals[i])) continue; const cx = xs.getPixelForValue(i); ctx.fillRect(cx-step/2,a.top,step,a.bottom-a.top); }
+    ctx.restore();
+  });
+}};
+const trendPlugin = { id:'csTrend', afterDatasetsDraw(chart){
+  const ctx = chart.ctx, a = chart.chartArea; let k = 0;
+  chart.data.datasets.forEach((ds,di)=>{
+    const t = ds.__trend; if(!t || !chart.isDatasetVisible(di)) return;
+    const xs = chart.scales.x, ys = chart.scales[ds.yAxisID] || chart.scales.y; if(!xs||!ys) return;
+    const x1=xs.getPixelForValue(t.x1), x2=xs.getPixelForValue(t.x2), y1=ys.getPixelForValue(t.y1), y2=ys.getPixelForValue(t.y2);
+    ctx.save(); ctx.beginPath(); ctx.rect(a.left,a.top,a.right-a.left,a.bottom-a.top); ctx.clip();
+    ctx.lineCap='round';
+    ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.setLineDash([9,6]); ctx.strokeStyle=t.color; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.restore();
+    const arrow = {up:'↗',down:'↘',flat:'→'}[t.dir], word = {up:'Naik',down:'Turun',flat:'Datar'}[t.dir];
+    const text = arrow+' '+word+' '+(t.pct>=0?'+':'')+fmtNum(t.pct)+'%';
+    ctx.save(); ctx.font='700 12px "Segoe UI", sans-serif'; ctx.textBaseline='middle';
+    const w = ctx.measureText(text).width+14, h=20, bx=a.left+8, by=a.top+8+k*24; k++;
+    ctx.fillStyle='rgba(255,255,255,.92)'; ctx.strokeStyle=t.color; ctx.lineWidth=1.5;
+    ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(bx,by,w,h,6); else ctx.rect(bx,by,w,h); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#222'; ctx.fillText(text,bx+7,by+h/2+.5); ctx.restore();
+  });
+}};
+function regPlugins(){ try{ Chart.register(paretoShade, trendPlugin); }catch(e){ console.warn(e); } }
+if(typeof Chart!=='undefined') regPlugins(); else document.addEventListener('cs-libs-ready', regPlugins);
+
+/* ---------- 1) Arsir untuk Pareto ---------- */
+function aggVals(v, fn){
+  if(fn==='count') return v.length;
+  if(!v.length) return null;
+  if(fn==='max') return Math.max.apply(null,v);
+  if(fn==='min') return Math.min.apply(null,v);
+  const s = v.reduce((a,b)=>a+b,0);
+  return fn==='avg' ? s/v.length : s;
+}
+const _rpc = W.renderParetoChart;
+W.renderParetoChart = function(cfg, canvas, wrap, pointLabels, seriesData, s, rowIdx){
+  _rpc(cfg, canvas, wrap, pointLabels, seriesData, s, rowIdx);
+  const chart = cfg.chartObj; if(!chart) return;
+  const rules = (cfg.shades||[]).filter(r=> r.col!=='' && r.col!==undefined);
+  if(!rules.length || !Array.isArray(rowIdx)) return;
+  const fn = cfg.paretoFn || 'sum';
+  const xIdx = parseInt(cfg.xCol), xIsNumber = state.colTypes[xIdx]==='number';
+  const step = parseFloat(String(cfg.paretoBin||'').replace(',','.'));
+  const binOn = xIsNumber && step>0;
+  const xNums = xIsNumber ? numCol(xIdx) : null;
+  const groups = new Map();
+  pointLabels.forEach((lab,i)=>{
+    let key = String(lab);
+    if(binOn){
+      const xv = xNums[rowIdx[i]];
+      if(xv===null || xv===undefined || isNaN(xv)) key = '(kosong)';
+      else { const lo = Math.round(Math.floor(xv/step+1e-9)*step*1e6)/1e6; key = paretoNum(lo)+' – <'+paretoNum(lo+step); }
+    }
+    let g = groups.get(key); if(!g){ g=[]; groups.set(key,g); } g.push(rowIdx[i]);
+  });
+  const labels = chart.data.labels;
+  const out = rules.map(rule=>{
+    const col = numCol(parseInt(rule.col));
+    const vals = labels.map(k=>{
+      const v = []; (groups.get(k)||[]).forEach(ix=>{ const x = col[ix]; if(x!==null && x!==undefined && !isNaN(x)) v.push(x); });
+      return aggVals(v, fn);
+    });
+    return { rule, vals };
+  });
+  chart.__csParetoShade = out; chart.update('none');
+  const card = wrap.closest('.chart-card'), sp = card && card.querySelector('[data-role=statspanel]');
+  if(sp){
+    sp.insertAdjacentHTML('afterbegin', '<div class="shade-legend">' + out.map(o=>{
+      const cnt = o.vals.filter(v=> shadePass(o.rule,v)).length;
+      return '<span class="shade-chip"><span class="shade-swatch" style="background:'+hexAlpha(o.rule.color,Math.min(.9,(o.rule.alpha||20)/100*2))+'"></span>Arsir: '+esc(describeShade(o.rule))+' · '+cnt+' dari '+o.vals.length+' kategori (nilai kolom dihitung per kategori: '+esc(fn)+')</span>';
+    }).join('') + '</div>');
+  }
+};
+
+/* ---------- 2) Tren + 3) Ketebalan: setelah chart digambar ---------- */
+function computeTrend(pts, flatPct){
+  const n = pts.length; if(n<3) return null;
+  let sx=0, sy=0, ymin=Infinity, ymax=-Infinity;
+  pts.forEach(p=>{ sx+=p.x; sy+=p.y; if(p.y<ymin) ymin=p.y; if(p.y>ymax) ymax=p.y; });
+  const mx=sx/n, my=sy/n; let sxx=0,sxy=0,syy=0;
+  pts.forEach(p=>{ const dx=p.x-mx, dy=p.y-my; sxx+=dx*dx; sxy+=dx*dy; syy+=dy*dy; });
+  if(sxx===0) return null;
+  const slope=sxy/sxx, ic=my-slope*mx, r2 = syy===0 ? 0 : (sxy*sxy)/(sxx*syy);
+  const x1=pts[0].x, x2=pts[n-1].x, y1=ic+slope*x1, y2=ic+slope*x2, change=y2-y1;
+  const base = Math.abs(my)>1e-9 ? Math.abs(my) : ((ymax-ymin)||1);
+  const pct = change/base*100, th = (flatPct>=0) ? flatPct : 3;
+  const dir = Math.abs(pct)<th ? 'flat' : (change>0 ? 'up' : 'down');
+  return { x1,x2,y1,y2,slope,r2,pct,dir,n,th };
+}
+function postRender(cfg){
+  const chart = cfg.chartObj; if(!chart) return;
+  if(cfg.mode==='pie' || cfg.mode==='donut' || cfg.mode==='pareto') return;
+  const vis = cfg.series.filter(s=> s.colIndex!=='' && s.colIndex!==undefined && !cfg.hiddenSeries.has(s.colIndex));
+  const isScatter = cfg.mode==='scatter', trends = [];
+  chart.data.datasets.forEach((ds,i)=>{
+    const s = vis[i]; if(!s) return;
+    const lw = parseFloat(s.lw), pr = parseFloat(s.pr);
+    if(lw>0 && s.chartType!=='point' && !isScatter) ds.borderWidth = lw;
+    if(pr>=0 && (s.chartType!=='bar' || isScatter)){ ds.pointRadius = pr; ds.pointHoverRadius = Math.max(pr+2,4); }
+    ds.__trend = null;
+    if(s.trend){
+      const pts = [];
+      (ds.data||[]).forEach((v,k)=>{
+        let x,y; if(v && typeof v==='object'){ x=v.x; y=v.y; } else { x=k; y=v; }
+        if(y===null || y===undefined || isNaN(y)) return; pts.push({x,y});
+      });
+      const t = computeTrend(pts, parseFloat(s.flat));
+      if(t){ t.color = s.color; t.name = ds.label; ds.__trend = t; trends.push(t); }
+    }
+  });
+  chart.update('none');
+  const card = document.getElementById('chartcard-'+cfg.id), sp = card && card.querySelector('[data-role=statspanel]');
+  if(sp && trends.length){
+    const word = {up:'Naik',down:'Turun',flat:'Datar (sejajar)'}, arrow = {up:'↗',down:'↘',flat:'→'};
+    sp.insertAdjacentHTML('afterbegin', '<div class="trend-box"><b>📈 Arah tren (garis regresi linear)</b>' + trends.map(t=>
+      '<div class="tb-row"><span class="tb-dot" style="background:'+t.color+'"></span><b>'+esc(t.name)+'</b> <span class="trend-'+t.dir+'">'+arrow[t.dir]+' '+word[t.dir]+' ('+(t.pct>=0?'+':'')+fmtNum(t.pct)+'%)</span>' +
+      '<span>dari '+fmtStat(t.y1)+' ke '+fmtStat(t.y2)+' · kemiringan '+fmtStat(t.slope)+' per titik · R² = '+t.r2.toFixed(3)+(t.r2<0.05 ? ' <i>(data sangat bervariasi, tren lemah)</i>' : '')+'</span></div>'
+    ).join('') + '<div style="color:var(--text-soft);margin-top:4px;">Dianggap “datar” bila perubahan garis tren dari awal ke akhir kurang dari batas % (default 3% dari rata-rata).</div></div>');
+  }
+}
+const _rcn = W.renderChartNow;
+W.renderChartNow = function(cfg){
+  // filter tanggal global digabung (irisan) dengan filter tanggal tiap grafik
+  const g = state.globalDate || {}, of = cfg.dateFrom, ot = cfg.dateTo;
+  if(g.from || g.to){
+    cfg.dateFrom = (g.from && (!of || g.from>of)) ? g.from : of;
+    cfg.dateTo = (g.to && (!ot || g.to<ot)) ? g.to : ot;
+  }
+  try{ _rcn(cfg); } finally { cfg.dateFrom = of; cfg.dateTo = ot; }
+  try{ postRender(cfg); }catch(e){ console.error(e); }
+};
+
+/* kontrol tambahan di baris series */
+const _rsl = W.renderSeriesList;
+W.renderSeriesList = function(card, cfg){
+  _rsl(card, cfg);
+  card.querySelectorAll('[data-role=serieslist] .series-block').forEach((block,idx)=>{
+    const s = cfg.series[idx]; if(!s) return;
+    const row = block.querySelector('.series-row'), rm = block.querySelector('[data-role=sremove]'); if(!row||!rm) return;
+    const span = document.createElement('span'); span.className = 'sx-extra';
+    span.innerHTML =
+      '<label title="Tebal garis (px). Kosong = otomatis">Garis <input type="number" step="0.5" min="0.5" max="12" data-k="lw" placeholder="auto"></label>' +
+      '<label title="Ukuran titik (px). Kosong = otomatis. Untuk data banyak coba 1–2">Titik <input type="number" step="0.5" min="0" max="20" data-k="pr" placeholder="auto"></label>' +
+      '<label title="Tampilkan garis tren (naik / turun / sejajar)"><input type="checkbox" data-k="trend"> 📈 Tren</label>' +
+      '<label title="Dianggap datar bila perubahan tren kurang dari % ini">datar &lt; <input type="number" step="0.5" min="0" data-k="flat" placeholder="3"> %</label>';
+    const set = (k,v)=>{ const el = span.querySelector('[data-k='+k+']'); if(el){ if(el.type==='checkbox') el.checked = !!v; else el.value = (v===undefined||v===null)?'':v; } };
+    set('lw',s.lw); set('pr',s.pr); set('trend',s.trend); set('flat',s.flat);
+    span.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const k = inp.dataset.k;
+        s[k] = inp.type==='checkbox' ? inp.checked : inp.value;
+        renderChart(cfg);
+      });
+    });
+    rm.insertAdjacentElement('beforebegin', span);
+  });
+};
+
+/* ---------- 4) Duplikat & salin template grafik ---------- */
+const J = x=> JSON.parse(JSON.stringify(x===undefined ? null : x));
+function applyTemplate(src, dst, withData){
+  ['mode','granularity','aggFn','calloutStyle','autoThin','yMin','yMax','y1Min','y1Max','paretoFn','paretoTop','paretoBin','showAllCallouts','limitN','limitMode'].forEach(k=>{ dst[k] = src[k]; });
+  dst.statsShow = J(src.statsShow || {}); dst.shades = J(src.shades || []);
+  dst.yUnits = J(ensureUnits(src,'y')); dst.y1Units = J(ensureUnits(src,'y1'));
+  dst.yUnitDismiss = J(src.yUnitDismiss || []); dst.y1UnitDismiss = J(src.y1UnitDismiss || []);
+  if(withData){
+    dst.xCol = src.xCol; dst.xCol2 = src.xCol2; dst.dateFrom = src.dateFrom; dst.dateTo = src.dateTo;
+    dst.filters = J(src.filters || []); dst.series = J(src.series || []); dst.hiddenSeries = new Set(Array.from(src.hiddenSeries||[]));
+  } else {
+    dst.series.forEach((s,i)=>{ const t = src.series[i]; if(!t) return;
+      ['axis','chartType','color','colorAuto','lw','pr','trend','flat'].forEach(k=>{ if(t[k]!==undefined) s[k] = t[k]; });
+      s.target = J(t.target || s.target);
+    });
+  }
+}
+function refreshCard(cfg){
+  const card = document.getElementById('chartcard-'+cfg.id); if(!card) return;
+  populateAllColumnSelectors();
+  renderFiltersList(card,cfg); renderShadesList(card,cfg); renderSeriesList(card,cfg);
+  syncChartCardControls(card,cfg); renderChart(cfg);
+}
+function duplicateChart(src){
+  if(state.charts.length >= 40){ showToast('Maksimal 40 grafik'); return; }
+  const cfg = newChartConfig(); applyTemplate(src, cfg, true);
+  cfg.title = src.title + ' (salinan)'; cfg.wPct = src.wPct; cfg.hPx = src.hPx;
+  state.charts.push(cfg);
+  const container = q('#chartsContainer'), en = container.querySelector('.empty-note'); if(en) en.remove();
+  const card = buildChartCardDom(cfg); container.appendChild(card);
+  populateAllColumnSelectors(); syncChartCardControls(card,cfg); renderChart(cfg);
+  reapplyAllSizes(); syncCountSeg(); collapseHints(container);
+  card.scrollIntoView({behavior:'smooth', block:'nearest'});
+  scheduleAutosave(); showToast('Grafik diduplikat');
+}
+function openTemplateDialog(dst){
+  const others = state.charts.filter(c=> c.id!==dst.id);
+  if(!others.length){ showToast('Belum ada grafik lain untuk dijadikan template'); return; }
+  const ov = document.createElement('div'); ov.className = 'rp-overlay';
+  ov.innerHTML = '<div class="rp-dialog"><h4>Salin template ke “'+esc(dst.title)+'”</h4>' +
+    '<div class="field"><label>Ambil dari grafik</label><select id="tplSrc">'+others.map(c=>'<option value="'+c.id+'">'+esc(c.title)+'</option>').join('')+'</select></div>' +
+    '<label class="rp-chk"><input type="checkbox" id="tplData" checked> Salin juga Sumbu X, data yang digambar (series), filter nilai &amp; rentang tanggal</label>' +
+    '<div style="font-size:12px;color:var(--text-soft);">Selalu disalin: tipe grafik, sumbu Y &amp; satuan, arsir, ketebalan garis/titik, tren, statistik, callout. Judul grafik tidak berubah. Jika kotak di atas tidak dicentang, hanya gaya yang disalin ke series yang sudah ada (berdasarkan urutan).</div>' +
+    '<div class="rp-btns"><button class="btn small" data-q="cancel">Batal</button><button class="btn small primary" data-q="ok">Terapkan</button></div></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e=>{
+    if(e.target===ov){ ov.remove(); return; }
+    const a = e.target.dataset && e.target.dataset.q; if(!a) return;
+    if(a==='cancel'){ ov.remove(); return; }
+    const src = state.charts.find(c=> String(c.id)===q('#tplSrc',ov).value);
+    const withData = q('#tplData',ov).checked;
+    ov.remove(); if(!src) return;
+    applyTemplate(src, dst, withData); refreshCard(dst); scheduleAutosave();
+    showToast('Template disalin dari “'+src.title+'”');
+  });
+}
+const _bccd = W.buildChartCardDom;
+W.buildChartCardDom = function(cfg){
+  const card = _bccd(cfg);
+  const rm = card.querySelector('[data-role=removechart]');
+  if(rm){
+    rm.insertAdjacentHTML('beforebegin',
+      '<button class="icon-btn" data-role="dupchart" title="Duplikat grafik ini (grafik baru dengan pengaturan sama)">⧉</button>' +
+      '<button class="icon-btn" data-role="tplchart" title="Salin template (pengaturan) dari grafik lain ke grafik ini">📋</button>');
+    card.querySelector('[data-role=dupchart]').addEventListener('click', ()=> duplicateChart(cfg));
+    card.querySelector('[data-role=tplchart]').addEventListener('click', ()=> openTemplateDialog(cfg));
+  }
+  return card;
+};
+
+/* ---------- 5) Blok sel + Delete (tabel Sumber Data & Pratinjau) ---------- */
+function makeRange(root, cellSel, posOf, onClear){
+  if(!root) return;
+  let anchor=null, sel=[], dragging=false, moved=false;
+  const mark = on=> sel.forEach(c=> c.classList.toggle('rng-sel', on));
+  const clearSel = ()=>{ mark(false); sel=[]; root.classList.remove('rng-drag'); };
+  const apply = (a,b)=>{
+    mark(false); sel=[];
+    const pa=posOf(a), pb=posOf(b), r1=Math.min(pa.r,pb.r), r2=Math.max(pa.r,pb.r), c1=Math.min(pa.c,pb.c), c2=Math.max(pa.c,pb.c);
+    root.querySelectorAll(cellSel).forEach(c=>{ const p=posOf(c); if(p.r>=r1&&p.r<=r2&&p.c>=c1&&p.c<=c2){ c.classList.add('rng-sel'); sel.push(c); } });
+  };
+  root.addEventListener('mousedown', e=>{
+    if(e.button!==0) return;
+    const c = e.target.closest(cellSel);
+    if(!c){ clearSel(); return; }
+    if(e.shiftKey && anchor && root.contains(anchor)){ e.preventDefault(); apply(anchor,c); root.classList.add('rng-drag'); moved=true; return; }
+    anchor=c; dragging=true; moved=false; clearSel();
+  });
+  root.addEventListener('mouseover', e=>{
+    if(!dragging || !anchor) return;
+    const c = e.target.closest(cellSel); if(!c || (c===anchor && !moved)) return;
+    moved=true; root.classList.add('rng-drag');
+    const s = window.getSelection(); if(s) s.removeAllRanges();
+    apply(anchor,c);
+  });
+  root.addEventListener('selectstart', e=>{ if(dragging && moved) e.preventDefault(); });
+  document.addEventListener('mouseup', ()=>{ dragging=false; });
+  document.addEventListener('mousedown', e=>{ if(!root.contains(e.target)) clearSel(); }, true);
+  document.addEventListener('keydown', e=>{
+    sel = sel.filter(c=> root.contains(c)); if(!sel.length) return;
+    if(e.key==='Escape'){ clearSel(); return; }
+    if(e.key==='Delete' || e.key==='Backspace'){
+      if(sel.length<2 && !moved) return;
+      e.preventDefault();
+      const cells = sel.slice(), n = cells.length; clearSel(); onClear(cells);
+      showToast(n+' sel dikosongkan');
+    }
+  });
+  document.addEventListener('copy', e=>{
+    sel = sel.filter(c=> root.contains(c)); if(sel.length<2) return;
+    const rows = new Map();
+    sel.forEach(c=>{ const p=posOf(c); if(!rows.has(p.r)) rows.set(p.r,new Map()); rows.get(p.r).set(p.c, c.textContent.replace(/[\t\r\n]+/g,' ')); });
+    const rs = Array.from(rows.keys()).sort((a,b)=>a-b), cs = Array.from(new Set(sel.map(c=>posOf(c).c))).sort((a,b)=>a-b);
+    e.clipboardData.setData('text/plain', rs.map(r=> cs.map(c=> rows.get(r).get(c)||'').join('\t')).join('\n'));
+    e.preventDefault();
+  });
+}
+makeRange(q('#manualTableWrap'), 'td[data-col], th[data-col]',
+  c=> ({ r:c.parentElement.rowIndex, c:parseInt(c.dataset.col) }),
+  cells=> cells.forEach(c=>{ c.textContent=''; }));
+makeRange(q('#dataPreviewWrap'), 'td[data-r][data-c]',
+  c=> ({ r:parseInt(c.dataset.r), c:parseInt(c.dataset.c) }),
+  cells=>{
+    cells.forEach(c=>{ const r=parseInt(c.dataset.r), k=parseInt(c.dataset.c); if(state.rows[r]) state.rows[r][k]=''; });
+    bumpData(); detectColumnTypes(); renderDataPreview(); state.charts.forEach(renderChart);
+    if(typeof rpRefreshIfOpen==='function') rpRefreshIfOpen();
+  });
+(function(){ const h = q('#manualTableWrap .table-toolbar'); if(h) h.insertAdjacentHTML('beforeend','<span class="rng-hint">Blok sel: seret mouse / Shift+klik, lalu tekan <b>Delete</b> (Ctrl+C untuk salin)</span>'); })();
+
+/* ---------- 6) Freeze kolom di tabel Sumber Data ---------- */
+function applyManualFreeze(){
+  const tbl = q('#manualTable'), sel = q('#mFreezeSel'); if(!tbl || !sel) return;
+  const n = parseInt(sel.value) || 0;
+  tbl.querySelectorAll('.frz').forEach(el=>{ el.classList.remove('frz'); el.style.left=''; });
+  if(!n || !tbl.tHead || !tbl.tHead.rows[0]) return;
+  const ths = Array.from(tbl.tHead.rows[0].children), offs = [];
+  let acc = ths[0] ? ths[0].getBoundingClientRect().width : 30;
+  for(let c=0;c<n;c++){ offs[c]=acc; acc += ths[c+1] ? ths[c+1].getBoundingClientRect().width : 0; }
+  Array.from(tbl.rows).forEach(tr=>{
+    const ch = tr.children;
+    if(ch[0]){ ch[0].classList.add('frz'); ch[0].style.left='0px'; }
+    for(let c=0;c<n;c++){ const cell = ch[c+1]; if(cell){ cell.classList.add('frz'); cell.style.left = offs[c]+'px'; } }
+  });
+}
+(function(){
+  const bar = q('#manualTableWrap .table-toolbar'); if(!bar) return;
+  bar.insertAdjacentHTML('beforeend','<label class="frz-ctl" title="Kolom di sebelah kiri tetap terlihat saat tabel digeser ke kanan">❄️ Bekukan kolom: <select id="mFreezeSel"><option value="0">Tidak</option><option value="1">1 kolom</option><option value="2">2 kolom</option><option value="3">3 kolom</option><option value="4">4 kolom</option><option value="5">5 kolom</option></select></label>');
+  q('#mFreezeSel').addEventListener('change', applyManualFreeze);
+  let t=null; const re = ()=>{ clearTimeout(t); t=setTimeout(applyManualFreeze,150); };
+  const tbl = q('#manualTable');
+  if(tbl && W.MutationObserver) new MutationObserver(re).observe(tbl,{childList:true,subtree:true,characterData:true});
+  window.addEventListener('resize', re);
+})();
+
+/* ---------- 7) Sel error (#DIV/0!, #N/A, dll) menjadi kosong ---------- */
+const ERR_RE = /^(#(DIV\/0!?|N\/A|NA|VALUE!?|REF!?|NAME\??|NUM!?|NULL!?|SPILL!?|CALC!?|ERROR!?|GETTING_DATA)|Err:\d+|NaN|[-+]?Infinity|#+)$/i;
+function isErrCell(v){
+  if(typeof v==='number') return !isFinite(v);
+  if(typeof v!=='string') return false;
+  return ERR_RE.test(v.trim());
+}
+const _fd = W.finalizeData;
+W.finalizeData = function(headers, rows, extra){
+  let n = 0;
+  const clean = rows.map(r=> r.map(v=>{ if(isErrCell(v)){ n++; return ''; } return v; }));
+  _fd(headers, clean, extra);
+  if(n) showToast('Data dimuat: '+state.rows.length+' baris, '+state.headers.length+' kolom · '+n+' sel error (#DIV/0!, #N/A, dll) dikosongkan');
+};
+
+/* ---------- 8) Filter tanggal untuk SEMUA grafik ---------- */
+(function(){
+  const host = q('.hero-controls'); if(!host) return;
+  const box = document.createElement('div'); box.className = 'ctl-group';
+  box.innerHTML = '<span class="ctl-label">Filter tanggal semua grafik</span>' +
+    '<div class="gd-box"><input type="date" id="gdFrom" title="Dari tanggal"> <span>–</span> <input type="date" id="gdTo" title="Sampai tanggal">' +
+    '<button class="btn small" data-gd="7">7 hari</button><button class="btn small" data-gd="30">30 hari</button><button class="btn small" data-gd="90">90 hari</button>' +
+    '<button class="btn small ghost" data-gd="all">Reset</button></div><div class="gd-info" id="gdInfo"></div>';
+  host.appendChild(box);
+  W.syncGlobalDateUI = function(){
+    const g = state.globalDate, f=q('#gdFrom'), t=q('#gdTo'), i=q('#gdInfo');
+    f.value = g.from||''; t.value = g.to||'';
+    const fmt = s=> formatDateOnly(new Date(s+'T00:00:00'));
+    i.innerHTML = (g.from||g.to) ? '<span class="gd-on">Aktif: '+(g.from?fmt(g.from):'awal data')+' → '+(g.to?fmt(g.to):'akhir data')+'</span> — digabung dengan filter tanggal tiap grafik.' : 'Tidak aktif: tiap grafik memakai filter tanggalnya sendiri.';
+  };
+  const apply = ()=>{ state.globalDate.from = q('#gdFrom').value; state.globalDate.to = q('#gdTo').value; syncGlobalDateUI(); state.charts.forEach(renderChart); scheduleAutosave(); };
+  q('#gdFrom').addEventListener('change', apply); q('#gdTo').addEventListener('change', apply);
+  box.querySelectorAll('[data-gd]').forEach(b=> b.addEventListener('click', ()=>{
+    const k = b.dataset.gd;
+    if(k==='all'){ state.globalDate.from=''; state.globalDate.to=''; }
+    else {
+      const ci = state.colTypes.indexOf('date'), bd = ci>=0 ? getDateBounds(ci) : null;
+      if(!bd){ showToast('Data belum punya kolom tanggal'); return; }
+      const mx = new Date(bd.max);
+      state.globalDate.from = rulerIso(new Date(mx.getFullYear(), mx.getMonth(), mx.getDate()-(parseInt(k)-1)));
+      state.globalDate.to = '';
+    }
+    syncGlobalDateUI(); state.charts.forEach(renderChart); scheduleAutosave();
+  }));
+  syncGlobalDateUI();
+})();
+
+/* ---------- simpan / buka proyek: sertakan pengaturan baru ---------- */
+const _bp = W.buildProject;
+W.buildProject = function(){
+  const p = _bp();
+  p.globalDate = state.globalDate;
+  (p.charts||[]).forEach((pc,i)=>{
+    const cfg = state.charts[i]; if(!cfg) return;
+    (pc.series||[]).forEach((ps,j)=>{ const s = cfg.series[j]; if(!s) return; ps.lw=s.lw; ps.pr=s.pr; ps.trend=!!s.trend; ps.flat=s.flat; });
+  });
+  return p;
+};
+const _lp = W.loadProject;
+W.loadProject = function(p){
+  _lp(p);
+  try{
+    state.globalDate = Object.assign({from:'',to:''}, p.globalDate || {});
+    syncGlobalDateUI();
+    (p.charts||[]).slice(0,40).forEach((c,i)=>{
+      const cfg = state.charts[i]; if(!cfg) return;
+      (c.series||[]).forEach((s,j)=>{ const t = cfg.series[j]; if(!t) return; ['lw','pr','trend','flat'].forEach(k=>{ if(s[k]!==undefined) t[k]=s[k]; }); });
+    });
+    state.charts.forEach(c=>{ const cd = document.getElementById('chartcard-'+c.id); if(cd) renderSeriesList(cd,c); });
+    state.charts.forEach(renderChart);
+  }catch(e){ console.error(e); }
+};
+})();
+</script>
+
 </body>
 </html>
