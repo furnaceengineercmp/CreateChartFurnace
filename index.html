@@ -7478,84 +7478,92 @@ W.exportAllJPG = ()=> runExport('jpg', state.charts);
 W.exportAllPPT = ()=> runExport('ppt', state.charts);
 })();
 </script>
- <!-- ================= PATCH v7: angka (callout) per series ================= -->
+<!-- ================= PATCH v8: PERFORMA (menggantikan v7) ================= -->
 <script>
 (function(){
 'use strict';
 const W = window;
 
-// copot plugin angka lama (jika ada) agar tidak tergambar dobel
-function dropOld(){
-  try{
-    const old = Chart.registry.plugins.get('csSeriesNums');
-    if(old) Chart.unregister(old);
-  }catch(e){}
+/* 1) Matikan animasi, batasi resolusi kanvas */
+function tune(){
+  if(typeof Chart === 'undefined') return;
+  Chart.defaults.animation = false;
+  try{ Chart.defaults.transitions.active.animation.duration = 0; }catch(e){}
+  // 1.5 = hemat. Ubah ke 2 bila teks grafik terasa kurang tajam.
+  try{ Chart.defaults.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 1.5); }catch(e){}
+  try{ const old = Chart.registry.plugins.get('csSeriesNums'); if(old) Chart.unregister(old); }catch(e){}
+  try{ Chart.register(NUMS); }catch(e){ console.warn(e); }
 }
-if(typeof Chart !== 'undefined') dropOld(); else document.addEventListener('cs-libs-ready', dropOld);
 
+/* 2) Angka per series: dihitung SEKALI lalu disimpan sebagai gambar */
+function buildLayer(chart, cfg, vis){
+  const area = chart.chartArea; if(!area) return { cv:null };
+  const dpr = chart.currentDevicePixelRatio || window.devicePixelRatio || 1;
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(chart.width * dpr));
+  cv.height = Math.max(1, Math.round(chart.height * dpr));
+  const x = cv.getContext('2d'); x.scale(dpr, dpr);
+  const cands = [];
+  vis.forEach((s, di)=>{
+    if(!s.showNum) return;
+    const ds = chart.data.datasets[di]; if(!ds || !chart.isDatasetVisible(di)) return;
+    const meta = chart.getDatasetMeta(di); if(!meta) return;
+    const color = s.color || '#333';
+    meta.data.forEach((el, i)=>{
+      const raw = ds.data[i];
+      const v = (raw !== null && typeof raw === 'object') ? raw.y : raw;
+      if(v === null || v === undefined || isNaN(v) || isNaN(el.x) || isNaN(el.y)) return;
+      cands.push({ x: el.x, y: el.y, text: fmtNum(v), color: color });
+    });
+  });
+  if(!cands.length) return { cv:null };
+  cands.sort((a,b)=> a.x - b.x);
+  x.font = '700 11px "Segoe UI", sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+  const H = 14, placed = [], halo = cssVar('--panel') || '#fff';
+  const hit = (a,b)=> !(a.x + a.w + 2 <= b.x || b.x + b.w + 2 <= a.x || a.y + a.h + 1 <= b.y || b.y + b.h + 1 <= a.y);
+  for(let k=0;k<cands.length;k++){
+    const c = cands[k];
+    const w = x.measureText(c.text).width + 6;
+    for(let side=0; side<2; side++){
+      const rx = Math.max(area.left, Math.min(c.x - w/2, area.right - w));
+      const ry = side === 0 ? (c.y - 7 - H) : (c.y + 7);
+      if(ry < area.top - 2 || ry + H > area.bottom + 2) continue;
+      const r = { x: rx, y: ry, w: w, h: H };
+      let clash = false;
+      for(let j=placed.length-1; j>=0 && j>=placed.length-80; j--){ if(hit(r, placed[j])){ clash = true; break; } }
+      if(clash) continue;
+      placed.push(r);
+      x.lineWidth = 3; x.strokeStyle = halo; x.strokeText(c.text, rx + w/2, ry + H/2);
+      x.fillStyle = c.color; x.fillText(c.text, rx + w/2, ry + H/2);
+      break;
+    }
+  }
+  return { cv: cv };
+}
 const NUMS = {
-  id: 'csSeriesNums2',
+  id: 'csSeriesNums3',
+  afterUpdate(chart){ chart.__numCache = null; },
   afterDraw(chart){
     const cfg = chart.__csCfg;
-    if(!cfg || cfg.showAllCallouts) return;                       // "Angka Semua" sudah menangani
+    if(!cfg || cfg.showAllCallouts) return;
     if(cfg.mode === 'pie' || cfg.mode === 'donut' || cfg.mode === 'pareto') return;
     const vis = cfg.series.filter(s=> s.colIndex !== '' && s.colIndex !== undefined && !cfg.hiddenSeries.has(s.colIndex));
-    const area = chart.chartArea, ctx = chart.ctx, cands = [];
-    vis.forEach((s, di)=>{
-      if(!s.showNum) return;
-      const ds = chart.data.datasets[di]; if(!ds) return;
-      if(!chart.isDatasetVisible(di)) return;
-      const meta = chart.getDatasetMeta(di); if(!meta) return;
-      const color = s.color || '#333';
-      meta.data.forEach((el, i)=>{
-        const raw = ds.data[i];
-        const v = (raw !== null && typeof raw === 'object') ? raw.y : raw;
-        if(v === null || v === undefined || isNaN(v) || isNaN(el.x) || isNaN(el.y)) return;
-        cands.push({ x: el.x, y: el.y, text: fmtNum(v), color: color });
-      });
-    });
-    if(!cands.length) return;
-    cands.sort((a,b)=> a.x - b.x);
-    ctx.save();
-    ctx.font = '700 11px "Segoe UI", sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-    const H = 14, placed = [], halo = cssVar('--panel') || '#fff';
-    const hit = (a,b)=> !(a.x + a.w + 2 <= b.x || b.x + b.w + 2 <= a.x || a.y + a.h + 1 <= b.y || b.y + b.h + 1 <= a.y);
-    for(let k=0;k<cands.length;k++){
-      const c = cands[k];
-      const w = ctx.measureText(c.text).width + 6;
-      const sides = ['above','below'];
-      for(let s=0;s<2;s++){
-        const rx = Math.max(area.left, Math.min(c.x - w/2, area.right - w));
-        const ry = sides[s] === 'above' ? (c.y - 7 - H) : (c.y + 7);
-        if(ry < area.top - 2 || ry + H > area.bottom + 2) continue;
-        const r = { x: rx, y: ry, w: w, h: H };
-        let clash = false;
-        for(let j=placed.length-1; j>=0 && j>=placed.length-80; j--){ if(hit(r, placed[j])){ clash = true; break; } }
-        if(clash) continue;
-        placed.push(r);
-        ctx.lineWidth = 3; ctx.strokeStyle = halo; ctx.strokeText(c.text, rx + w/2, ry + H/2);
-        ctx.fillStyle = c.color; ctx.fillText(c.text, rx + w/2, ry + H/2);
-        break;
-      }
-    }
-    ctx.restore();
+    if(!vis.some(s=> s.showNum)) return;
+    let c = chart.__numCache;
+    if(!c){ c = buildLayer(chart, cfg, vis); chart.__numCache = c; }
+    if(c.cv) chart.ctx.drawImage(c.cv, 0, 0, chart.width, chart.height);
   }
 };
+if(typeof Chart !== 'undefined') tune(); else document.addEventListener('cs-libs-ready', tune);
 
-// pasang plugin langsung ke setiap grafik setelah selesai dibuat
-const _rcn7 = W.renderChartNow;
-W.renderChartNow = function(cfg){
-  _rcn7.apply(this, arguments);
-  const ch = cfg.chartObj; if(!ch) return;
-  try{
-    const holder = (ch.config && ch.config._config) ? ch.config._config : ch.config;
-    if(!Array.isArray(holder.plugins)) holder.plugins = [];
-    if(holder.plugins.indexOf(NUMS) < 0){
-      holder.plugins.push(NUMS);
-      ch.update('none');
-    }
-  }catch(e){ console.error('Plugin angka gagal dipasang', e); }
+/* 3) Gabungkan render beruntun (mengetik, menggeser ruler, dll) menjadi satu */
+const _rc = W.renderChart;
+const pending = new Map();
+W.renderChart = function(cfg){
+  if(!cfg) return;
+  if(pending.has(cfg.id)) return;
+  pending.set(cfg.id, setTimeout(()=>{ pending.delete(cfg.id); _rc(cfg); }, 60));
 };
 })();
 </script>
