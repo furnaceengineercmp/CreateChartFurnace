@@ -7478,225 +7478,85 @@ W.exportAllJPG = ()=> runExport('jpg', state.charts);
 W.exportAllPPT = ()=> runExport('ppt', state.charts);
 })();
 </script>
-  <!-- ================= PATCH v6: hapus kolom terpilih + pisahkan satuan ================= -->
-<style>
-#manualTable thead tr:nth-child(5) th{ top:128px; background:var(--panel-2); text-align:center; height:32px; box-sizing:border-box; z-index:6; }
-.unit-opt{ display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 12px 10px; }
-.unit-opt select{ padding:5px 8px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:12.5px; }
-</style>
+ <!-- ================= PATCH v7: angka (callout) per series ================= -->
 <script>
 (function(){
 'use strict';
 const W = window;
-const q  = (s,r)=> (r||document).querySelector(s);
-const qa = (s,r)=> Array.from((r||document).querySelectorAll(s));
-const HEAD_ROWS = ['#manualHeaderRow','#manualHeaderRow2','#manualTargetRow','#manualUnitRow'];
 
-/* ========== A) HAPUS KOLOM TERPILIH (tabel Sumber Data) ========== */
-function ensureColRow(){
-  const thead = q('#manualTable thead'); if(!thead) return null;
-  let tr = q('#manualColCheckRow');
-  if(!tr){ tr = document.createElement('tr'); tr.id = 'manualColCheckRow'; thead.appendChild(tr); }
-  return tr;
+// copot plugin angka lama (jika ada) agar tidak tergambar dobel
+function dropOld(){
+  try{
+    const old = Chart.registry.plugins.get('csSeriesNums');
+    if(old) Chart.unregister(old);
+  }catch(e){}
 }
-function syncColCheckRow(){
-  const tr = ensureColRow(); if(!tr) return;
-  const keep = new Set(qa('.manual-col-check', tr).filter(cb=> cb.checked).map(cb=> cb.dataset.colsel));
-  const n = qa('#manualHeaderRow th[data-col]').length;
-  let h = '<th style="width:30px;" title="Pilih / batalkan semua kolom"><input type="checkbox" id="manualColSelectAll"></th>';
-  for(let i=0;i<n;i++){
-    h += '<th title="Centang untuk memilih kolom ke-' + (i+1) + '"><input type="checkbox" class="manual-col-check" data-colsel="' + i + '"' + (keep.has(String(i)) ? ' checked' : '') + '></th>';
-  }
-  tr.innerHTML = h;
-}
-function reindexCols(){
-  HEAD_ROWS.forEach(sel=> qa(sel + ' th[data-col]').forEach((th,k)=>{ th.dataset.col = k; }));
-  qa('#manualBody tr').forEach(tr=> qa('td[data-col]', tr).forEach((td,k)=>{ td.dataset.col = k; }));
-  manualCols = qa('#manualHeaderRow th[data-col]').length;
-  syncColCheckRow();
-}
-function deleteCols(idxs){
-  if(!idxs.length) return false;
-  if(idxs.length >= manualCols){ showToast('Minimal harus tersisa 1 kolom'); return false; }
-  idxs.slice().sort((a,b)=> b-a).forEach(i=>{
-    HEAD_ROWS.forEach(sel=>{ const el = q(sel + ' th[data-col="' + i + '"]'); if(el) el.remove(); });
-    qa('#manualBody td[data-col="' + i + '"]').forEach(td=> td.remove());
-  });
-  reindexCols();
-  return true;
-}
-function emptyColIdxs(){
-  const out = [];
-  for(let c=0;c<manualCols;c++){
-    const h1 = ((q('#manualHeaderRow th[data-col="' + c + '"]')||{}).textContent || '').trim();
-    const others = ['#manualHeaderRow2','#manualTargetRow','#manualUnitRow'].some(sel=> ((q(sel + ' th[data-col="' + c + '"]')||{}).textContent || '').trim() !== '');
-    const body = qa('#manualBody td[data-col="' + c + '"]').some(td=> td.textContent.trim() !== '');
-    if((h1 === '' || /^Kolom \d+$/i.test(h1)) && !others && !body) out.push(c);
-  }
-  return out;
-}
-// bungkus fungsi bawaan agar baris centang kolom selalu ikut
-['initManualTable','manualAddColumn','manualDelColumn'].forEach(name=>{
-  const orig = W[name]; if(typeof orig !== 'function') return;
-  W[name] = function(){ const r = orig.apply(this, arguments); syncColCheckRow(); return r; };
-});
-(function(){
-  const btn = q('#btnDeleteSelectedManual'); if(!btn) return;
-  btn.insertAdjacentHTML('afterend',
-    '<button class="btn small" id="btnDelSelCols" title="Hapus kolom yang dicentang pada baris kotak di bawah header">🗑 Hapus Kolom Terpilih</button>' +
-    '<button class="btn small ghost" id="btnDelEmptyCols" title="Hapus semua kolom yang benar-benar kosong">🧹 Hapus Kolom Kosong</button>');
-  q('#btnDelSelCols').addEventListener('click', ()=>{
-    const idxs = qa('.manual-col-check:checked').map(cb=> parseInt(cb.dataset.colsel));
-    if(!idxs.length){ showToast('Centang dulu kolom yang ingin dihapus (kotak di bawah header)'); return; }
-    if(deleteCols(idxs)) showToast(idxs.length + ' kolom dihapus dari tabel');
-  });
-  q('#btnDelEmptyCols').addEventListener('click', ()=>{
-    const idxs = emptyColIdxs();
-    if(!idxs.length){ showToast('Tidak ada kolom kosong'); return; }
-    if(deleteCols(idxs)) showToast(idxs.length + ' kolom kosong dihapus');
-  });
-  const thead = q('#manualTable thead');
-  thead.addEventListener('change', e=>{
-    if(e.target && e.target.id === 'manualColSelectAll'){
-      qa('.manual-col-check').forEach(cb=> cb.checked = e.target.checked);
-    }
-  });
-  syncColCheckRow();
-})();
+if(typeof Chart !== 'undefined') dropOld(); else document.addEventListener('cs-libs-ready', dropOld);
 
-/* ========== B) PISAHKAN SATUAN DARI ANGKA ========== */
-// "0.400 °C" -> angka 0.400 + satuan "°C" (di kolom samping dan/atau baris 📏)
-const UNUM = /^\s*([-+]?\d[\d.,]*)\s*([A-Za-z°%µΩ‰][A-Za-z0-9°%µΩ‰²³·\/^.\-]*)\s*$/;
-const MON  = /^(jan|feb|mar|apr|mei|may|jun|jul|agu|ags|agt|aug|sep|okt|oct|nov|des|dec)/i;
-function unitMatch(v){
-  if(typeof v !== 'string') return null;
-  const m = v.match(UNUM); if(!m) return null;
-  const u = m[2];
-  if(/^[eE][-+]?\d+$/.test(u) || MON.test(u)) return null;   // 1e5 / "3 Agustus" bukan satuan
-  if(parseNumberString(m[1]) === null) return null;
-  return { num: m[1].trim(), unit: u };
-}
-function detectUnitCols(rows, n){
-  const res = [];
-  for(let c=0;c<n;c++){
-    let ne = 0, matched = 0, other = 0; const cnt = {};
-    for(let i=0;i<rows.length;i++){
-      const v = rows[i][c];
-      if(v === '' || v === undefined || v === null) continue;
-      ne++;
-      const m = unitMatch(v);
-      if(m){ matched++; const u = fmtUnitText(m.unit); cnt[u] = (cnt[u]||0) + 1; continue; }
-      if(typeof v === 'number' || parseNumberString(String(v)) !== null) continue;
-      other++;
-    }
-    if(!matched) continue;
-    const top = Object.keys(cnt).sort((a,b)=> cnt[b] - cnt[a])[0];
-    if(matched/ne >= 0.6 && cnt[top]/matched >= 0.9 && other/ne <= 0.1) res.push({ c, unit: top });
-  }
-  return res;
-}
-function splitUnits(headers, rows, extra, mode){
-  const cols = detectUnitCols(rows, headers.length);
-  if(!cols.length) return { headers, rows, extra, inserted:[], cols };
-  const H = headers.slice(), R = rows.map(r=> r.slice());
-  const E = Object.assign({}, extra || {});
-  E.h1 = Array.isArray(E.h1) ? E.h1.slice() : headers.slice();
-  E.h2 = Array.isArray(E.h2) ? E.h2.slice() : headers.map(()=> '');
-  E.targets = Array.isArray(E.targets) ? E.targets.slice() : null;
-  E.units = Array.isArray(E.units) ? E.units.slice() : headers.map(()=> '');
-  const inserted = []; let off = 0;
-  cols.forEach(o=>{
-    const c = o.c + off;
-    const side = R.map(r=>{
-      const m = unitMatch(r[c]);
-      if(m){ r[c] = m.num; return fmtUnitText(m.unit); }
-      return '';
+const NUMS = {
+  id: 'csSeriesNums2',
+  afterDraw(chart){
+    const cfg = chart.__csCfg;
+    if(!cfg || cfg.showAllCallouts) return;                       // "Angka Semua" sudah menangani
+    if(cfg.mode === 'pie' || cfg.mode === 'donut' || cfg.mode === 'pareto') return;
+    const vis = cfg.series.filter(s=> s.colIndex !== '' && s.colIndex !== undefined && !cfg.hiddenSeries.has(s.colIndex));
+    const area = chart.chartArea, ctx = chart.ctx, cands = [];
+    vis.forEach((s, di)=>{
+      if(!s.showNum) return;
+      const ds = chart.data.datasets[di]; if(!ds) return;
+      if(!chart.isDatasetVisible(di)) return;
+      const meta = chart.getDatasetMeta(di); if(!meta) return;
+      const color = s.color || '#333';
+      meta.data.forEach((el, i)=>{
+        const raw = ds.data[i];
+        const v = (raw !== null && typeof raw === 'object') ? raw.y : raw;
+        if(v === null || v === undefined || isNaN(v) || isNaN(el.x) || isNaN(el.y)) return;
+        cands.push({ x: el.x, y: el.y, text: fmtNum(v), color: color });
+      });
     });
-    if(!E.units[c]) E.units[c] = o.unit;               // satuan juga masuk baris 📏 (sumbu Y otomatis)
-    if(mode === 'side'){
-      let nm = H[c] + ' (satuan)', k = 2;
-      while(H.indexOf(nm) >= 0) nm = H[c] + ' (satuan ' + (k++) + ')';
-      H.splice(c+1, 0, nm);
-      R.forEach((r,i)=> r.splice(c+1, 0, side[i]));
-      E.h1.splice(c+1, 0, nm); E.h2.splice(c+1, 0, '');
-      if(E.targets) E.targets.splice(c+1, 0, '');
-      E.units.splice(c+1, 0, '');
-      inserted.push(o.c); off++;
+    if(!cands.length) return;
+    cands.sort((a,b)=> a.x - b.x);
+    ctx.save();
+    ctx.font = '700 11px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    const H = 14, placed = [], halo = cssVar('--panel') || '#fff';
+    const hit = (a,b)=> !(a.x + a.w + 2 <= b.x || b.x + b.w + 2 <= a.x || a.y + a.h + 1 <= b.y || b.y + b.h + 1 <= a.y);
+    for(let k=0;k<cands.length;k++){
+      const c = cands[k];
+      const w = ctx.measureText(c.text).width + 6;
+      const sides = ['above','below'];
+      for(let s=0;s<2;s++){
+        const rx = Math.max(area.left, Math.min(c.x - w/2, area.right - w));
+        const ry = sides[s] === 'above' ? (c.y - 7 - H) : (c.y + 7);
+        if(ry < area.top - 2 || ry + H > area.bottom + 2) continue;
+        const r = { x: rx, y: ry, w: w, h: H };
+        let clash = false;
+        for(let j=placed.length-1; j>=0 && j>=placed.length-80; j--){ if(hit(r, placed[j])){ clash = true; break; } }
+        if(clash) continue;
+        placed.push(r);
+        ctx.lineWidth = 3; ctx.strokeStyle = halo; ctx.strokeText(c.text, rx + w/2, ry + H/2);
+        ctx.fillStyle = c.color; ctx.fillText(c.text, rx + w/2, ry + H/2);
+        break;
+      }
     }
-  });
-  return { headers:H, rows:R, extra:E, inserted, cols };
-}
-function remapCols(idxs){
-  const f  = i=>{ i = parseInt(i); return isNaN(i) ? i : i + idxs.filter(k=> k < i).length; };
-  const fs = v=> (v === '' || v === undefined || v === null) ? v : String(f(v));
-  state.charts.forEach(cfg=>{
-    cfg.xCol = fs(cfg.xCol); cfg.xCol2 = fs(cfg.xCol2);
-    (cfg.series||[]).forEach(sr=>{ sr.colIndex = fs(sr.colIndex); });
-    (cfg.filters||[]).forEach(x=>{ x.col = fs(x.col); });
-    (cfg.shades||[]).forEach(x=>{ x.col = fs(x.col); });
-    cfg.hiddenSeries = new Set(Array.from(cfg.hiddenSeries || []).map(fs));
-  });
-}
-let __forceUnit = false;
-const _fd2 = W.finalizeData;
-W.finalizeData = function(headers, rows, extra){
-  const cb = q('#optSplitUnit');
-  const on = __forceUnit || !cb || cb.checked;
-  let nCols = 0;
-  if(on){
-    const mode = (q('#optUnitMode') || {}).value || 'side';
-    const prev = state.headers.slice();
-    const sp = splitUnits(headers, rows, extra, mode);
-    if(sp.cols.length){
-      const same = prev.length === headers.length && prev.every((h,i)=> h === headers[i]);
-      if(same && sp.inserted.length) remapCols(sp.inserted);
-      headers = sp.headers; rows = sp.rows; extra = sp.extra; nCols = sp.cols.length;
-    }
-  }
-  _fd2(headers, rows, extra);
-  if(nCols) showToast('Data dimuat: ' + state.rows.length + ' baris, ' + state.headers.length + ' kolom · ' + nCols + ' kolom satuan dipisahkan dari angka');
-};
-
-// pilihan di panel Sumber Data
-(function(){
-  const lab = q('#optSplitDT'); const host = lab ? lab.closest('label') : q('#panel-input .subtabs');
-  if(!host) return;
-  let on = '1', mode = 'side';
-  try{ on = localStorage.getItem('chartStudioSplitUnit') || '1'; mode = localStorage.getItem('chartStudioUnitMode') || 'side'; }catch(e){}
-  host.insertAdjacentHTML('afterend',
-    '<span class="unit-opt"><label class="rp-chk" title="Nilai seperti 0.400 °C dipisah: angka tetap di kolomnya, satuan dipindah"><input type="checkbox" id="optSplitUnit"' + (on === '1' ? ' checked' : '') + '> 📏 Pisahkan satuan dari angka (mis. 0.4 °C → 0.4 | °C)</label>' +
-    '<select id="optUnitMode" title="Letak satuan setelah dipisah"><option value="side"' + (mode === 'side' ? ' selected' : '') + '>Satuan di kolom samping</option><option value="row"' + (mode === 'row' ? ' selected' : '') + '>Satuan hanya di baris 📏</option></select></span>');
-  q('#optSplitUnit').addEventListener('change', e=>{ try{ localStorage.setItem('chartStudioSplitUnit', e.target.checked ? '1' : '0'); }catch(_){} });
-  q('#optUnitMode').addEventListener('change', e=>{ try{ localStorage.setItem('chartStudioUnitMode', e.target.value); }catch(_){} });
-})();
-
-// tombol untuk data yang sudah termuat
-function splitCurrentUnits(){
-  if(!state.headers.length){ showToast('Belum ada data'); return; }
-  const rows = state.rows.map(r=> r.slice());
-  if(!detectUnitCols(rows, state.headers.length).length){ showToast('Tidak ditemukan kolom yang berisi angka + satuan'); return; }
-  const extra = { h1: state.h1.slice(), h2: state.h2.slice(),
-    targets: state.targetRow ? state.targetRow.slice() : null,
-    units: state.unitRow ? state.unitRow.slice() : null };
-  __forceUnit = true;
-  try{ W.finalizeData(state.headers.slice(), rows, extra); } finally { __forceUnit = false; }
-}
-const _rdp2 = W.renderDataPreview;
-W.renderDataPreview = function(){
-  _rdp2.apply(this, arguments);
-  const bar = q('#dataPreviewWrap .table-toolbar');
-  if(bar && !bar.querySelector('#btnSplitUnit')){
-    const b = document.createElement('button');
-    b.className = 'btn small'; b.id = 'btnSplitUnit';
-    b.title = 'Pisahkan satuan (mis. °C, %, mm) dari angka pada data yang sudah dimuat';
-    b.textContent = '📏 Pisahkan Satuan';
-    const go = bar.querySelector('#btnGoBuilder');
-    if(go) bar.insertBefore(b, go); else bar.appendChild(b);
-    b.addEventListener('click', splitCurrentUnits);
+    ctx.restore();
   }
 };
-// gambar ulang toolbar pratinjau agar tombol baru langsung muncul
-try{ if(state.headers.length) W.renderDataPreview(); }catch(e){}
+
+// pasang plugin langsung ke setiap grafik setelah selesai dibuat
+const _rcn7 = W.renderChartNow;
+W.renderChartNow = function(cfg){
+  _rcn7.apply(this, arguments);
+  const ch = cfg.chartObj; if(!ch) return;
+  try{
+    const holder = (ch.config && ch.config._config) ? ch.config._config : ch.config;
+    if(!Array.isArray(holder.plugins)) holder.plugins = [];
+    if(holder.plugins.indexOf(NUMS) < 0){
+      holder.plugins.push(NUMS);
+      ch.update('none');
+    }
+  }catch(e){ console.error('Plugin angka gagal dipasang', e); }
+};
 })();
 </script>
 </body>
