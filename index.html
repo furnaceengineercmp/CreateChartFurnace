@@ -42,7 +42,7 @@ window.__csMissingLibs = [];
   Promise.all(libs.map(function(lib){
     return ensure(lib).then(function(success){ if(!success) window.__csMissingLibs.push(lib.name); });
   })).then(function(){
-    document.dispatchEvent(new Event('cs-libs-ready'));
+    document.disEvent(new Event('cs-libs-ready'));
   });
 })();
 </script>
@@ -6711,8 +6711,9 @@ function fbInit(){
 
 </script>
  <!-- ================================================================
-  PATCH CHART STUDIO v4  — tempel SATU KALI tepat sebelum </body>
+  PATCH CHART STUDIO v5  — tempel SATU KALI tepat sebelum </body>
   (setelah </script> terakhir milik aplikasi Anda).
+  v5: kolom tanggal+jam otomatis dipisah jadi 2 kolom (Tanggal | Jam).
   v4: perbaikan ukuran titik, ekspor baru (semua grafik, opsi statistik/Pareto),
       rentang tanggal Korelasi, angka (callout) per series.
   Isi: arsir di Pareto, garis tren (naik/turun/datar), ketebalan garis/titik,
@@ -7118,11 +7119,116 @@ function isErrCell(v){
   return ERR_RE.test(v.trim());
 }
 const _fd = W.finalizeData;
+let __forceSplit = false;
+const pad2 = n=> String(n).padStart(2,'0');
+// Pecah nilai "tanggal + jam" menjadu {d, t}. timed=false bila tidak ada jam sama sekali.
+function dtParts(v){
+  if(v instanceof Date && !isNaN(v)){
+    const timed = !!(v.getHours() || v.getMinutes() || v.getSeconds());
+    return { d: pad2(v.getDate())+'/'+pad2(v.getMonth()+1)+'/'+v.getFullYear(), t: pad2(v.getHours())+':'+pad2(v.getMinutes())+(v.getSeconds()?':'+pad2(v.getSeconds()):''), timed };
+  }
+  if(typeof v !== 'string') return null;
+  const str = v.trim();
+  let m = str.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if(m) return { d: m[3]+'/'+m[2]+'/'+m[1], t: pad2(m[4])+':'+m[5]+(m[6]!==undefined?':'+m[6]:''), timed:true };
+  m = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if(m) return { d: m[1]+'/'+m[2]+'/'+m[3], t: pad2(m[4])+':'+m[5]+(m[6]!==undefined?':'+m[6]:''), timed:true };
+  return null;
+}
+// Kolom yang isinya tanggal+jam digabung -> dipecah jadi kolom Tanggal dan kolom "(jam)" tepat di sebelahnya.
+function splitDateTime(headers, rows, extra){
+  const idxs = [];
+  for(let c=0;c<headers.length;c++){
+    let ne = 0, timed = 0;
+    for(let r=0;r<rows.length;r++){
+      const v = rows[r][c]; if(v==='' || v===undefined || v===null) continue;
+      ne++; const p = dtParts(v); if(p && p.timed) timed++;
+    }
+    if(ne && timed/ne >= 0.6) idxs.push(c);
+  }
+  if(!idxs.length) return { headers, rows, extra, idxs };
+  const H = headers.slice(), R = rows.map(r=> r.slice());
+  const E = extra ? Object.assign({}, extra) : null;
+  let off = 0;
+  idxs.forEach(c0=>{
+    const c = c0 + off;
+    let nm = H[c] + ' (jam)', k = 2; while(H.indexOf(nm) >= 0) nm = H[c] + ' (jam ' + (k++) + ')';
+    H.splice(c+1, 0, nm);
+    R.forEach(r=>{ const p = dtParts(r[c]); if(p){ r[c] = p.d; r.splice(c+1, 0, p.t); } else r.splice(c+1, 0, ''); });
+    if(E) ['h1','h2','targets','units'].forEach(key=>{
+      if(Array.isArray(E[key])){ E[key] = E[key].slice(); E[key].splice(c+1, 0, key==='h1' ? nm : ''); }
+    });
+    off++;
+  });
+  return { headers:H, rows:R, extra:E, idxs };
+}
+// Jika data yang sama dimuat ulang, indeks kolom di grafik yang sudah ada ikut disesuaikan.
+function remapChartCols(idxs){
+  const f = i=>{ i = parseInt(i); return isNaN(i) ? i : i + idxs.filter(k=> k < i).length; };
+  const fs = v=> (v==='' || v===undefined || v===null) ? v : String(f(v));
+  state.charts.forEach(cfg=>{
+    cfg.xCol = fs(cfg.xCol); cfg.xCol2 = fs(cfg.xCol2);
+    (cfg.series||[]).forEach(sr=>{ sr.colIndex = fs(sr.colIndex); });
+    (cfg.filters||[]).forEach(x=>{ x.col = fs(x.col); });
+    (cfg.shades||[]).forEach(x=>{ x.col = fs(x.col); });
+    cfg.hiddenSeries = new Set(Array.from(cfg.hiddenSeries || []).map(fs));
+  });
+}
 W.finalizeData = function(headers, rows, extra){
   let n = 0;
-  const clean = rows.map(r=> r.map(v=>{ if(isErrCell(v)){ n++; return ''; } return v; }));
+  let clean = rows.map(r=> r.map(v=>{ if(isErrCell(v)){ n++; return ''; } return v; }));
+  const cb = q('#optSplitDT'), on = __forceSplit || !cb || cb.checked;
+  let nsplit = 0;
+  if(on){
+    const prev = state.headers.slice();
+    const sp = splitDateTime(headers, clean, extra);
+    if(sp.idxs.length){
+      const same = prev.length === headers.length && prev.every((h,i)=> h === headers[i]);
+      if(same) remapChartCols(sp.idxs);
+      headers = sp.headers; clean = sp.rows; extra = sp.extra; nsplit = sp.idxs.length;
+    }
+  }
   _fd(headers, clean, extra);
-  if(n) showToast('Data dimuat: '+state.rows.length+' baris, '+state.headers.length+' kolom · '+n+' sel error (#DIV/0!, #N/A, dll) dikosongkan');
+  const bits = [];
+  if(nsplit) bits.push(nsplit + ' kolom tanggal+jam dipisah menjadi Tanggal | Jam');
+  if(n) bits.push(n + ' sel error (#DIV/0!, #N/A, dll) dikosongkan');
+  if(bits.length) showToast('Data dimuat: '+state.rows.length+' baris, '+state.headers.length+' kolom · ' + bits.join(' · '));
+};
+// Pilihan otomatis di Sumber Data
+(function(){
+  const sub = q('#panel-input .subtabs'); if(!sub) return;
+  let saved = '1'; try{ saved = localStorage.getItem('chartStudioSplitDT') || '1'; }catch(e){}
+  sub.insertAdjacentHTML('afterend', '<label class="rp-chk" style="margin:0 0 12px 2px;" title="Kolom seperti 2026-11-09 06:00:00 otomatis dipisah menjadi kolom Tanggal dan kolom Jam"><input type="checkbox" id="optSplitDT"' + (saved==='1' ? ' checked' : '') + '> ✂️ Pisahkan kolom tanggal + jam otomatis saat data dimuat</label>');
+  q('#optSplitDT').addEventListener('change', e=>{ try{ localStorage.setItem('chartStudioSplitDT', e.target.checked ? '1' : '0'); }catch(_){} });
+})();
+// Tombol untuk data yang sudah termuat
+function splitCurrentData(){
+  if(!state.headers.length){ showToast('Belum ada data'); return; }
+  const rows = state.rows.map(r=> r.slice());
+  const extra = { h1:state.h1.slice(), h2:state.h2.slice(), targets: state.targetRow ? state.targetRow.slice() : null, units: state.unitRow ? state.unitRow.slice() : null };
+  if(!splitDateTime(state.headers.slice(), rows, extra).idxs.length){ showToast('Tidak ditemukan kolom yang berisi tanggal + jam sekaligus'); return; }
+  __forceSplit = true;
+  try{ W.finalizeData(state.headers.slice(), rows, extra); } finally { __forceSplit = false; }
+}
+const _rdp = W.renderDataPreview;
+W.renderDataPreview = function(){
+  _rdp.apply(this, arguments);
+  const bar = q('#dataPreviewWrap .table-toolbar');
+  if(bar && !bar.querySelector('#btnSplitDT')){
+    const b = document.createElement('button'); b.className = 'btn small'; b.id = 'btnSplitDT';
+    b.title = 'Pisahkan kolom yang berisi tanggal + jam menjadi dua kolom (Tanggal | Jam)'; b.textContent = '✂️ Pisahkan Tanggal & Jam';
+    const go = bar.querySelector('#btnGoBuilder'); if(go) bar.insertBefore(b, go); else bar.appendChild(b);
+    b.addEventListener('click', splitCurrentData);
+  }
+};
+// Atur otomatis: bila ada kolom "(jam)" tepat setelah tanggal, pakai sebagai kolom ke-2 Sumbu X
+const _auto = W.autoSetupChart;
+W.autoSetupChart = function(cfg, card){
+  _auto(cfg, card);
+  const xi = parseInt(cfg.xCol);
+  if(!isNaN(xi) && state.colTypes[xi]==='date' && (cfg.xCol2==='' || cfg.xCol2===undefined) && xi+1 < state.headers.length && isTimeLikeColumn(xi+1)){
+    cfg.xCol2 = String(xi+1); syncChartCardControls(card, cfg); renderChart(cfg);
+  }
 };
 
 /* ---------- 8) Filter tanggal untuk SEMUA grafik ---------- */
