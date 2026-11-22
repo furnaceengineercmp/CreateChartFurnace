@@ -7567,5 +7567,518 @@ W.renderChart = function(cfg){
 };
 })();
 </script>
+  <!-- ================= PATCH v9: PDF (Daily Report, 1 PDF semua, pratinjau) + penanda halaman ================= -->
+<style>
+.pg-badge{font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:999px;background:rgba(242,153,74,.18);border:1px solid #F2994A;color:#9a5a10;white-space:nowrap;}
+.pg-badge.ok{background:rgba(39,174,96,.16);border-color:#27AE60;color:#1E8449;}
+[data-mode="dark"] .pg-badge{color:#ffd6a0;} [data-mode="dark"] .pg-badge.ok{color:#8be0ae;}
+.pv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;}
+.pv-dialog{background:var(--panel);color:var(--text);border-radius:16px;width:min(1200px,97vw);height:min(94vh,940px);display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden;}
+.pv-head{padding:14px 18px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.pv-head h4{margin:0;font-size:17px;}
+.pv-opts{padding:6px 18px 10px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;border-bottom:1px solid var(--border);font-size:12.5px;}
+.pv-opts label{display:inline-flex;gap:6px;align-items:center;font-weight:600;}
+.pv-opts select{padding:5px 8px;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);font-size:12.5px;}
+.pv-warn{padding:0 18px;font-size:12.5px;}
+.pv-warn div{margin:4px 0;padding:6px 10px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border);}
+.pv-warn div.w{border-color:#F2994A;background:rgba(242,153,74,.12);}
+.pv-body{flex:1;overflow:auto;padding:14px 18px;background:var(--bg);}
+.pv-grid{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}
+.pv-item{display:flex;flex-direction:column;gap:4px;}
+.pv-img{display:block;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);}
+.pv-cap{font-size:11.5px;color:var(--text-soft);}
+.pv-foot{padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
+.pv-foot .sp{flex:1;font-size:12.5px;font-weight:700;color:var(--text-soft);}
+</style>
+<script>
+(function(){
+'use strict';
+const W = window;
+const q  = (s,r)=> (r||document).querySelector(s);
+const qa = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const sleep = ms=> new Promise(r=> setTimeout(r, ms));
+const esc = s=> escapeHtml(s == null ? '' : String(s));
+
+/* ================= konstanta halaman ================= */
+const PXPT = 2.2;                         // piksel kanvas per poin PDF
+const A4 = { w:595.28, h:841.89 };
+const MPT = 22, TITLE_PT = 28, FOOT_PT = 16;
+const FONT = '"Segoe UI", Arial, sans-serif';
+function pageDims(orient){
+  const l = orient === 'l';
+  const wpt = l ? A4.h : A4.w, hpt = l ? A4.w : A4.h;
+  return { orient: orient, wpt: wpt, hpt: hpt, W: Math.round(wpt*PXPT), H: Math.round(hpt*PXPT) };
+}
+function targetRatio(){            // rasio area grafik pada 1 halaman landscape
+  return (A4.h - 2*MPT) / (A4.w - 2*MPT - TITLE_PT - FOOT_PT);
+}
+
+/* ================= penanda "pas 1 halaman" ================= */
+function geom(card){
+  const wrap = card.querySelector('.canvas-wrap'); if(!wrap) return null;
+  const w = wrap.clientWidth - 28, h = wrap.clientHeight - 28;
+  if(w <= 0 || h <= 0) return null;
+  return { w: w, h: h, r: w/h };
+}
+function badgeInfo(card){
+  const g = geom(card); if(!g) return null;
+  const t = targetRatio(), fill = Math.min(g.r/t, t/g.r), pct = Math.round(fill*100);
+  if(fill >= 0.93) return { ok:true, pct: pct, text:'✅ Pas 1 halaman landscape', short:'✅ pas 1 halaman PDF landscape' };
+  return { ok:false, pct: pct, text: (g.r > t ? '↔ Terlalu lebar' : '↕ Terlalu tinggi') + ' — terisi ' + pct + '% halaman', short:'terisi ' + pct + '% halaman PDF' };
+}
+function updateBadge(card){
+  const el = card.querySelector('.pg-badge'); if(!el) return;
+  const b = badgeInfo(card);
+  if(!b){ el.style.display = 'none'; return; }
+  el.style.display = ''; el.textContent = b.text; el.classList.toggle('ok', b.ok);
+  el.title = b.ok ? 'Ukuran ini sudah memenuhi 1 halaman A4 landscape saat diekspor ke PDF'
+                  : 'Klik tombol 📐 di kanan untuk memas-kan ukuran grafik ke 1 halaman A4 landscape';
+}
+function fitChart(cfg, card){
+  const cont = card.parentElement, cw = cont ? cont.clientWidth : 0;
+  if(!cw){ showToast('Buka tab ② Buat Grafik dulu'); return; }
+  const t = targetRatio();
+  let hp = fullScreenHeight();
+  let px = (hp - 28) * t + 28;
+  let wp = (px + 0.5 + CHART_GAP) / (cw + CHART_GAP) * 100;
+  if(wp > 100){ wp = 100; px = cw - 0.5; hp = (px - 28) / t + 28; }
+  wp = Math.max(20, wp);
+  cfg.wPct = Math.round(wp*100)/100;
+  cfg.hPx = Math.round(Math.max(220, Math.min(1800, hp)));
+  applyChartSize(card, cfg); resizeChartObj(cfg); scheduleAutosave();
+}
+function fitAllCharts(){
+  const list = state.charts.filter(c=> document.getElementById('chartcard-' + c.id));
+  if(!list.length){ showToast('Belum ada grafik'); return; }
+  list.forEach(c=> fitChart(c, document.getElementById('chartcard-' + c.id)));
+  showToast('Semua grafik dipas-kan ke 1 halaman A4 landscape');
+}
+// label ukuran saat kartu ditarik juga menampilkan status halaman
+function hookTip(card){
+  if(!W.MutationObserver) return;
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes.forEach(function(n){
+        if(!(n.classList && n.classList.contains('rs-tip'))) return;
+        const sync = function(){
+          const b = badgeInfo(card); if(!b) return;
+          const base = n.textContent.split(' · ')[0]; if(!base) return;
+          const want = base + ' · ' + b.short;
+          if(n.textContent !== want) n.textContent = want;
+          n.style.background = b.ok ? '#1E8449' : 'rgba(0,0,0,.78)';
+        };
+        new MutationObserver(sync).observe(n, { childList:true, characterData:true, subtree:true });
+        sync();
+      });
+    });
+  }).observe(card, { childList:true });
+}
+const _acs = W.applyChartSize;
+W.applyChartSize = function(card, cfg){ _acs.apply(this, arguments); try{ updateBadge(card); }catch(e){} };
+const _bcc = W.buildChartCardDom;
+W.buildChartCardDom = function(cfg){
+  const card = _bcc.apply(this, arguments);
+  const head = card.querySelector('.chart-card-head'), acts = card.querySelector('.head-actions');
+  if(head && acts){
+    const b = document.createElement('span'); b.className = 'pg-badge'; b.style.display = 'none';
+    head.insertBefore(b, acts);
+    const btn = document.createElement('button');
+    btn.className = 'icon-btn'; btn.dataset.role = 'fitpage'; btn.textContent = '📐';
+    btn.title = 'Pas-kan ukuran grafik ke 1 halaman A4 landscape (agar PDF-nya penuh 1 halaman)';
+    btn.addEventListener('click', ()=> fitChart(cfg, card));
+    const fs = acts.querySelector('[data-role=fullsize]');
+    if(fs) fs.insertAdjacentElement('afterend', btn); else acts.insertBefore(btn, acts.firstChild);
+  }
+  const wrap = card.querySelector('.canvas-wrap');
+  if(wrap && W.ResizeObserver) new ResizeObserver(()=> updateBadge(card)).observe(wrap);
+  hookTip(card);
+  return card;
+};
+
+/* ================= util gambar ================= */
+function copyCanvas(src, maxW, bg){
+  const k = Math.min(1, maxW / src.width);
+  const w = Math.max(1, Math.round(src.width*k)), h = Math.max(1, Math.round(src.height*k));
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const x = cv.getContext('2d'); x.fillStyle = bg || '#ffffff'; x.fillRect(0,0,w,h);
+  x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, w, h);
+  return cv;
+}
+function xHost(){
+  let h = document.getElementById('pdfHost');
+  if(!h){ h = document.createElement('div'); h.id = 'pdfHost'; h.style.cssText = 'position:absolute;left:0;top:0;z-index:-1;pointer-events:none;'; document.body.appendChild(h); }
+  return h;
+}
+async function snapNode(node, width){
+  const host = xHost(), box = document.createElement('div');
+  box.style.cssText = 'width:' + width + 'px;background:#fff;color:#222;padding:6px 18px 10px;box-sizing:border-box;font-family:' + FONT + ';';
+  box.appendChild(node); host.appendChild(box);
+  const cv = await h2c(box, { scale:1.6, backgroundColor:'#ffffff' });
+  box.remove();
+  return cv;
+}
+
+/* ================= pengambilan bahan (grafik, korelasi, report) ================= */
+async function chartPiece(cfg){
+  const card = document.getElementById('chartcard-' + cfg.id), ch = cfg.chartObj;
+  if(!ch || !ch.canvas) return null;
+  const pc = { title: cfg.title, img: copyCanvas(ch.canvas, 1800), stats:null, pareto:null };
+  const sp = card && card.querySelector('[data-role=statspanel]');
+  if(sp && sp.textContent.trim()){
+    const c1 = sp.cloneNode(true);
+    c1.querySelectorAll('button').forEach(n=> n.remove());
+    c1.querySelectorAll('.pareto-an').forEach(n=> n.remove());
+    if(c1.textContent.trim()) pc.stats = await snapNode(c1, 1100);
+    const c2 = sp.cloneNode(true);
+    c2.querySelectorAll('button').forEach(n=> n.remove());
+    const pa = c2.querySelector('.pareto-an');
+    if(pa){ pa.querySelectorAll('details:not([open])').forEach(n=> n.remove()); pc.pareto = await snapNode(pa, 1100); }
+  }
+  return pc;
+}
+function grabCorr(){
+  const dark = document.documentElement.getAttribute('data-mode') === 'dark';
+  const bg = dark ? (cssVar('--panel') || '#211c17') : '#ffffff';
+  const o = {
+    result: (q('#corrResultText')||{}).textContent || '', interp: (q('#corrInterpretation')||{}).textContent || '',
+    img: copyCanvas(corrChart.canvas, 1800, bg), lag:null, lagText:''
+  };
+  const lp = q('#lagPanel');
+  if(typeof lagChart !== 'undefined' && lagChart && lp && lp.style.display !== 'none'){
+    o.lag = copyCanvas(lagChart.canvas, 1800, bg); o.lagText = (q('#lagSummary')||{}).textContent || '';
+  }
+  return o;
+}
+async function reportPiece(){
+  switchTab('report'); await sleep(300);
+  const R = rpState();
+  return await rpExportCapture(async function(area){
+    const cv = await captureEl(area);
+    const ar = area.getBoundingClientRect(), k = cv.height / ar.height;
+    const tbl = area.querySelector('table.rp-table');
+    const rows = [], bad = new Set();
+    let headTop = 0, headBottom = 0;
+    if(tbl && tbl.tBodies[0]){
+      const trs = Array.from(tbl.tBodies[0].rows);
+      trs.forEach(function(tr, i){ Array.from(tr.cells).forEach(function(td){ if(td.rowSpan > 1){ for(let j=i; j<i+td.rowSpan-1; j++) bad.add(j); } }); });
+      trs.forEach(function(tr, i){ const r = tr.getBoundingClientRect(); rows.push({ top:(r.top-ar.top)*k, bottom:(r.bottom-ar.top)*k, ok: !bad.has(i) }); });
+      if(tbl.tHead){ const r = tbl.tHead.getBoundingClientRect(); headTop = (r.top-ar.top)*k; headBottom = (r.bottom-ar.top)*k; }
+    }
+    return { cv: cv, k: k, rows: rows, headTop: headTop, headBottom: headBottom, date: R.date, title: R.title };
+  });
+}
+async function gatherPieces(scope){
+  showBusy('Menyiapkan PDF…');
+  const act = q('.tab-btn.active'), startTab = act ? act.dataset.tab : 'builder';
+  const startMode = (typeof __appMode !== 'undefined') ? __appMode : 'chart';
+  const pieces = { report:null, charts:[], corr:null };
+  try{
+    if(startMode === 'fishbone') setAppMode('chart');
+    if(scope.corr && typeof corrChart !== 'undefined' && corrChart){
+      setBusyMsg('Mengambil grafik korelasi…'); switchTab('korelasi'); await sleep(400);
+      try{ corrChart.resize(); if(typeof lagChart !== 'undefined' && lagChart) lagChart.resize(); }catch(e){}
+      await sleep(150); pieces.corr = grabCorr();
+    }
+    setChartsPrintMode(true); await sleep(500);          // tema terang + resolusi tinggi
+    if(scope.report && state.headers.length){ setBusyMsg('Menangkap Daily Report…'); pieces.report = await reportPiece(); }
+    if(scope.charts.length){
+      switchTab('builder'); await sleep(600);
+      scope.charts.forEach(c=>{ try{ if(c.chartObj) c.chartObj.resize(); }catch(e){} });
+      await sleep(300);
+      for(let i=0;i<scope.charts.length;i++){
+        setBusyMsg('Memproses grafik ' + (i+1) + ' dari ' + scope.charts.length + '…');
+        const p = await chartPiece(scope.charts[i]); if(p) pieces.charts.push(p);
+        await sleep(20);
+      }
+    }
+  } finally {
+    try{ setChartsPrintMode(false); }catch(e){}
+    const h = document.getElementById('pdfHost'); if(h) h.remove();
+    try{ switchTab(startTab); }catch(e){}
+    if(startMode === 'fishbone') try{ setAppMode('fishbone'); }catch(e){}
+    hideBusy();
+  }
+  return pieces;
+}
+
+/* ================= menyusun halaman ================= */
+function newPage(D){
+  const cv = document.createElement('canvas'); cv.width = D.W; cv.height = D.H;
+  const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,D.W,D.H);
+  return { cv: cv, ctx: ctx, D: D, label:'' };
+}
+function drawTitle(x, text, D){
+  const M = MPT*PXPT, maxW = D.W - 2*M;
+  x.save(); x.font = 'bold ' + (15*PXPT) + 'px ' + FONT; x.fillStyle = '#1b1b1b'; x.textBaseline = 'top';
+  let t = String(text || ''), cut = false;
+  while(t.length > 3 && x.measureText(t).width > maxW){ t = t.slice(0,-2); cut = true; }
+  if(cut) t = t.trimEnd() + '…';
+  x.fillText(t, M, M);
+  x.fillStyle = '#E0212B'; x.fillRect(M, M + 19*PXPT, 54*PXPT, 2.2*PXPT);
+  x.restore();
+}
+function wrapText(x, text, px, py, maxW, lh){
+  const words = String(text || '').split(/\s+/); let line = '', y = py;
+  words.forEach(function(w){
+    const t = line ? line + ' ' + w : w;
+    if(x.measureText(t).width > maxW && line){ x.fillText(line, px, y); y += lh; line = w; } else line = t;
+  });
+  if(line){ x.fillText(line, px, y); y += lh; }
+  return y;
+}
+function drawContain(x, img, bx, by, bw, bh){
+  const s = Math.min(bw/img.width, bh/img.height), w = img.width*s, h = img.height*s;
+  x.drawImage(img, bx + (bw-w)/2, by, w, h);
+}
+function flow(st, img){
+  const M = MPT*PXPT, F = FOOT_PT*PXPT, T = TITLE_PT*PXPT, D = st.D, maxY = D.H - M - F, top = M + T;
+  const s = (D.W - 2*M) / img.width, total = img.height * s;
+  const newP = function(){
+    st.cur = newPage(D); st.pages.push(st.cur); st.cur.label = st.label + ' (lanjutan)';
+    drawTitle(st.cur.ctx, st.title + ' — statistik', D); st.y = top;
+  };
+  if(st.y + total > maxY && (total <= maxY - top || (maxY - st.y) < 140)) newP();
+  let sy = 0;
+  while(sy < img.height - 1){
+    const free = maxY - st.y, hs = Math.min(img.height - sy, free / s);
+    st.cur.ctx.drawImage(img, 0, sy, img.width, hs, M, st.y, img.width*s, hs*s);
+    sy += hs; st.y += hs*s + 8*PXPT;
+    if(sy < img.height - 1) newP();
+  }
+}
+function composeChart(pc, o){
+  const D = pageDims('l'), M = MPT*PXPT, T = TITLE_PT*PXPT, F = FOOT_PT*PXPT;
+  const pages = [], p = newPage(D); pages.push(p);
+  drawTitle(p.ctx, pc.title, D);
+  const bw = D.W - 2*M, bh = D.H - 2*M - T - F, cv = pc.img;
+  const s = Math.min(bw/cv.width, bh/cv.height), w = cv.width*s, h = cv.height*s;
+  p.ctx.drawImage(cv, M + (bw-w)/2, M + T, w, h);
+  p.label = 'Grafik: ' + pc.title; p.fill = (w*h) / (bw*bh); p.chartTitle = pc.title; p.ratio = cv.width / cv.height;
+  const st = { pages: pages, cur: p, y: M + T + h + 8*PXPT, D: D, label: 'Statistik: ' + pc.title, title: pc.title };
+  if(o.stats && pc.stats) flow(st, pc.stats);
+  if(o.pareto && pc.pareto) flow(st, pc.pareto);
+  return pages;
+}
+function composeCorr(pc){
+  const D = pageDims('l'), M = MPT*PXPT, T = TITLE_PT*PXPT, F = FOOT_PT*PXPT;
+  const p = newPage(D), x = p.ctx; p.label = 'Korelasi';
+  drawTitle(x, 'Korelasi Antar Data', D);
+  let y = M + T;
+  x.save(); x.fillStyle = '#222'; x.textBaseline = 'top';
+  x.font = 'bold ' + (13*PXPT) + 'px ' + FONT; x.fillText(pc.result, M, y); y += 19*PXPT;
+  x.font = (9.5*PXPT) + 'px ' + FONT; y = wrapText(x, pc.interp, M, y, D.W - 2*M, 12.5*PXPT) + 6*PXPT;
+  const maxY = D.H - M - F, gap = 16*PXPT, bw = pc.lag ? (D.W - 2*M - gap)/2 : D.W - 2*M;
+  drawContain(x, pc.img, M, y, bw, maxY - y);
+  if(pc.lag){
+    x.font = (9*PXPT) + 'px ' + FONT;
+    const y2 = wrapText(x, pc.lagText, M + bw + gap, y, bw, 11.5*PXPT) + 6*PXPT;
+    drawContain(x, pc.lag, M + bw + gap, y2, bw, maxY - y2);
+  }
+  x.restore();
+  return [p];
+}
+function composeReport(pc, o){
+  const D = pageDims(o.orient), M = MPT*PXPT, F = FOOT_PT*PXPT;
+  const cw = D.W - 2*M, chH = D.H - 2*M - F, cv = pc.cv;
+  let s = Math.min(cw / cv.width, 1.15);
+  const pages = [], notes = [];
+  const mk = function(){ const p = newPage(D); p.label = 'Daily Report'; pages.push(p); return p; };
+  if(o.fit === 'one'){
+    s = Math.min(s, chH / cv.height);
+    const p = mk(), w = cv.width*s, h = cv.height*s;
+    p.ctx.drawImage(cv, 0, 0, cv.width, cv.height, (D.W - w)/2, M, w, h);
+  } else {
+    const cap = chH / s, headH = pc.headBottom - pc.headTop, x0 = (D.W - cv.width*s)/2;
+    let y0 = 0, first = true, guard = 0;
+    while(y0 < cv.height - 1 && guard++ < 200){
+      const avail = first ? cap : cap - headH, lim = y0 + avail;
+      let y1 = null;
+      if(lim >= cv.height - 2) y1 = cv.height;
+      else {
+        for(let i=pc.rows.length-1;i>=0;i--){ const r = pc.rows[i]; if(r.bottom <= lim && r.bottom > y0 + 8 && r.ok){ y1 = r.bottom; break; } }
+        if(y1 === null) for(let i=pc.rows.length-1;i>=0;i--){ const r = pc.rows[i]; if(r.bottom <= lim && r.bottom > y0 + 8){ y1 = r.bottom; break; } }
+        if(y1 === null) y1 = lim;
+      }
+      const p = mk(); let dy = M;
+      if(!first && headH > 0){ p.ctx.drawImage(cv, 0, pc.headTop, cv.width, headH, x0, dy, cv.width*s, headH*s); dy += headH*s; }
+      p.ctx.drawImage(cv, 0, y0, cv.width, y1 - y0, x0, dy, cv.width*s, (y1 - y0)*s);
+      y0 = y1; first = false;
+    }
+  }
+  const fontPt = 13 * pc.k * s / PXPT, small = fontPt < 6.5;
+  notes.push({ warn: small, html: 'Daily Report: <b>' + pages.length + ' halaman</b>, ukuran huruf ± ' + fontPt.toFixed(1).replace('.', ',') + ' pt' +
+    (small ? ' — terlalu kecil. Pilih “Boleh terpotong” atau orientasi Landscape.' : '') });
+  return { pages: pages, notes: notes };
+}
+function footers(pages){
+  const n = pages.length, ds = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+  pages.forEach(function(p, i){
+    const x = p.ctx, M = MPT*PXPT, yb = p.D.H - M*0.55;
+    x.save(); x.font = (8*PXPT) + 'px ' + FONT; x.fillStyle = '#8a8a8a'; x.textBaseline = 'alphabetic';
+    x.textAlign = 'left'; x.fillText('Chart Studio · Ceria Metalindo Prima · ' + ds, M, yb);
+    x.textAlign = 'right'; x.fillText('Halaman ' + (i+1) + ' dari ' + n, p.D.W - M, yb);
+    x.restore();
+  });
+}
+function composeAll(pieces, o){
+  const pages = [], notes = [];
+  if(o.report && pieces.report){ const r = composeReport(pieces.report, o); r.pages.forEach(p=> pages.push(p)); r.notes.forEach(n=> notes.push(n)); }
+  if(o.charts) pieces.charts.forEach(function(pc){
+    composeChart(pc, o).forEach(function(p){
+      pages.push(p);
+      if(p.fill !== undefined && p.fill < 0.93){
+        const wide = p.ratio > targetRatio();
+        notes.push({ warn:true, chart:true, html: '“<b>' + esc(p.chartTitle) + '</b>” hanya mengisi ±' + Math.round(p.fill*100) + '% halaman (' +
+          (wide ? 'terlalu lebar, ada ruang kosong di bawah' : 'terlalu tinggi, akan mengecil di sisi kiri-kanan') + ').' });
+      }
+    });
+  });
+  if(o.corr && pieces.corr) composeCorr(pieces.corr).forEach(p=> pages.push(p));
+  footers(pages);
+  return { pages: pages, notes: notes };
+}
+function makePdf(pages){
+  const jsPDF = window.jspdf.jsPDF; let pdf = null;
+  pages.forEach(function(p){
+    const l = p.D.orient === 'l', ori = l ? 'landscape' : 'portrait';
+    if(!pdf) pdf = new jsPDF({ orientation: ori, unit:'pt', format:'a4', compress:true }); else pdf.addPage('a4', ori);
+    pdf.addImage(p.cv.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, p.D.wpt, p.D.hpt);
+  });
+  return pdf;
+}
+function thumbUrl(cv){
+  const k = 1000 / Math.max(cv.width, cv.height), c = document.createElement('canvas');
+  c.width = Math.round(cv.width*k); c.height = Math.round(cv.height*k);
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height);
+  x.imageSmoothingQuality = 'high'; x.drawImage(cv, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.85);
+}
+
+/* ================= dialog pratinjau ================= */
+function loadOpts(){
+  let o = null;
+  try{ o = JSON.parse(localStorage.getItem('chartStudioPdfOpts') || 'null'); }catch(e){}
+  if(!o){ let x = {}; try{ x = JSON.parse(localStorage.getItem('chartStudioExportOpts') || '{}'); }catch(e){} o = { stats: !!x.stats, pareto: !!x.pareto }; }
+  return Object.assign({ stats:false, pareto:false, orient:'p', fit:'split' }, o);
+}
+function stemOf(o, pieces){
+  const R = rpState(), d = R.date || new Date().toISOString().slice(0,10);
+  if(o.report && !o.charts && !o.corr) return fileSafe('daily-report ' + d);
+  if(!o.report && o.charts && !o.corr && pieces.charts.length === 1) return fileSafe(pieces.charts[0].title);
+  if(!o.report && !o.corr) return 'semua-grafik';
+  return fileSafe('laporan-chart-studio ' + d);
+}
+function showPreview(scope, pieces){
+  const sv = loadOpts();
+  const has = { report: !!pieces.report, charts: pieces.charts.length > 0, corr: !!pieces.corr,
+    stats: pieces.charts.some(p=> p.stats), pareto: pieces.charts.some(p=> p.pareto) };
+  const ov = document.createElement('div'); ov.className = 'pv-overlay';
+  ov.innerHTML =
+    '<div class="pv-dialog">' +
+      '<div class="pv-head"><h4>👁️ Pratinjau PDF</h4><button class="btn small" id="pvClose">✕ Tutup</button></div>' +
+      '<div class="pv-opts">' +
+        (has.report ? '<label><input type="checkbox" id="pvRep" checked> Daily Report</label>' : '') +
+        (has.charts ? '<label><input type="checkbox" id="pvCh" checked> Grafik (' + pieces.charts.length + ')</label>' : '') +
+        (has.corr ? '<label><input type="checkbox" id="pvCo" checked> Korelasi</label>' : '') +
+        (has.report ? '<label>Daily Report: <select id="pvOri"><option value="p"' + (sv.orient==='p'?' selected':'') + '>Portrait (A4 tegak)</option><option value="l"' + (sv.orient==='l'?' selected':'') + '>Landscape (A4 mendatar)</option></select></label>' +
+                      '<label><select id="pvFit"><option value="split"' + (sv.fit==='split'?' selected':'') + '>Boleh terpotong ke halaman berikutnya</option><option value="one"' + (sv.fit==='one'?' selected':'') + '>Paksa muat 1 halaman (diperkecil)</option></select></label>' : '') +
+        (has.stats ? '<label><input type="checkbox" id="pvSt"' + (sv.stats?' checked':'') + '> Statistik &amp; tren</label>' : '') +
+        (has.pareto ? '<label><input type="checkbox" id="pvPa"' + (sv.pareto?' checked':'') + '> Analisis Pareto</label>' : '') +
+        '<label style="margin-left:auto;">Ukuran pratinjau <input type="range" id="pvZoom" min="260" max="900" value="520"></label>' +
+      '</div>' +
+      '<div class="pv-warn" id="pvWarn"></div>' +
+      '<div class="pv-body"><div class="pv-grid" id="pvGrid"></div></div>' +
+      '<div class="pv-foot"><span class="sp" id="pvInfo"></span>' +
+        (has.charts ? '<button class="btn small" id="pvFitAll" title="Memas-kan semua grafik ke 1 halaman landscape lalu membuat pratinjau ulang">📐 Pas-kan semua grafik &amp; buat ulang</button>' : '') +
+        '<button class="btn" id="pvCancel">Batal</button><button class="btn primary" id="pvDl">📄 Unduh PDF</button></div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  const g = id=> q('#' + id, ov);
+  const cur = ()=> ({
+    report: has.report ? g('pvRep').checked : false, charts: has.charts ? g('pvCh').checked : false, corr: has.corr ? g('pvCo').checked : false,
+    orient: has.report ? g('pvOri').value : 'p', fit: has.report ? g('pvFit').value : 'split',
+    stats: has.stats ? g('pvSt').checked : false, pareto: has.pareto ? g('pvPa').checked : false,
+  });
+  const zoom = ()=>{ const z = +g('pvZoom').value; qa('.pv-img', ov).forEach(im=>{ im.style.width = (im.dataset.l === '1' ? z : z*0.7071) + 'px'; }); };
+  const refresh = function(){
+    const o = cur(), res = composeAll(pieces, o), grid = g('pvGrid');
+    grid.innerHTML = '';
+    res.pages.forEach(function(p, i){
+      const item = document.createElement('div'); item.className = 'pv-item';
+      const img = new Image(); img.className = 'pv-img'; img.dataset.l = p.D.orient === 'l' ? '1' : '0'; img.src = thumbUrl(p.cv);
+      const cap = document.createElement('div'); cap.className = 'pv-cap';
+      cap.innerHTML = '<b>Hal. ' + (i+1) + '</b> · ' + esc(p.label) + (p.fill !== undefined ? ' · terisi ' + Math.round(p.fill*100) + '%' : '');
+      item.appendChild(img); item.appendChild(cap); grid.appendChild(item);
+    });
+    zoom();
+    g('pvWarn').innerHTML = res.notes.map(n=> '<div class="' + (n.warn ? 'w' : '') + '">' + (n.warn ? '⚠️ ' : 'ℹ️ ') + n.html + '</div>').join('');
+    g('pvInfo').textContent = res.pages.length + ' halaman';
+    res.pages.forEach(p=>{ p.cv.width = 0; });   // bebaskan memori
+  };
+  let esc_ = null;
+  const close = ()=>{ ov.remove(); document.removeEventListener('keydown', esc_); };
+  esc_ = e=>{ if(e.key === 'Escape') close(); };
+  document.addEventListener('keydown', esc_);
+  g('pvClose').addEventListener('click', close); g('pvCancel').addEventListener('click', close);
+  g('pvZoom').addEventListener('input', zoom);
+  qa('input[type=checkbox], select', ov).forEach(el=> el.addEventListener('change', refresh));
+  const fa = g('pvFitAll');
+  if(fa) fa.addEventListener('click', async function(){
+    close(); switchTab('builder'); await sleep(150);
+    scope.charts.forEach(c=>{ const card = document.getElementById('chartcard-' + c.id); if(card) fitChart(c, card); });
+    await sleep(350); openPdfExport(scope);
+  });
+  g('pvDl').addEventListener('click', async function(){
+    const btn = g('pvDl'), o = cur();
+    btn.disabled = true; btn.textContent = '⏳ Menyusun PDF…'; await sleep(80);
+    try{
+      try{ localStorage.setItem('chartStudioPdfOpts', JSON.stringify({ stats:o.stats, pareto:o.pareto, orient:o.orient, fit:o.fit })); }catch(e){}
+      const res = composeAll(pieces, o);
+      if(!res.pages.length){ showToast('Tidak ada halaman yang dipilih'); btn.disabled = false; btn.textContent = '📄 Unduh PDF'; return; }
+      makePdf(res.pages).save(stemOf(o, pieces) + '.pdf');
+      showToast('PDF diunduh (' + res.pages.length + ' halaman)');
+      close();
+    }catch(err){ console.error(err); showToast('Gagal membuat PDF: ' + (err && err.message ? err.message : err)); btn.disabled = false; btn.textContent = '📄 Unduh PDF'; }
+  });
+  refresh();
+}
+async function openPdfExport(scope){
+  if(W.__pdfBusy) return; W.__pdfBusy = true;
+  try{
+    scope.charts = (scope.charts || []).filter(c=> c.chartObj);
+    scope.corr = !!(scope.corr && typeof corrChart !== 'undefined' && corrChart);
+    if(scope.report && !state.headers.length){ showToast('Daily Report butuh data. Masukkan data dulu.'); scope.report = false; }
+    if(!scope.charts.length && !scope.report && !scope.corr){ showToast('Belum ada yang bisa diekspor (grafik belum diatur / data kosong)'); return; }
+    const pieces = await gatherPieces(scope);
+    if(!pieces.report && !pieces.charts.length && !pieces.corr){ showToast('Tidak ada bahan yang berhasil diambil'); return; }
+    showPreview(scope, pieces);
+  }catch(err){ console.error(err); hideBusy(); showToast('Gagal menyiapkan PDF: ' + (err && err.message ? err.message : err)); }
+  finally{ W.__pdfBusy = false; }
+}
+
+/* ================= sambungkan tombol ================= */
+W.exportChartPDF = cfg=> openPdfExport({ charts:[cfg], report:false, corr:false });
+W.exportAllPDF   = ()=> openPdfExport({ charts: state.charts.slice(), report:false, corr:false });
+const allScope = ()=> ({ charts: state.charts.slice(), report:true, corr:true });
+
+(function(){
+  const rj = q('#rpJpg');
+  if(rj) rj.insertAdjacentHTML('afterend',
+    '<button class="btn small" id="rpPdf" title="Unduh Daily Report sebagai PDF (ada pratinjau)">📄 PDF</button>' +
+    '<button class="btn small primary" id="rpPdfAll" title="Satu PDF berisi Daily Report (paling atas), semua grafik, dan korelasi">📚 Semua jadi 1 PDF</button>');
+  const ea = q('#btnExportAllPDF');
+  if(ea) ea.insertAdjacentHTML('afterend',
+    '<button class="btn small primary" id="btnPdfAll" title="Satu PDF berisi Daily Report (paling atas), semua grafik, dan korelasi">📚 1 PDF (Report + Grafik + Korelasi)</button>');
+  const l3 = q('[data-layout="3"]');
+  if(l3) l3.insertAdjacentHTML('afterend',
+    '<button class="btn small" id="btnFitAll" title="Pas-kan semua grafik ke 1 halaman A4 landscape agar PDF-nya penuh">📐 Pas halaman PDF</button>');
+  const on = (id, fn)=>{ const b = q('#' + id); if(b) b.addEventListener('click', fn); };
+  on('rpPdf', ()=> openPdfExport({ charts:[], report:true, corr:false }));
+  on('rpPdfAll', ()=> openPdfExport(allScope()));
+  on('btnPdfAll', ()=> openPdfExport(allScope()));
+  on('btnFitAll', fitAllCharts);
+})();
+})();
+</script>
 </body>
 </html>
