@@ -11,7 +11,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script>
-  <footer class="app-footer">Ceria Metalindo Prima &middot; Process Engineer Furnace</footer>
 // Some networks/browsers block one CDN but not another. If a library failed
 // to load above, try a second CDN before giving up, then let app.js know
 // which ones (if any) are still missing so it can warn the user clearly
@@ -748,6 +747,12 @@ table.rp-table.no-ctl col.c-ctl{ display:none; }
 
 </style>
 </head>
+  <!-- PATCH v10: footer -->
+<style>
+.cs-footer{ text-align:center; padding:18px 12px 26px; font-size:12px; font-weight:700; color:var(--text-soft); letter-spacing:.3px; }
+@media print{ .cs-footer{ display:none !important; } }
+</style>
+<div class="cs-footer">Created By Process Engineer Furnace</div>
 <body>
 
 <div class="topbar">
@@ -7916,8 +7921,9 @@ function footers(pages){
   pages.forEach(function(p, i){
     const x = p.ctx, M = MPT*PXPT, yb = p.D.H - M*0.55;
     x.save(); x.font = (8*PXPT) + 'px ' + FONT; x.fillStyle = '#8a8a8a'; x.textBaseline = 'alphabetic';
-    x.textAlign = 'left'; x.fillText('Chart Studio · Ceria Metalindo Prima · ' + ds, M, yb);
+    x.textAlign = 'left'; x.fillText('Chart Studio · ' + ds, M, yb);
     x.textAlign = 'right'; x.fillText('Halaman ' + (i+1) + ' dari ' + n, p.D.W - M, yb);
+    x.textAlign = 'center'; x.fillText('Created By Process Engineer Furnace', p.D.W / 2, yb);
     x.restore();
   });
 }
